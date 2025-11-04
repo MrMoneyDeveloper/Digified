@@ -1,201 +1,233 @@
 <h1 class="visibility-hidden">{{ help_center.name }}</h1>
 
+<div id="tsparticles"></div>
+
 <main id="main-content" class="home-main">
-  <section id="hero" class="hero hero-gradient">
-    <div class="hero-inner">
-      <p class="hero-eyebrow">CXI Support</p>
-      <h2 class="hero-title">Welcome to the CXI (Digified) <span class="accent-text">Help Centre</span></h2>
-      <p class="hero-subtitle">Find help, report issues, read policies.</p>
+  <section id="hero" class="hero hero-gradient py-5">
+    <div class="container position-relative">
+      <div class="row align-items-center g-5">
+        <div class="col-lg-6">
+          <p class="hero-eyebrow text-uppercase mb-3">CXI Support</p>
+          <h2 class="hero-title">Welcome to the CXI (Digified) <span class="accent-text">Help Centre</span></h2>
+          <p class="hero-subtitle">Find help, report issues, read policies.</p>
 
-      <div class="hero-actions">
-        {{#if settings.network_issue_form_path}}
-          <a class="btn hero-btn hero-btn-primary" href="/hc/{{help_center.locale}}{{settings.network_issue_form_path}}">Report Networking Issue</a>
-        {{else}}
-          <a class="btn hero-btn hero-btn-primary" href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436&amp;tf_issue_type=network">Report Networking Issue</a>
-        {{/if}}
+          <div class="hero-actions d-flex flex-wrap gap-3">
+            {{#if settings.network_issue_form_path}}
+              <a class="btn hero-btn hero-btn-primary" href="/hc/{{help_center.locale}}{{settings.network_issue_form_path}}">Report Networking Issue</a>
+            {{else}}
+              <a class="btn hero-btn hero-btn-primary" href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436&amp;tf_issue_type=network">Report Networking Issue</a>
+            {{/if}}
 
-        {{#if settings.access_request_form_path}}
-          <a class="btn hero-btn hero-btn-secondary" href="/hc/{{help_center.locale}}{{settings.access_request_form_path}}">Request Access</a>
-        {{else}}
-          <a class="btn hero-btn hero-btn-secondary" href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436&amp;tf_issue_type=access">Request Access</a>
-        {{/if}}
+            {{#if settings.access_request_form_path}}
+              <a class="btn hero-btn hero-btn-secondary" href="/hc/{{help_center.locale}}{{settings.access_request_form_path}}">Request Access</a>
+            {{else}}
+              <a class="btn hero-btn hero-btn-secondary" href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436&amp;tf_issue_type=access">Request Access</a>
+            {{/if}}
 
-        {{#if settings.policies_category_path}}
-          <a class="btn hero-btn hero-btn-tertiary" href="/hc/{{help_center.locale}}{{settings.policies_category_path}}">Read Policies</a>
-        {{else}}
-          <a class="btn hero-btn hero-btn-tertiary" href="/hc/{{help_center.locale}}/categories">Read Policies</a>
-        {{/if}}
-      </div>
+            {{#if settings.policies_category_path}}
+              <a class="btn hero-btn hero-btn-tertiary" href="/hc/{{help_center.locale}}{{settings.policies_category_path}}">Read Policies</a>
+            {{else}}
+              <a class="btn hero-btn hero-btn-tertiary" href="/hc/{{help_center.locale}}/categories">Read Policies</a>
+            {{/if}}
+          </div>
 
-      <div class="hero-search">
-        {{search submit=false instant=settings.instant_search class='search search-full hero-search-field'}}
-      </div>
-
-      <div class="external-support-card">
-        <div class="external-support-content">
-          <h3>Need external expertise?</h3>
-          <p>Reach our partner engineers for third-party platforms and escalations.</p>
         </div>
-        {{#if settings.external_support_form_url}}
-          <a class="btn external-support-btn" href="{{settings.external_support_form_url}}" target="_blank" rel="noopener">Submit a Support Request</a>
-        {{else}}
-          <a class="btn external-support-btn" href="https://cxe-internal.zendesk.com/hc/requests/new?ticket_form_id=0000000000000" target="_blank" rel="noopener">Submit a Support Request</a>
-        {{/if}}
+
+        <div class="col-lg-6">
+          <div class="d-flex flex-column gap-4">
+            <div class="hero-search">
+              {{search submit=false instant=settings.instant_search class='search search-full hero-search-field'}}
+            </div>
+            <div class="external-support-card">
+              <div class="external-support-content">
+                <h3 class="mb-2">Need external expertise?</h3>
+                <p class="mb-0">Reach our partner engineers for third-party platforms and escalations.</p>
+              </div>
+              {{#if settings.external_support_form_url}}
+                <a class="btn external-support-btn" href="{{settings.external_support_form_url}}" target="_blank" rel="noopener">Submit a Support Request</a>
+              {{else}}
+                <a class="btn external-support-btn" href="https://cxe-internal.zendesk.com/hc/requests/new?ticket_form_id=0000000000000" target="_blank" rel="noopener">Submit a Support Request</a>
+              {{/if}}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <div class="container">
-    <section id="requests" class="section support-cards">
-      <header class="section-header">
+  <section id="requests" class="py-5 support-cards">
+    <div class="container">
+      <header class="section-header text-center mb-4">
         <h2><span class="accent-text">Get support</span> fast</h2>
         <p>Choose the path that matches your need.</p>
       </header>
 
-      <div class="cards-grid">
-        <article class="support-card">
-          <div class="card-icon" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="presentation">
-              <path d="M24 36a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm11.12-5.88a1.5 1.5 0 0 1-2.12 0 14 14 0 0 0-19.88 0 1.5 1.5 0 0 1-2.12-2.12 17 17 0 0 1 24.12 0 1.5 1.5 0 0 1 0 2.12Z"/>
-              <path d="M41.13 27.17a1.5 1.5 0 0 1-2.13 0 21 21 0 0 0-29.88 0 1.5 1.5 0 0 1-2.12-2.13 24 24 0 0 1 34.12 0 1.5 1.5 0 0 1 0 2.13ZM47 18.89a1.5 1.5 0 0 1-2.13 0 30 30 0 0 0-41.74 0A1.5 1.5 0 1 1 2.99 16.7a33 33 0 0 1 46.02 0A1.5 1.5 0 0 1 47 18.9Z"/>
-            </svg>
-          </div>
-          <h3><span class="accent-text">Network</span> &amp; Access Requests</h3>
-          <p>Fix connectivity issues or request new credentials. The form routes straight to CXI engineers.</p>
-          <div class="card-action">
-            {{#if settings.network_issue_form_path}}
-              <a class="card-link" href="/hc/{{help_center.locale}}{{settings.network_issue_form_path}}">Report or request now</a>
-            {{else}}
-              <a class="card-link" href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436&amp;tf_issue_type=network">Report or request now</a>
-            {{/if}}
-          </div>
-        </article>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <article class="support-card h-100">
+            <div class="card-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="presentation">
+                <path d="M24 36a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm11.12-5.88a1.5 1.5 0 0 1-2.12 0 14 14 0 0 0-19.88 0 1.5 1.5 0 0 1-2.12-2.12 17 17 0 0 1 24.12 0 1.5 1.5 0 0 1 0 2.12Z"/>
+                <path d="M41.13 27.17a1.5 1.5 0 0 1-2.13 0 21 21 0 0 0-29.88 0 1.5 1.5 0 0 1-2.12-2.13 24 24 0 0 1 34.12 0 1.5 1.5 0 0 1 0 2.13ZM47 18.89a1.5 1.5 0 0 1-2.13 0 30 30 0 0 0-41.74 0A1.5 1.5 0 1 1 2.99 16.7a33 33 0 0 1 46.02 0A1.5 1.5 0 0 1 47 18.9Z"/>
+              </svg>
+            </div>
+            <h3><span class="accent-text">Network</span> &amp; Access Requests</h3>
+            <p>Fix connectivity issues or request new credentials. The form routes straight to CXI engineers.</p>
+            <div class="card-action">
+              {{#if settings.network_issue_form_path}}
+                <a class="card-link" href="/hc/{{help_center.locale}}{{settings.network_issue_form_path}}">Report or request now</a>
+              {{else}}
+                <a class="card-link" href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436&amp;tf_issue_type=network">Report or request now</a>
+              {{/if}}
+            </div>
+          </article>
+        </div>
 
-        <article id="policies-card" class="support-card">
-          <div class="card-icon" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="presentation">
-              <path d="M12 6h18a6 6 0 0 1 6 6v27.5a1.5 1.5 0 0 1-2.36 1.2L24 34.35l-9.64 6.35A1.5 1.5 0 0 1 12 39.5V6Z"/>
-              <path d="M33 6h3a6 6 0 0 1 6 6v30a1.5 1.5 0 0 1-2.32 1.24L33 37.64"/>
-            </svg>
-          </div>
-          <h3><span class="accent-text">Policies</span> &amp; SOPs</h3>
-          <p>Review building use rules, security guidelines, and operating procedures directly in the portal.</p>
-          <div class="card-action">
-            {{#if settings.policies_category_path}}
-              <a class="card-link" href="/hc/{{help_center.locale}}{{settings.policies_category_path}}">Open policies</a>
-            {{else}}
-              <a class="card-link" href="/hc/{{help_center.locale}}/categories">Open policies</a>
-            {{/if}}
-          </div>
-        </article>
+        <div class="col-md-4">
+          <article class="support-card h-100">
+            <div class="card-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="presentation">
+                <path d="M12 6h18a6 6 0 0 1 6 6v27.5a1.5 1.5 0 0 1-2.36 1.2L24 34.35l-9.64 6.35A1.5 1.5 0 0 1 12 39.5V6Z"/>
+                <path d="M33 6h3a6 6 0 0 1 6 6v30a1.5 1.5 0 0 1-2.32 1.24L33 37.64"/>
+              </svg>
+            </div>
+            <h3><span class="accent-text">Policies</span> &amp; SOPs</h3>
+            <p>Review building use rules, security guidelines, and operating procedures directly in the portal.</p>
+            <div class="card-action">
+              {{#if settings.policies_category_path}}
+                <a class="card-link" href="/hc/{{help_center.locale}}{{settings.policies_category_path}}">Open policies</a>
+              {{else}}
+                <a class="card-link" href="/hc/{{help_center.locale}}/categories">Open policies</a>
+              {{/if}}
+            </div>
+          </article>
+        </div>
 
-        <article class="support-card support-card-placeholder">
-          <div class="card-icon" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="presentation">
-              <path d="M24 6a16 16 0 1 1-16 16A16 16 0 0 1 24 6Zm0 24a2 2 0 1 1 2-2 2 2 0 0 1-2 2Zm0-20a6 6 0 0 0-6 6 1.5 1.5 0 0 0 3 0 3 3 0 1 1 3 3 1.5 1.5 0 0 0-1.5 1.5V24a1.5 1.5 0 0 0 3 0v-.68A6 6 0 0 0 24 10Z"/>
-            </svg>
-          </div>
-          <h3>Knowledge Base <span class="accent-text">(coming soon)</span></h3>
-          <p>HR onboarding, admin FAQs, and facilities know-how join the CXI library next.</p>
-          <div class="card-action">
-            <a class="card-link" href="#knowledge-base">Preview roadmap</a>
-          </div>
-        </article>
+        <div class="col-md-4">
+          <article class="support-card support-card-placeholder h-100">
+            <div class="card-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="presentation">
+                <path d="M24 6a16 16 0 1 1-16 16A16 16 0 0 1 24 6Zm0 24a2 2 0 1 1 2-2 2 2 0 0 1-2 2Zm0-20a6 6 0 0 0-6 6 1.5 1.5 0 0 0 3 0 3 3 0 1 1 3 3 1.5 1.5 0 0 0-1.5 1.5V24a1.5 1.5 0 0 0 3 0v-.68A6 6 0 0 0 24 10Z"/>
+              </svg>
+            </div>
+            <h3>Knowledge Base <span class="accent-text">(coming soon)</span></h3>
+            <p>HR onboarding, admin FAQs, and facilities know-how join the CXI library next.</p>
+            <div class="card-action">
+              <a class="card-link" href="#knowledge-base">Preview roadmap</a>
+            </div>
+          </article>
+        </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section id="workplace-policies" class="section workplace-policies">
-      <header class="section-header">
+  <section id="workplace-policies" class="section workplace-policies py-5">
+    <div class="container">
+      <header class="section-header text-center mb-4">
         <h2><span class="accent-text">Workplace</span> Policies</h2>
         <p>Stay compliant with Digified standards for safety, security, and respect across our CX operations.</p>
       </header>
 
-      <div class="policy-grid">
-        <article class="policy-card">
-          <h3>Drug and Alcohol Policy</h3>
-          <p>Maintains a zero-tolerance stance on impairment to protect colleagues, clients, and customers.</p>
-          <div class="card-action">
-            {{#if settings.drug_policy_article_url}}
-              <a class="policy-link" href="{{settings.drug_policy_article_url}}">Read more</a>
-            {{else}}
-              <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
-            {{/if}}
-          </div>
-        </article>
+      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        <div class="col">
+          <article class="policy-card h-100">
+            <h3>Drug and Alcohol Policy</h3>
+            <p>Maintains a zero-tolerance stance on impairment to protect colleagues, clients, and customers.</p>
+            <div class="card-action">
+              {{#if settings.drug_policy_article_url}}
+                <a class="policy-link" href="{{settings.drug_policy_article_url}}">Read more</a>
+              {{else}}
+                <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+              {{/if}}
+            </div>
+          </article>
+        </div>
 
-        <article class="policy-card">
-          <h3>Clean Desk Policy</h3>
-          <p>Requires agents to secure devices and clear sensitive materials whenever desks are unattended.</p>
-          <div class="card-action">
-            {{#if settings.clean_desk_policy_article_url}}
-              <a class="policy-link" href="{{settings.clean_desk_policy_article_url}}">Read more</a>
-            {{else}}
-              <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
-            {{/if}}
-          </div>
-        </article>
+        <div class="col">
+          <article class="policy-card h-100">
+            <h3>Clean Desk Policy</h3>
+            <p>Requires agents to secure devices and clear sensitive materials whenever desks are unattended.</p>
+            <div class="card-action">
+              {{#if settings.clean_desk_policy_article_url}}
+                <a class="policy-link" href="{{settings.clean_desk_policy_article_url}}">Read more</a>
+              {{else}}
+                <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+              {{/if}}
+            </div>
+          </article>
+        </div>
 
-        <article class="policy-card">
-          <h3>Locker Policy for Contact Centre Agents</h3>
-          <p>Explains locker assignments, permitted items, and inspection rights to keep operations secure.</p>
-          <div class="card-action">
-            {{#if settings.locker_policy_article_url}}
-              <a class="policy-link" href="{{settings.locker_policy_article_url}}">Read more</a>
-            {{else}}
-              <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
-            {{/if}}
-          </div>
-        </article>
+        <div class="col">
+          <article class="policy-card h-100">
+            <h3>Locker Policy for Contact Centre Agents</h3>
+            <p>Explains locker assignments, permitted items, and inspection rights to keep operations secure.</p>
+            <div class="card-action">
+              {{#if settings.locker_policy_article_url}}
+                <a class="policy-link" href="{{settings.locker_policy_article_url}}">Read more</a>
+              {{else}}
+                <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+              {{/if}}
+            </div>
+          </article>
+        </div>
 
-        <article class="policy-card">
-          <h3>PCI Compliance Policy</h3>
-          <p>Details cardholder data safeguards, device controls, and monitoring to uphold PCI DSS obligations.</p>
-          <div class="card-action">
-            {{#if settings.pci_policy_article_url}}
-              <a class="policy-link" href="{{settings.pci_policy_article_url}}">Read more</a>
-            {{else}}
-              <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
-            {{/if}}
-          </div>
-        </article>
+        <div class="col">
+          <article class="policy-card h-100">
+            <h3>PCI Compliance Policy</h3>
+            <p>Details cardholder data safeguards, device controls, and monitoring to uphold PCI DSS obligations.</p>
+            <div class="card-action">
+              {{#if settings.pci_policy_article_url}}
+                <a class="policy-link" href="{{settings.pci_policy_article_url}}">Read more</a>
+              {{else}}
+                <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+              {{/if}}
+            </div>
+          </article>
+        </div>
 
-        <article class="policy-card">
-          <h3>Smoking Policy</h3>
-          <p>Defines approved smoking areas, break schedules, and penalties for non-compliance.</p>
-          <div class="card-action">
-            {{#if settings.smoking_policy_article_url}}
-              <a class="policy-link" href="{{settings.smoking_policy_article_url}}">Read more</a>
-            {{else}}
-              <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
-            {{/if}}
-          </div>
-        </article>
+        <div class="col">
+          <article class="policy-card h-100">
+            <h3>Smoking Policy</h3>
+            <p>Defines approved smoking areas, break schedules, and penalties for non-compliance.</p>
+            <div class="card-action">
+              {{#if settings.smoking_policy_article_url}}
+                <a class="policy-link" href="{{settings.smoking_policy_article_url}}">Read more</a>
+              {{else}}
+                <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+              {{/if}}
+            </div>
+          </article>
+        </div>
 
-        <article class="policy-card">
-          <h3>Sexual Harassment Policy</h3>
-          <p>Affirms Digified's zero-tolerance approach with reporting channels and investigation steps.</p>
-          <div class="card-action">
-            {{#if settings.harassment_policy_article_url}}
-              <a class="policy-link" href="{{settings.harassment_policy_article_url}}">Read more</a>
-            {{else}}
-              <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
-            {{/if}}
-          </div>
-        </article>
+        <div class="col">
+          <article class="policy-card h-100">
+            <h3>Sexual Harassment Policy</h3>
+            <p>Affirms Digified's zero-tolerance approach with reporting channels and investigation steps.</p>
+            <div class="card-action">
+              {{#if settings.harassment_policy_article_url}}
+                <a class="policy-link" href="{{settings.harassment_policy_article_url}}">Read more</a>
+              {{else}}
+                <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+              {{/if}}
+            </div>
+          </article>
+        </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section id="knowledge-base" class="section knowledge-base">
-      <header class="section-header">
+  <section id="knowledge-base" class="section knowledge-base py-5">
+    <div class="container">
+      <header class="section-header text-center mb-4">
         <h2><span class="accent-text">Knowledge</span> base spotlight</h2>
         <p>Browse categories, featured articles, and policy updates as they go live.</p>
       </header>
 
       <section class="categories blocks knowledge-grid">
-        <ul class="blocks-list">
+        <ul class="blocks-list row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
           {{#each categories}}
             {{#if ../has_multiple_categories}}
-              <li class="blocks-item">
+              <li class="blocks-item col">
                 <a href="{{url}}" class="blocks-item-link">
                   <span class="blocks-item-title">{{name}}</span>
                   <span class="blocks-item-description">{{excerpt description}}</span>
@@ -203,7 +235,7 @@
               </li>
             {{else}}
               {{#each sections}}
-                <li class="blocks-item">
+                <li class="blocks-item col">
                   <a href="{{url}}" class="blocks-item-link">
                     <span class="blocks-item-title">{{name}}</span>
                     <span class="blocks-item-description">{{excerpt description}}</span>
@@ -217,12 +249,12 @@
       </section>
 
       {{#if promoted_articles}}
-        <section class="articles promoted-spotlight">
-          <h3>Featured updates</h3>
-          <ul class="article-list promoted-articles">
+        <section class="articles promoted-spotlight mt-5">
+          <h3 class="mb-3">Featured updates</h3>
+          <ul class="article-list promoted-articles row row-cols-1 row-cols-md-2 g-3 list-unstyled">
             {{#each promoted_articles}}
-              <li class="promoted-articles-item">
-                <a href="{{url}}">
+              <li class="promoted-articles-item col">
+                <a href="{{url}}" class="d-flex align-items-center gap-2">
                   {{title}}
                   {{#if internal}}
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" focusable="false" viewBox="0 0 16 16" class="icon-lock" title="{{t 'internal'}}">
@@ -236,20 +268,30 @@
           </ul>
         </section>
       {{/if}}
+    </div>
+  </section>
+
+  {{#if help_center.community_enabled}}
+    <section class="section home-section community community-highlight py-5">
+      <div class="container">
+        <div class="row align-items-center gy-4">
+          <div class="col-lg-6">
+            <h2>Join the community</h2>
+            {{#link 'community' class='community-link btn btn-outline-light mt-3'}}{{t 'join_conversation'}}{{/link}}
+          </div>
+          <div class="col-lg-6">
+            <div class="community-image" aria-hidden="true"></div>
+          </div>
+        </div>
+      </div>
     </section>
+  {{/if}}
 
-    {{#if help_center.community_enabled}}
-      <section class="section home-section community community-highlight">
-        <h2>Join the community</h2>
-        {{#link 'community' class='community-link'}}{{t 'join_conversation'}}{{/link}}
-        <div class="community-image" aria-hidden="true"></div>
-      </section>
-    {{/if}}
-
-    <section class="section home-section activity">
+  <section class="section home-section activity py-5">
+    <div class="container">
       {{#if settings.show_recent_activity}}
         {{recent_activity}}
       {{/if}}
-    </section>
-  </div>
+    </div>
+  </section>
 </main>
