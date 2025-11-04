@@ -12,27 +12,30 @@
 
   <div class="nav-wrapper-desktop">
     <nav class="user-nav" id="user-nav" aria-label="{{t 'user_navigation'}}">
-      <ul class="user-nav-list">
-        <li>{{link 'community'}}</li>
-        <li>{{link 'service_catalog'}}</li>
+      <ul class="user-nav-list primary-nav">
+        <li>{{#link 'help_center' class='nav-link'}}Home{{/link}}</li>
+        <li><a class="nav-link" href="#requests">Requests</a></li>
+        <li><a class="nav-link" href="#policies">Policies &amp; SOPs</a></li>
+        <li><a class="nav-link" href="#knowledge-base">Knowledge Base</a></li>
+        <li><a class="nav-link" href="#contact">Contact</a></li>
+      </ul>
 
-        {{!-- Show "My activities" when signed in --}}
+      <ul class="user-nav-list utility-nav">
         {{#if signed_in}}
-          <li>{{link 'requests' class='my-activities'}}</li>
+          <li>{{link 'requests' class='nav-link my-activities'}}</li>
         {{/if}}
 
-        {{!-- Submit a request → single unified form --}}
         <li>
           <a class="btn btn-primary submit-a-request"
              href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436"
-             aria-label="Open the CXI — Internal Support & Requests form">
+             aria-label="Open the CXI Internal Support &amp; Requests form">
             {{t 'submit_a_request'}}
           </a>
         </li>
 
         {{#unless signed_in}}
           <li>
-            {{#link "sign_in" class="sign-in"}}
+            {{#link "sign_in" class="sign-in nav-link"}}
               {{t 'sign_in'}}
             {{/link}}
           </li>
@@ -98,14 +101,16 @@
           <li class="nav-divider"></li>
         {{/if}}
 
-        <li class="item">{{link 'community'}}</li>
-        <li class="item">{{link 'service_catalog'}}</li>
+        <li class="item"><a href="#hero">Home</a></li>
+        <li class="item"><a href="#requests">Requests</a></li>
+        <li class="item"><a href="#policies">Policies &amp; SOPs</a></li>
+        <li class="item"><a href="#knowledge-base">Knowledge Base</a></li>
+        <li class="item"><a href="#contact">Contact</a></li>
 
-        {{!-- Direct link to unified request form on mobile --}}
         <li class="nav-divider"></li>
         <li class="item">
-          <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436">
-            🧩 Support &amp; Requests
+          <a class="menu-primary-action" href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436">
+            CXI Support &amp; Requests
           </a>
         </li>
 

@@ -403,6 +403,65 @@
           "value": false
         }
       ]
+    },
+    {
+      "label": "CXI hero links",
+      "variables": [
+        {
+          "identifier": "network_issue_form_path",
+          "type": "text",
+          "label": "Network issue form path",
+          "description": "Path appended after /hc/<locale> for the networking issue CTA button.",
+          "value": "/requests/new?ticket_form_id=22989127409436&tf_issue_type=network"
+        },
+        {
+          "identifier": "access_request_form_path",
+          "type": "text",
+          "label": "Access request form path",
+          "description": "Path appended after /hc/<locale> for the access request CTA button.",
+          "value": "/requests/new?ticket_form_id=22989127409436&tf_issue_type=access"
+        },
+        {
+          "identifier": "policies_category_path",
+          "type": "text",
+          "label": "Policies category path",
+          "description": "Path appended after /hc/<locale> to reach the policies and SOPs category.",
+          "value": "/categories"
+        }
+      ]
+    },
+    {
+      "label": "CXI contact details",
+      "variables": [
+        {
+          "identifier": "service_desk_phone_link",
+          "type": "text",
+          "label": "Service desk phone (tel format)",
+          "description": "Digits used for the tel: link, e.g. +63253143975.",
+          "value": "+63253143975"
+        },
+        {
+          "identifier": "service_desk_phone_display",
+          "type": "text",
+          "label": "Service desk phone (display)",
+          "description": "Formatted phone number shown to users.",
+          "value": "+63 (2) 5314 3975"
+        },
+        {
+          "identifier": "service_desk_email",
+          "type": "text",
+          "label": "Service desk email",
+          "description": "Primary contact email for the CXI service desk.",
+          "value": "info@digifybpo.com"
+        },
+        {
+          "identifier": "service_desk_hours",
+          "type": "text",
+          "label": "Service desk hours",
+          "description": "Standard operating hours displayed in the footer.",
+          "value": "Mon-Fri, 7:00-19:00 PHT"
+        }
+      ]
     }
   ]
 }

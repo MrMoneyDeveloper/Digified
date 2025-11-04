@@ -1,9 +1,51 @@
-<footer class="footer">
+<footer class="footer" id="contact">
   <div class="footer-inner">
-    {{#link 'help_center'}}{{help_center.name}}{{/link}}
+    <div class="footer-column footer-brand">
+      {{#link 'help_center' class='footer-logo'}}{{help_center.name}}{{/link}}
+      <p class="footer-text">Empowering CXI teams with fast answers, clear policies, and direct access to Digified specialists.</p>
+    </div>
 
-    <div class="footer-language-selector">
-      {{#if alternative_locales}}
+    <div class="footer-column footer-contact">
+      <h3>Contact</h3>
+      <ul class="footer-list">
+        {{#if settings.service_desk_phone_link}}
+          <li>
+            <span class="footer-label">Service Desk</span>
+            <a href="tel:{{settings.service_desk_phone_link}}">{{#if settings.service_desk_phone_display}}{{settings.service_desk_phone_display}}{{else}}{{settings.service_desk_phone_link}}{{/if}}</a>
+          </li>
+        {{/if}}
+        {{#if settings.service_desk_email}}
+          <li>
+            <span class="footer-label">Email</span>
+            <a href="mailto:{{settings.service_desk_email}}">{{settings.service_desk_email}}</a>
+          </li>
+        {{/if}}
+        {{#if settings.service_desk_hours}}
+          <li>
+            <span class="footer-label">Hours</span>
+            <span>{{settings.service_desk_hours}}</span>
+          </li>
+        {{/if}}
+      </ul>
+    </div>
+
+    <div class="footer-column footer-links">
+      <h3>Quick Links</h3>
+      <ul class="footer-list">
+        <li><a href="#hero">Home</a></li>
+        <li><a href="#requests">Requests</a></li>
+        <li><a href="#policies">Policies &amp; SOPs</a></li>
+        <li><a href="#knowledge-base">Knowledge Base</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; {{date 'now' format='YYYY'}} CXI (Digified). All rights reserved.</p>
+
+    {{#if alternative_locales}}
+      <div class="footer-language-selector">
         <div class="dropdown language-selector">
           <button class="dropdown-toggle" aria-haspopup="true">
             {{current_locale.name}}
@@ -19,7 +61,7 @@
             {{/each}}
           </span>
         </div>
-      {{/if}}
-    </div>
+      </div>
+    {{/if}}
   </div>
 </footer>
