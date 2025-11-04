@@ -1,0 +1,8 @@
+# Zendesk theme
+*.zip
+node_modules/
+dist/
+.DS_Store
+.vscode/
+.idea/
+*.log
