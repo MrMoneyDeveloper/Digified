@@ -1,61 +1,12 @@
 <a class="skip-navigation visually-hidden-focusable" tabindex="1" href="#main-content">{{t 'skip_navigation' }}</a>
 
-<header class="header navbar navbar-expand-lg navbar-dark">
-  <div class="container">
-    {{#link 'help_center' class='navbar-brand d-flex align-items-center gap-2'}}
-      <img src="{{settings.logo}}" alt="{{t 'home_page' name=help_center.name}}" class="navbar-brand-logo" />
-      {{#if settings.show_brand_name}}
-        <span class="fw-semibold">{{help_center.name}}</span>
-      {{/if}}
-    {{/link}}
-
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#cxiNavbar" aria-controls="cxiNavbar" aria-expanded="false" aria-label="{{t 'toggle_navigation'}}">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-
-    <div class="collapse navbar-collapse" id="cxiNavbar">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item">{{#link 'help_center' class='nav-link'}}Home{{/link}}</li>
-        <li class="nav-item"><a class="nav-link" href="#requests">Requests</a></li>
-        <li class="nav-item"><a class="nav-link" href="#workplace-policies">Policies</a></li>
-        <li class="nav-item"><a class="nav-link" href="#knowledge-base">Knowledge Base</a></li>
-        {{#if settings.external_support_form_url}}
-          <li class="nav-item"><a class="nav-link" href="{{settings.external_support_form_url}}" target="_blank" rel="noopener">External IT Support</a></li>
-        {{/if}}
-        <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
-      </ul>
-
-      <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-2">
-        {{#if signed_in}}
-          <li class="nav-item">{{link 'requests' class='nav-link'}}</li>
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              {{user_avatar class="user-avatar rounded-circle"}}
-              <span>{{user_name}}</span>
-            </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-              <li>{{#my_profile class="dropdown-item"}}{{t 'profile'}}{{/my_profile}}</li>
-              <li>{{link "requests" class="dropdown-item"}}</li>
-              <li>{{#link "contributions" class="dropdown-item"}}{{t "activities"}}{{/link}}</li>
-              <li>{{link "approval_requests" class="dropdown-item"}}</li>
-              <li>{{contact_details class='dropdown-item'}}</li>
-              <li>{{change_password class='dropdown-item'}}</li>
-              <li><hr class="dropdown-divider"></li>
-              <li>{{link "sign_out" class="dropdown-item"}}</li>
-            </ul>
-          </li>
-        {{else}}
-          <li class="nav-item">{{#link "sign_in" class="nav-link"}}{{t 'sign_in'}}{{/link}}</li>
-        {{/if}}
-
-        <li class="nav-item">
-          <a class="btn btn-info submit-a-request text-uppercase"
-             href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436"
-             aria-label="Open the CXI Internal Support &amp; Requests form">
-            {{t 'submit_a_request'}}
-          </a>
-        </li>
-      </ul>
-    </div>
+<header class="digify-header">
+  <div class="container header-inner">
+    <a class="brand" href="{{help_center.url}}">Digify BPO</a>
+    <nav class="nav-main">
+      <a class="nav-link" href="{{page_path 'new_request'}}">Requests</a>
+      <a class="nav-link" href="/hc/{{help_center.locale}}/categories">Policies (Preview)</a>
+      <a class="cta" href="{{page_path 'new_request'}}">Submit a request</a>
+    </nav>
   </div>
 </header>
