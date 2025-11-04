@@ -13,21 +13,21 @@
 
           <div class="hero-actions d-flex flex-wrap gap-3">
             {{#if settings.network_issue_form_path}}
-              <a class="btn hero-btn hero-btn-primary" href="/hc/{{help_center.locale}}{{settings.network_issue_form_path}}">Report Networking Issue</a>
+              <a class="btn btn-light hero-btn text-primary" href="/hc/{{help_center.locale}}{{settings.network_issue_form_path}}">Report Networking Issue</a>
             {{else}}
-              <a class="btn hero-btn hero-btn-primary" href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436&amp;tf_issue_type=network">Report Networking Issue</a>
+              <a class="btn btn-light hero-btn text-primary" href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436&amp;tf_issue_type=network">Report Networking Issue</a>
             {{/if}}
 
             {{#if settings.access_request_form_path}}
-              <a class="btn hero-btn hero-btn-secondary" href="/hc/{{help_center.locale}}{{settings.access_request_form_path}}">Request Access</a>
+              <a class="btn btn-outline-light hero-btn" href="/hc/{{help_center.locale}}{{settings.access_request_form_path}}">Request Access</a>
             {{else}}
-              <a class="btn hero-btn hero-btn-secondary" href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436&amp;tf_issue_type=access">Request Access</a>
+              <a class="btn btn-outline-light hero-btn" href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436&amp;tf_issue_type=access">Request Access</a>
             {{/if}}
 
             {{#if settings.policies_category_path}}
-              <a class="btn hero-btn hero-btn-tertiary" href="/hc/{{help_center.locale}}{{settings.policies_category_path}}">Read Policies</a>
+              <a class="btn btn-outline-info hero-btn" href="/hc/{{help_center.locale}}{{settings.policies_category_path}}">Read Policies</a>
             {{else}}
-              <a class="btn hero-btn hero-btn-tertiary" href="/hc/{{help_center.locale}}/categories">Read Policies</a>
+              <a class="btn btn-outline-info hero-btn" href="/hc/{{help_center.locale}}/categories">Read Policies</a>
             {{/if}}
           </div>
 
@@ -44,9 +44,9 @@
                 <p class="mb-0">Reach our partner engineers for third-party platforms and escalations.</p>
               </div>
               {{#if settings.external_support_form_url}}
-                <a class="btn external-support-btn" href="{{settings.external_support_form_url}}" target="_blank" rel="noopener">Submit a Support Request</a>
+                <a class="btn btn-light external-support-btn" href="{{settings.external_support_form_url}}" target="_blank" rel="noopener">Submit a Support Request</a>
               {{else}}
-                <a class="btn external-support-btn" href="https://cxe-internal.zendesk.com/hc/requests/new?ticket_form_id=0000000000000" target="_blank" rel="noopener">Submit a Support Request</a>
+                <a class="btn btn-light external-support-btn" href="https://cxe-internal.zendesk.com/hc/requests/new?ticket_form_id=0000000000000" target="_blank" rel="noopener">Submit a Support Request</a>
               {{/if}}
             </div>
           </div>

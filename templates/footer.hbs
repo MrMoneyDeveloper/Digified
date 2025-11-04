@@ -69,47 +69,15 @@
 
 <script src="{{asset 'bootstrap.bundle.min.js'}}"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vanta/0.5.24/vanta.globe.min.js"></script>
-<script>
-  (function () {
-    function initVanta() {
-      if (!window.VANTA || !window.THREE) {
-        window.setTimeout(initVanta, 120);
-        return;
-      }
-      if (window.__cxiVanta) {
-        window.__cxiVanta.destroy();
-      }
-      window.__cxiVanta = window.VANTA.GLOBE({
-        el: '#hero',
-        mouseControls: true,
-        touchControls: true,
-        gyroControls: false,
-        minHeight: 200.00,
-        minWidth: 200.00,
-        scale: 1.00,
-        scaleMobile: 1.00,
-        color: 0x3fdfff,
-        size: 2.00,
-        backgroundColor: 0x542489
-      });
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initVanta);
-    } else {
-      initVanta();
-    }
-  })();
-</script>
-
 <script src="https://cdn.jsdelivr.net/npm/tsparticles@3/tsparticles.bundle.min.js"></script>
 <script>
   (function () {
     function initParticles() {
       if (!window.tsParticles) {
         window.setTimeout(initParticles, 120);
+        return;
+      }
+      if (!document.getElementById("tsparticles")) {
         return;
       }
       window.tsParticles.load("tsparticles", {

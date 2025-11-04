@@ -23,17 +23,19 @@
     const menuButton = document.querySelector(".header .menu-button-mobile");
     const menuList = document.querySelector("#user-nav-mobile");
 
-    menuButton.addEventListener("click", (event) => {
-      event.stopPropagation();
-      toggleNavigation(menuButton, menuList);
-    });
-
-    menuList.addEventListener("keyup", (event) => {
-      if (event.keyCode === ESCAPE) {
+    if (menuButton && menuList) {
+      menuButton.addEventListener("click", (event) => {
         event.stopPropagation();
-        closeNavigation(menuButton, menuList);
-      }
-    });
+        toggleNavigation(menuButton, menuList);
+      });
+
+      menuList.addEventListener("keyup", (event) => {
+        if (event.keyCode === ESCAPE) {
+          event.stopPropagation();
+          closeNavigation(menuButton, menuList);
+        }
+      });
+    }
 
     // Toggles expanded aria to collapsible elements
     const collapsible = document.querySelectorAll(
@@ -45,12 +47,15 @@
         ".collapsible-nav-toggle, .collapsible-sidebar-toggle"
       );
 
+      if (!toggle) {
+        return;
+      }
+
       element.addEventListener("click", () => {
         toggleNavigation(toggle, element);
       });
 
       element.addEventListener("keyup", (event) => {
-        console.log("escape");
         if (event.keyCode === ESCAPE) {
           closeNavigation(toggle, element);
         }
@@ -63,11 +68,13 @@
     );
     multibrandFilterLists.forEach((filter) => {
       if (filter.children.length > 6) {
-        // Display the show more button
         const trigger = filter.querySelector(".see-all-filters");
+        if (!trigger) {
+          return;
+        }
+
         trigger.setAttribute("aria-hidden", false);
 
-        // Add event handler for click
         trigger.addEventListener("click", (event) => {
           event.stopPropagation();
           trigger.parentNode.removeChild(trigger);
@@ -466,11 +473,15 @@
   window.addEventListener("DOMContentLoaded", () => {
     // Set up clear functionality for the search field
     const searchForms = [...document.querySelectorAll(searchFormSelector)];
-    const searchInputs = searchForms.map((form) =>
-      form.querySelector("input[type='search']")
-    );
-    searchInputs.forEach((input) => {
-      appendClearSearchButton(input, input.closest(searchFormSelector));
+    const searchInputs = searchForms
+      .map((form) => ({
+        input: form.querySelector("input[type='search']"),
+        form,
+      }))
+      .filter(({ input }) => input);
+
+    searchInputs.forEach(({ input, form }) => {
+      appendClearSearchButton(input, form);
       input.addEventListener("keyup", clearSearchInputOnKeypress);
       input.addEventListener("keyup", toggleClearSearchButtonAvailability);
     });
@@ -506,7 +517,7 @@
       ".comment-form-controls, .comment-ccs"
     );
 
-    if (commentContainerTextarea) {
+    if (commentContainerTextarea && commentContainerFormControls) {
       commentContainerTextarea.addEventListener(
         "focus",
         function focusCommentContainerTextarea() {
@@ -534,7 +545,7 @@
       ".request-container .comment-container .request-submit-comment"
     );
 
-    if (showRequestCommentContainerTrigger) {
+    if (showRequestCommentContainerTrigger && requestCommentSubmit) {
       showRequestCommentContainerTrigger.addEventListener("click", () => {
         showRequestCommentContainerTrigger.style.display = "none";
         Array.prototype.forEach.call(requestCommentFields, (element) => {
@@ -559,7 +570,11 @@
       ".request-container .comment-container input[type=submit]"
     );
 
-    if (requestMarkAsSolvedButton) {
+    if (
+      requestMarkAsSolvedButton &&
+      requestMarkAsSolvedCheckbox &&
+      requestCommentSubmitButton
+    ) {
       requestMarkAsSolvedButton.addEventListener("click", () => {
         requestMarkAsSolvedCheckbox.setAttribute("checked", true);
         requestCommentSubmitButton.disabled = true;
