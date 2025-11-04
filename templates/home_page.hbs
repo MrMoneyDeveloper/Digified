@@ -30,6 +30,18 @@
       <div class="hero-search">
         {{search submit=false instant=settings.instant_search class='search search-full hero-search-field'}}
       </div>
+
+      <div class="external-support-card">
+        <div class="external-support-content">
+          <h3>Need external expertise?</h3>
+          <p>Reach our partner engineers for third-party platforms and escalations.</p>
+        </div>
+        {{#if settings.external_support_form_url}}
+          <a class="btn external-support-btn" href="{{settings.external_support_form_url}}" target="_blank" rel="noopener">Submit a Support Request</a>
+        {{else}}
+          <a class="btn external-support-btn" href="https://cxe-internal.zendesk.com/hc/requests/new?ticket_form_id=0000000000000" target="_blank" rel="noopener">Submit a Support Request</a>
+        {{/if}}
+      </div>
     </div>
   </section>
 
@@ -59,7 +71,7 @@
           </div>
         </article>
 
-        <article id="policies" class="support-card">
+        <article id="policies-card" class="support-card">
           <div class="card-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="presentation">
               <path d="M12 6h18a6 6 0 0 1 6 6v27.5a1.5 1.5 0 0 1-2.36 1.2L24 34.35l-9.64 6.35A1.5 1.5 0 0 1 12 39.5V6Z"/>
@@ -87,6 +99,87 @@
           <p>HR onboarding, admin FAQs, and facilities know-how join the CXI library next.</p>
           <div class="card-action">
             <a class="card-link" href="#knowledge-base">Preview roadmap</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="workplace-policies" class="section workplace-policies">
+      <header class="section-header">
+        <h2><span class="accent-text">Workplace</span> Policies</h2>
+        <p>Stay compliant with Digified standards for safety, security, and respect across our CX operations.</p>
+      </header>
+
+      <div class="policy-grid">
+        <article class="policy-card">
+          <h3>Drug and Alcohol Policy</h3>
+          <p>Maintains a zero-tolerance stance on impairment to protect colleagues, clients, and customers.</p>
+          <div class="card-action">
+            {{#if settings.drug_policy_article_url}}
+              <a class="policy-link" href="{{settings.drug_policy_article_url}}">Read more</a>
+            {{else}}
+              <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+            {{/if}}
+          </div>
+        </article>
+
+        <article class="policy-card">
+          <h3>Clean Desk Policy</h3>
+          <p>Requires agents to secure devices and clear sensitive materials whenever desks are unattended.</p>
+          <div class="card-action">
+            {{#if settings.clean_desk_policy_article_url}}
+              <a class="policy-link" href="{{settings.clean_desk_policy_article_url}}">Read more</a>
+            {{else}}
+              <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+            {{/if}}
+          </div>
+        </article>
+
+        <article class="policy-card">
+          <h3>Locker Policy for Contact Centre Agents</h3>
+          <p>Explains locker assignments, permitted items, and inspection rights to keep operations secure.</p>
+          <div class="card-action">
+            {{#if settings.locker_policy_article_url}}
+              <a class="policy-link" href="{{settings.locker_policy_article_url}}">Read more</a>
+            {{else}}
+              <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+            {{/if}}
+          </div>
+        </article>
+
+        <article class="policy-card">
+          <h3>PCI Compliance Policy</h3>
+          <p>Details cardholder data safeguards, device controls, and monitoring to uphold PCI DSS obligations.</p>
+          <div class="card-action">
+            {{#if settings.pci_policy_article_url}}
+              <a class="policy-link" href="{{settings.pci_policy_article_url}}">Read more</a>
+            {{else}}
+              <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+            {{/if}}
+          </div>
+        </article>
+
+        <article class="policy-card">
+          <h3>Smoking Policy</h3>
+          <p>Defines approved smoking areas, break schedules, and penalties for non-compliance.</p>
+          <div class="card-action">
+            {{#if settings.smoking_policy_article_url}}
+              <a class="policy-link" href="{{settings.smoking_policy_article_url}}">Read more</a>
+            {{else}}
+              <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+            {{/if}}
+          </div>
+        </article>
+
+        <article class="policy-card">
+          <h3>Sexual Harassment Policy</h3>
+          <p>Affirms Digified's zero-tolerance approach with reporting channels and investigation steps.</p>
+          <div class="card-action">
+            {{#if settings.harassment_policy_article_url}}
+              <a class="policy-link" href="{{settings.harassment_policy_article_url}}">Read more</a>
+            {{else}}
+              <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+            {{/if}}
           </div>
         </article>
       </div>

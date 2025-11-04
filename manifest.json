@@ -462,6 +462,65 @@
           "value": "Mon-Fri, 7:00-19:00 PHT"
         }
       ]
+    },
+    {
+      "label": "External support",
+      "variables": [
+        {
+          "identifier": "external_support_form_url",
+          "type": "text",
+          "label": "External IT support form URL",
+          "description": "Full URL to the external Zendesk form used for vendor escalations.",
+          "value": "https://cxe-internal.zendesk.com/hc/requests/new?ticket_form_id=0000000000000"
+        }
+      ]
+    },
+    {
+      "label": "Workplace policy articles",
+      "variables": [
+        {
+          "identifier": "drug_policy_article_url",
+          "type": "text",
+          "label": "Drug and Alcohol policy article URL",
+          "description": "Full URL for the Drug and Alcohol policy.",
+          "value": ""
+        },
+        {
+          "identifier": "clean_desk_policy_article_url",
+          "type": "text",
+          "label": "Clean Desk policy article URL",
+          "description": "Full URL for the Clean Desk policy.",
+          "value": ""
+        },
+        {
+          "identifier": "locker_policy_article_url",
+          "type": "text",
+          "label": "Locker policy article URL",
+          "description": "Full URL for the Locker policy.",
+          "value": ""
+        },
+        {
+          "identifier": "pci_policy_article_url",
+          "type": "text",
+          "label": "PCI policy article URL",
+          "description": "Full URL for the PCI policy.",
+          "value": ""
+        },
+        {
+          "identifier": "smoking_policy_article_url",
+          "type": "text",
+          "label": "Smoking policy article URL",
+          "description": "Full URL for the Smoking policy.",
+          "value": ""
+        },
+        {
+          "identifier": "harassment_policy_article_url",
+          "type": "text",
+          "label": "Sexual harassment policy article URL",
+          "description": "Full URL for the Sexual harassment policy.",
+          "value": ""
+        }
+      ]
     }
   ]
 }

@@ -15,8 +15,11 @@
       <ul class="user-nav-list primary-nav">
         <li>{{#link 'help_center' class='nav-link'}}Home{{/link}}</li>
         <li><a class="nav-link" href="#requests">Requests</a></li>
-        <li><a class="nav-link" href="#policies">Policies &amp; SOPs</a></li>
+        <li><a class="nav-link" href="#workplace-policies">Policies</a></li>
         <li><a class="nav-link" href="#knowledge-base">Knowledge Base</a></li>
+        {{#if settings.external_support_form_url}}
+          <li><a class="nav-link nav-link-external" href="{{settings.external_support_form_url}}" target="_blank" rel="noopener">External IT Support</a></li>
+        {{/if}}
         <li><a class="nav-link" href="#contact">Contact</a></li>
       </ul>
 
@@ -103,8 +106,11 @@
 
         <li class="item"><a href="#hero">Home</a></li>
         <li class="item"><a href="#requests">Requests</a></li>
-        <li class="item"><a href="#policies">Policies &amp; SOPs</a></li>
+        <li class="item"><a href="#workplace-policies">Policies</a></li>
         <li class="item"><a href="#knowledge-base">Knowledge Base</a></li>
+        {{#if settings.external_support_form_url}}
+          <li class="item"><a href="{{settings.external_support_form_url}}" target="_blank" rel="noopener">External IT Support</a></li>
+        {{/if}}
         <li class="item"><a href="#contact">Contact</a></li>
 
         <li class="nav-divider"></li>
