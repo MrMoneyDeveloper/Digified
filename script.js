@@ -439,7 +439,7 @@
     const button = document.createElement("button");
     button.setAttribute("type", "button");
     button.setAttribute("aria-controls", inputId);
-    button.classList.add("clear-button");
+    button.classList.add("btn", "btn-outline-light", "clear-button");
     const buttonLabel = window.searchClearButtonLabelLocalized;
     const icon = `<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' focusable='false' role='img' viewBox='0 0 12 12' aria-label='${buttonLabel}'><path stroke='currentColor' stroke-linecap='round' stroke-width='2' d='M3 9l6-6m0 6L3 3'/></svg>`;
     button.innerHTML = icon;
@@ -451,7 +451,20 @@
   // Append the clear button to the search form
   function appendClearSearchButton(input, form) {
     const searchClearButton = buildClearSearchButton(input.id);
-    form.append(searchClearButton);
+    const inputGroup = form.querySelector(".search-input-group");
+
+    if (inputGroup) {
+      const submitButton = inputGroup.querySelector("button[type='submit']");
+      if (submitButton) {
+        inputGroup.insertBefore(searchClearButton, submitButton);
+      } else {
+        inputGroup.append(searchClearButton);
+      }
+      inputGroup.classList.add("has-clear");
+    } else {
+      form.append(searchClearButton);
+    }
+
     if (input.value.length > 0) {
       form.classList.add(searchFormFilledClassName);
     }

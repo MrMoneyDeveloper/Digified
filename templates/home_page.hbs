@@ -36,7 +36,12 @@
         <div class="col-lg-6">
           <div class="d-flex flex-column gap-4">
             <div class="hero-search">
-              {{search submit=false instant=settings.instant_search class='search search-full hero-search-field'}}
+              <form class="search-form" role="search" action="/hc/{{help_center.locale}}/search" aria-label="{{t 'search'}}">
+                <div class="search-input-group input-group input-group-lg">
+                  <input id="hero-search-input" type="search" name="query" class="form-control" placeholder="{{t 'search' }}" aria-label="{{t 'search'}}">
+                  <button class="btn btn-info" type="submit">{{t 'search'}}</button>
+                </div>
+              </form>
             </div>
             <div class="external-support-card">
               <div class="external-support-content">
@@ -137,7 +142,7 @@
               {{#if settings.drug_policy_article_url}}
                 <a class="policy-link" href="{{settings.drug_policy_article_url}}">Read more</a>
               {{else}}
-                <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+                <span class="policy-placeholder">Add your article URL in Theme settings</span>
               {{/if}}
             </div>
           </article>
@@ -151,7 +156,7 @@
               {{#if settings.clean_desk_policy_article_url}}
                 <a class="policy-link" href="{{settings.clean_desk_policy_article_url}}">Read more</a>
               {{else}}
-                <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+                <span class="policy-placeholder">Add your article URL in Theme settings</span>
               {{/if}}
             </div>
           </article>
@@ -165,7 +170,7 @@
               {{#if settings.locker_policy_article_url}}
                 <a class="policy-link" href="{{settings.locker_policy_article_url}}">Read more</a>
               {{else}}
-                <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+                <span class="policy-placeholder">Add your article URL in Theme settings</span>
               {{/if}}
             </div>
           </article>
@@ -179,7 +184,7 @@
               {{#if settings.pci_policy_article_url}}
                 <a class="policy-link" href="{{settings.pci_policy_article_url}}">Read more</a>
               {{else}}
-                <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+                <span class="policy-placeholder">Add your article URL in Theme settings</span>
               {{/if}}
             </div>
           </article>
@@ -193,7 +198,7 @@
               {{#if settings.smoking_policy_article_url}}
                 <a class="policy-link" href="{{settings.smoking_policy_article_url}}">Read more</a>
               {{else}}
-                <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+                <span class="policy-placeholder">Add your article URL in Theme settings</span>
               {{/if}}
             </div>
           </article>
@@ -207,7 +212,7 @@
               {{#if settings.harassment_policy_article_url}}
                 <a class="policy-link" href="{{settings.harassment_policy_article_url}}">Read more</a>
               {{else}}
-                <a class="policy-link" href="/hc/{{help_center.locale}}/categories">Read more</a>
+                <span class="policy-placeholder">Add your article URL in Theme settings</span>
               {{/if}}
             </div>
           </article>
