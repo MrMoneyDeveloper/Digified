@@ -3,37 +3,62 @@
 <div id="tsparticles"></div>
 
 <main id="main-content" class="home-main">
-  <section class="hero hero-bg">
+  <section class="hero hero-grey">
     <div class="container">
       <h1 class="hero-title">Welcome to the <span>Digify BPO</span> Help Centre</h1>
       <p class="hero-sub">Find help, report issues, read policies.</p>
+      <div class="hero-actions d-flex flex-wrap gap-3 mt-4">
+        <a class="btn btn-primary btn-lg" href="/requests/new?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">Report Networking Issue</a>
+        <a class="btn btn-outline-primary btn-lg mt-2 mt-md-0" href="/requests/new?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">Request Access</a>
+        <a class="btn btn-link hero-link mt-2 mt-md-0" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}/hc/{{help_center.locale}}/categories{{/if}}">Read Policies</a>
+      </div>
+      {{#if settings.hero_image_url}}
+        <div class="hero-image-wrap mt-4">
+          <img class="hero-img" src="{{settings.hero_image_url}}" alt="" role="presentation">
+        </div>
+      {{/if}}
     </div>
   </section>
 
-  <section class="quick-paths container">
-    <h2 class="section-title">Get support <span>fast</span></h2>
-    <div class="cards-3">
-      <article class="feature-card card--primary">
-        <h3>Network &amp; Access Requests</h3>
-        <p>Fix connectivity issues or request new credentials. The form routes straight to CXI engineers.</p>
-        <a class="link-cta" href="{{page_path 'new_request'}}">Report or request now</a>
-      </article>
-
-      <article class="feature-card card--light">
-        <h3>Policies &amp; SOPs</h3>
-        <p>Review building use rules, security guidelines, and operating procedures directly in the portal.</p>
-        {{#if settings.policies_category_path}}
-          <a class="link-cta" href="/hc/{{help_center.locale}}{{settings.policies_category_path}}">Open policies</a>
-        {{else}}
-          <a class="link-cta" href="/hc/{{help_center.locale}}/categories">Open policies</a>
-        {{/if}}
-      </article>
-
-      <article class="feature-card card--primary">
-        <h3>Knowledge Base <span class="soft">(coming soon)</span></h3>
-        <p>HR onboarding, admin FAQs, and facilities know-how join the library next.</p>
-        <a class="link-ghost" href="/hc/{{help_center.locale}}/categories">Preview roadmap</a>
-      </article>
+  <section class="quick-paths py-5">
+    <div class="container">
+      <h2 class="section-title">Get support <span>fast</span></h2>
+      <div class="row g-4">
+        <div class="col-12 col-md-4">
+          <article class="feature-card card-dark h-100">
+            {{#if settings.card_icon_set_url}}
+              <img class="card-icon-img mb-3" src="{{settings.card_icon_set_url}}" alt="" role="presentation">
+            {{/if}}
+            <h3>Network &amp; Access Requests</h3>
+            <p>Fix connectivity issues or request new credentials. The form routes straight to CXI engineers.</p>
+            <a class="link-cta" href="/requests/new?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">Report or request now</a>
+          </article>
+        </div>
+        <div class="col-12 col-md-4">
+          <article class="feature-card card-light h-100">
+            {{#if settings.card_icon_set_url}}
+              <img class="card-icon-img mb-3" src="{{settings.card_icon_set_url}}" alt="" role="presentation">
+            {{/if}}
+            <h3>Policies &amp; SOPs</h3>
+            <p>Review building use rules, security guidelines, and operating procedures directly in the portal.</p>
+            <a class="link-cta" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}/hc/{{help_center.locale}}/categories{{/if}}">Open policies</a>
+          </article>
+        </div>
+        <div class="col-12 col-md-4">
+          <article class="feature-card card-dark h-100">
+            {{#if settings.card_icon_set_url}}
+              <img class="card-icon-img mb-3" src="{{settings.card_icon_set_url}}" alt="" role="presentation">
+            {{/if}}
+            <h3>Knowledge Base <span class="soft">(coming soon)</span></h3>
+            <p>HR onboarding, admin FAQs, and facilities know-how join the library next.</p>
+            {{#if settings.kb_roadmap_url}}
+              <a class="link-ghost" href="{{settings.kb_roadmap_url}}">Preview roadmap</a>
+            {{else}}
+              <a class="link-ghost" href="/hc/{{help_center.locale}}/categories">Preview roadmap</a>
+            {{/if}}
+          </article>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -50,10 +75,10 @@
             <h3>Drug and Alcohol Policy</h3>
             <p>Maintains a zero-tolerance stance on impairment to protect colleagues, clients, and customers.</p>
             <div class="card-action">
-              {{#if settings.drug_policy_article_url}}
-                <a class="policy-link" href="{{settings.drug_policy_article_url}}">Read more</a>
+              {{#if settings.drug_policy_url}}
+                <a class="policy-link" href="{{settings.drug_policy_url}}">READ MORE</a>
               {{else}}
-                <span class="policy-placeholder">Add your article URL in Theme settings</span>
+                <span class="policy-placeholder">Add article URL in Theme settings</span>
               {{/if}}
             </div>
           </article>
@@ -64,10 +89,10 @@
             <h3>Clean Desk Policy</h3>
             <p>Requires agents to secure devices and clear sensitive materials whenever desks are unattended.</p>
             <div class="card-action">
-              {{#if settings.clean_desk_policy_article_url}}
-                <a class="policy-link" href="{{settings.clean_desk_policy_article_url}}">Read more</a>
+              {{#if settings.clean_desk_policy_url}}
+                <a class="policy-link" href="{{settings.clean_desk_policy_url}}">READ MORE</a>
               {{else}}
-                <span class="policy-placeholder">Add your article URL in Theme settings</span>
+                <span class="policy-placeholder">Add article URL in Theme settings</span>
               {{/if}}
             </div>
           </article>
@@ -78,10 +103,10 @@
             <h3>Locker Policy for Contact Centre Agents</h3>
             <p>Explains locker assignments, permitted items, and inspection rights to keep operations secure.</p>
             <div class="card-action">
-              {{#if settings.locker_policy_article_url}}
-                <a class="policy-link" href="{{settings.locker_policy_article_url}}">Read more</a>
+              {{#if settings.locker_policy_url}}
+                <a class="policy-link" href="{{settings.locker_policy_url}}">READ MORE</a>
               {{else}}
-                <span class="policy-placeholder">Add your article URL in Theme settings</span>
+                <span class="policy-placeholder">Add article URL in Theme settings</span>
               {{/if}}
             </div>
           </article>
@@ -92,10 +117,10 @@
             <h3>PCI Compliance Policy</h3>
             <p>Details cardholder data safeguards, device controls, and monitoring to uphold PCI DSS obligations.</p>
             <div class="card-action">
-              {{#if settings.pci_policy_article_url}}
-                <a class="policy-link" href="{{settings.pci_policy_article_url}}">Read more</a>
+              {{#if settings.pci_policy_url}}
+                <a class="policy-link" href="{{settings.pci_policy_url}}">READ MORE</a>
               {{else}}
-                <span class="policy-placeholder">Add your article URL in Theme settings</span>
+                <span class="policy-placeholder">Add article URL in Theme settings</span>
               {{/if}}
             </div>
           </article>
@@ -106,10 +131,10 @@
             <h3>Smoking Policy</h3>
             <p>Defines approved smoking areas, break schedules, and penalties for non-compliance.</p>
             <div class="card-action">
-              {{#if settings.smoking_policy_article_url}}
-                <a class="policy-link" href="{{settings.smoking_policy_article_url}}">Read more</a>
+              {{#if settings.smoking_policy_url}}
+                <a class="policy-link" href="{{settings.smoking_policy_url}}">READ MORE</a>
               {{else}}
-                <span class="policy-placeholder">Add your article URL in Theme settings</span>
+                <span class="policy-placeholder">Add article URL in Theme settings</span>
               {{/if}}
             </div>
           </article>
@@ -120,10 +145,10 @@
             <h3>Sexual Harassment Policy</h3>
             <p>Affirms Digified's zero-tolerance approach with reporting channels and investigation steps.</p>
             <div class="card-action">
-              {{#if settings.harassment_policy_article_url}}
-                <a class="policy-link" href="{{settings.harassment_policy_article_url}}">Read more</a>
+              {{#if settings.harassment_policy_url}}
+                <a class="policy-link" href="{{settings.harassment_policy_url}}">READ MORE</a>
               {{else}}
-                <span class="policy-placeholder">Add your article URL in Theme settings</span>
+                <span class="policy-placeholder">Add article URL in Theme settings</span>
               {{/if}}
             </div>
           </article>

@@ -1,7 +1,7 @@
 {
   "name": "Copenhagen",
   "author": "Zendesk",
-  "version": "4.11.4",
+  "version": "4.11.5",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -476,48 +476,98 @@
       ]
     },
     {
+      "label": "External support form",
+      "variables": [
+        {
+          "identifier": "external_support_form_id",
+          "type": "text",
+          "label": "External support form ID",
+          "description": "Ticket form ID used for external support routing.",
+          "value": "23381214703004"
+        }
+      ]
+    },
+    {
+      "label": "Digify quick links",
+      "variables": [
+        {
+          "identifier": "policies_root_url",
+          "type": "text",
+          "label": "Policies root URL",
+          "description": "Destination used for Policies navigation and CTAs.",
+          "value": ""
+        },
+        {
+          "identifier": "kb_roadmap_url",
+          "type": "text",
+          "label": "Knowledge base roadmap URL",
+          "description": "Optional link for the Knowledge Base (coming soon) card.",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "label": "Hero and imagery",
+      "variables": [
+        {
+          "identifier": "hero_image_url",
+          "type": "text",
+          "label": "Hero image URL",
+          "description": "Optional image displayed in the homepage hero.",
+          "value": ""
+        },
+        {
+          "identifier": "card_icon_set_url",
+          "type": "text",
+          "label": "Card icon image URL",
+          "description": "Optional icon image used inside homepage cards.",
+          "value": ""
+        }
+      ]
+    },
+    {
       "label": "Workplace policy articles",
       "variables": [
         {
-          "identifier": "drug_policy_article_url",
+          "identifier": "drug_policy_url",
           "type": "text",
-          "label": "Drug and Alcohol policy article URL",
-          "description": "Full URL for the Drug and Alcohol policy.",
+          "label": "Drug and Alcohol policy URL",
+          "description": "Full URL for the Drug and Alcohol policy article.",
           "value": ""
         },
         {
-          "identifier": "clean_desk_policy_article_url",
+          "identifier": "clean_desk_policy_url",
           "type": "text",
-          "label": "Clean Desk policy article URL",
-          "description": "Full URL for the Clean Desk policy.",
+          "label": "Clean Desk policy URL",
+          "description": "Full URL for the Clean Desk policy article.",
           "value": ""
         },
         {
-          "identifier": "locker_policy_article_url",
+          "identifier": "locker_policy_url",
           "type": "text",
-          "label": "Locker policy article URL",
-          "description": "Full URL for the Locker policy.",
+          "label": "Locker policy URL",
+          "description": "Full URL for the Locker policy article.",
           "value": ""
         },
         {
-          "identifier": "pci_policy_article_url",
+          "identifier": "pci_policy_url",
           "type": "text",
-          "label": "PCI policy article URL",
-          "description": "Full URL for the PCI policy.",
+          "label": "PCI policy URL",
+          "description": "Full URL for the PCI compliance policy article.",
           "value": ""
         },
         {
-          "identifier": "smoking_policy_article_url",
+          "identifier": "smoking_policy_url",
           "type": "text",
-          "label": "Smoking policy article URL",
-          "description": "Full URL for the Smoking policy.",
+          "label": "Smoking policy URL",
+          "description": "Full URL for the Smoking policy article.",
           "value": ""
         },
         {
-          "identifier": "harassment_policy_article_url",
+          "identifier": "harassment_policy_url",
           "type": "text",
-          "label": "Sexual harassment policy article URL",
-          "description": "Full URL for the Sexual harassment policy.",
+          "label": "Sexual harassment policy URL",
+          "description": "Full URL for the Sexual harassment policy article.",
           "value": ""
         }
       ]

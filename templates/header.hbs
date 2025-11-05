@@ -4,9 +4,9 @@
   <div class="container header-inner">
     <a class="brand" href="{{help_center.url}}">Digify BPO</a>
     <nav class="nav-main">
-      <a class="nav-link" href="{{page_path 'new_request'}}">Requests</a>
-      <a class="nav-link" href="/hc/{{help_center.locale}}/categories">Policies (Preview)</a>
-      <a class="cta" href="{{page_path 'new_request'}}">Submit a request</a>
+      <a class="nav-link" href="/requests/new?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">Requests</a>
+      <a class="nav-link" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}/hc/{{help_center.locale}}/categories{{/if}}">Policies (Preview)</a>
+      <a class="cta" href="/requests/new?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">Submit a request</a>
     </nav>
   </div>
 </header>
