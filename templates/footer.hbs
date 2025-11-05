@@ -1,12 +1,12 @@
 <footer class="footer" id="contact">
   <div class="container py-5">
     <div class="row gy-4">
-      <div class="col-lg-4 footer-column footer-brand">
-        {{#link 'help_center' class='footer-logo d-inline-flex align-items-center gap-2'}}{{help_center.name}}{{/link}}
-        <p class="footer-text mb-0 mt-3">Empowering CXI teams with fast answers, clear policies, and direct access to Digified specialists.</p>
-      </div>
+    <div class="col-lg-4 footer-column footer-brand footer__brand">
+      <h4>Digify BPO Help Centre</h4>
+      <p>Fast answers, clear policies, and direct access to Digify specialists.</p>
+    </div>
 
-      <div class="col-sm-6 col-lg-4 footer-column footer-contact">
+    <div class="col-sm-6 col-lg-4 footer-column footer-contact">
         <h3 class="mb-3">Contact</h3>
         <ul class="footer-list list-unstyled mb-0">
           {{#if settings.service_desk_phone_link}}
@@ -30,15 +30,13 @@
         </ul>
       </div>
 
-      <div class="col-sm-6 col-lg-4 footer-column footer-links">
-        <h3 class="mb-3">Quick Links</h3>
-        <ul class="footer-list list-unstyled mb-0">
-          <li><a href="#hero">Home</a></li>
-          <li><a href="#requests">Requests</a></li>
-          <li><a href="#workplace-policies">Policies</a></li>
-          <li><a href="#knowledge-base">Knowledge Base</a></li>
-          <li><a href="#contact">Contact</a></li>
-        </ul>
+    <div class="col-sm-6 col-lg-4 footer-column footer-links">
+      <h3 class="mb-3">Quick Links</h3>
+      <ul class="footer-list list-unstyled mb-0 footer__links">
+        <li><a href="{{#link 'help_center'}}{{/link}}">Home</a></li>
+        <li><a href="{{#link 'new_request'}}{{/link}}">Submit a request</a></li>
+        <li><a href="/hc/{{help_center.locale}}/categories">Policies (Preview)</a></li>
+      </ul>
       </div>
     </div>
 

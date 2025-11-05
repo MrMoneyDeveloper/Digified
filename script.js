@@ -687,3 +687,17 @@
   });
 
 })();
+
+(function () {
+  var localePrefix = (window.location.pathname.match(/^\/hc\/[^\/]+/) || [""])[0];
+  var path = window.location.pathname.replace(localePrefix, "");
+  var isRequestsList =
+    path === "/requests" ||
+    path === "/requests/" ||
+    path.indexOf("/requests?") === 0 ||
+    (/^\/requests\/(?!new)/).test(path);
+  if (isRequestsList) {
+    window.location.replace("/requests/new?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}".replace(localePrefix, localePrefix));
+  }
+})();
+

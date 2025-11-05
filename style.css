@@ -1290,3 +1290,83 @@ ul {
 .community .topic-list a:hover {
   text-decoration: underline;
 }
+/* ===== Digify BPO brand overrides ===== */
+
+/* Palette */
+:root{
+  --digify-navy-900:#0b2239;   /* near-black blue for big headings */
+  --digify-navy-800:#0f2a4a;   /* default text/link color */
+  --digify-navy-700:#173a66;   /* hover */
+  --digify-muted-600:#5d6b7a;  /* muted text if needed */
+}
+
+/* Headline brand word (kills the green) */
+h1 span, h1 .accent, .hero-title .brand, .home-hero h1 strong {
+  color: var(--digify-navy-900) !important;
+}
+
+/* Global link tone: brand navy (not web blue) */
+a, .article-list a, .footer a, .navbar a {
+  color: var(--digify-navy-800) !important;
+  text-decoration: none !important;
+  font-weight: 600; /* trim if too heavy */
+}
+a:hover, a:focus {
+  color: var(--digify-navy-700) !important;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+/* Buttons – ensure contrast */
+button, .btn, .button, .c-btn { color: #fff; }
+
+/* CTA-as-link example */
+.link-cta, .policies-cta a {
+  color: #fff !important;
+  background: var(--digify-navy-800);
+  border-radius: 10px;
+  padding: 10px 16px;
+  display: inline-block;
+}
+.link-cta:hover, .policies-cta a:hover { background: var(--digify-navy-700); }
+
+/* Footer text color consistency */
+.footer, .footer a, .footer p, .footer li { color: #d9e1ea !important; }
+
+/* ===== Hide "Requests / My activities" everywhere (except submit form) ===== */
+a[href*="/hc/"][href*="/requests"]:not([href*="/requests/new"]),
+a[href*="/requests"]:not([href*="/requests/new"]),
+li a[href*="/requests"]:not([href*="/requests/new"]),
+.footer a[href*="/requests"]:not([href*="/requests/new"]),
+.user-nav a[href*="/requests"]:not([href*="/requests/new"]) {
+  display: none !important;
+}
+/* If your theme labels it \"My activities\" */
+a[href*="/hc/"][href*="activities"],
+.user-nav a[href*="activities"] {
+  display: none !important;
+}
+
+
+.hero-img {
+  width: 100%;
+  height: auto;
+  max-height: 320px;
+  border-radius: 18px;
+  object-fit: cover;
+}
+
+.card-icon-img {
+  width: 48px;
+  height: auto;
+  object-fit: contain;
+}
+
+.policy-placeholder {
+  display: inline-block;
+  opacity: 0.65;
+  font-style: italic;
+  color: rgba(17, 32, 68, 0.85);
+}
+
