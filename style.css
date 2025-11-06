@@ -67,9 +67,21 @@
   text-decoration: none;
 }
 .brand-logo {
-  display: block;
-  max-height: 44px;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+.brand-logo img {
+  height: 28px;
   width: auto;
+  object-fit: contain;
+  display: block;
+}
+.brand-text {
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  color: #9af6f1;
 }
 
 .nav-main {
@@ -182,6 +194,7 @@ body.new-request .search-container {
 .hero-img {
   width: 100%;
   height: auto;
+  display: block;
   max-height: 320px;
   border-radius: 18px;
   object-fit: cover;
@@ -1353,14 +1366,6 @@ a[href*="/hc/"][href*="activities"],
   display: none !important;
 }
 
-
-.hero-img {
-  width: 100%;
-  height: auto;
-  max-height: 320px;
-  border-radius: 18px;
-  object-fit: cover;
-}
 
 .card-icon-img {
   width: 48px;

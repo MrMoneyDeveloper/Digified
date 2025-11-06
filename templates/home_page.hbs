@@ -5,6 +5,13 @@
 <main id="main-content" class="home-main">
   <section class="hero hero-grey">
     <div class="container">
+      {{#if settings.home_hero_image}}
+        <img class="hero-img" src="{{settings.home_hero_image}}" alt="Digify BPO hero" />
+      {{else}}
+        {{#if settings.hero_image_url}}
+          <img class="hero-img" src="{{settings.hero_image_url}}" alt="Digify BPO hero" />
+        {{/if}}
+      {{/if}}
       <h1 class="hero-title">
         Welcome to the <span class="brand">Digify BPO</span> Help Centre
       </h1>
@@ -19,17 +26,6 @@
         {{/if}}
         <a class="btn btn-link hero-link mt-2 mt-md-0" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}/hc/{{help_center.locale}}/categories{{/if}}">Read Policies</a>
       </div>
-      {{#if settings.home_hero_image}}
-        <div class="hero-image-wrap mt-4">
-          <img class="hero-img" src="{{settings.home_hero_image}}" alt="">
-        </div>
-      {{else}}
-        {{#if settings.hero_image_url}}
-          <div class="hero-image-wrap mt-4">
-            <img class="hero-img" src="{{settings.hero_image_url}}" alt="">
-          </div>
-        {{/if}}
-      {{/if}}
     </div>
   </section>
 

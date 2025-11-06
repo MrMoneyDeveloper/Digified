@@ -2,11 +2,12 @@
 
 <header class="digify-header">
   <div class="container header-inner">
-    <a class="brand" href="{{help_center.url}}">
+    {{!-- Brand / logo --}}
+    <a class="brand-logo" href="{{help_center.url}}">
       {{#if settings.logo}}
-        <img class="brand-logo" src="{{settings.logo}}" alt="Digify BPO logo">
+        <img src="{{settings.logo}}" alt="Digify BPO" />
       {{else}}
-        Digify BPO
+        <span class="brand-text">Digify BPO</span>
       {{/if}}
     </a>
 <nav class="top-nav">

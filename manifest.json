@@ -1,7 +1,7 @@
 {
   "name": "Copenhagen",
   "author": "Zendesk",
-  "version": "4.11.10",
+  "version": "4.11.12",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -216,8 +216,8 @@
         {
           "identifier": "logo",
           "type": "file",
-          "description": "logo_description",
-          "label": "logo_label"
+          "label": "Company logo",
+          "description": "Header brand logo"
         },
         {
           "identifier": "show_brand_name",
@@ -525,7 +525,7 @@
           "identifier": "home_hero_image",
           "type": "file",
           "label": "Home hero image",
-          "description": "Upload a hero image for the home page"
+          "description": "Header hero on the home page"
         },
         {
           "identifier": "community_hero_image",
