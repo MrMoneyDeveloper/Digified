@@ -9,10 +9,16 @@
     </svg>
     {{search submit=false class='search search-full' scoped=settings.scoped_community_search}}
   </div>
-  {{#if settings.community_hero_image_url}}
+  {{#if settings.community_hero_image}}
     <div class="hero-image-wrap mt-4">
-      <img class="community-hero-img" src="{{settings.community_hero_image_url}}" alt="Community hero image">
+      <img class="community-hero-img" src="{{settings.community_hero_image}}" alt="Community hero image">
     </div>
+  {{else}}
+    {{#if settings.community_hero_image_url}}
+      <div class="hero-image-wrap mt-4">
+        <img class="community-hero-img" src="{{settings.community_hero_image_url}}" alt="Community hero image">
+      </div>
+    {{/if}}
   {{/if}}
 </section>
 
