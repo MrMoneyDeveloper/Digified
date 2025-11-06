@@ -1,13 +1,13 @@
 {
   "name": "Copenhagen",
   "author": "Zendesk",
-  "version": "4.11.14",
+  "version": "4.11.15",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
     {
       "label": "colors_group_label",
-      "variables": [
+      "settings": [
         {
           "identifier": "brand_color",
           "type": "color",
@@ -61,7 +61,7 @@
     },
     {
       "label": "fonts_group_label",
-      "variables": [
+      "settings": [
         {
           "identifier": "heading_font",
           "type": "list",
@@ -212,7 +212,7 @@
     },
     {
       "label": "brand_group_label",
-      "variables": [
+      "settings": [
         {
           "identifier": "show_brand_name",
           "type": "checkbox",
@@ -230,7 +230,7 @@
     },
     {
       "label": "images_group_label",
-      "variables": [
+      "settings": [
         {
           "identifier": "homepage_background_image",
           "type": "file",
@@ -253,7 +253,7 @@
     },
     {
       "label": "search_group_label",
-      "variables": [
+      "settings": [
         {
           "identifier": "instant_search",
           "type": "checkbox",
@@ -279,7 +279,7 @@
     },
     {
       "label": "home_page_group_label",
-      "variables": [
+      "settings": [
         {
           "identifier": "show_recent_activity",
           "type": "checkbox",
@@ -291,7 +291,7 @@
     },
     {
       "label": "article_page_group_label",
-      "variables": [
+      "settings": [
         {
           "identifier": "show_articles_in_section",
           "type": "checkbox",
@@ -345,7 +345,7 @@
     },
     {
       "label": "section_page_group_label",
-      "variables": [
+      "settings": [
         {
           "identifier": "show_follow_section",
           "type": "checkbox",
@@ -357,7 +357,7 @@
     },
     {
       "label": "community_post_group_label",
-      "variables": [
+      "settings": [
         {
           "identifier": "show_follow_post",
           "type": "checkbox",
@@ -376,7 +376,7 @@
     },
     {
       "label": "community_topic_group_label",
-      "variables": [
+      "settings": [
         {
           "identifier": "show_follow_topic",
           "type": "checkbox",
@@ -388,7 +388,7 @@
     },
     {
       "label": "request_list_group_label",
-      "variables": [
+      "settings": [
         {
           "identifier": "request_list_beta",
           "type": "checkbox",
@@ -400,7 +400,7 @@
     },
     {
       "label": "CXI hero links",
-      "variables": [
+      "settings": [
         {
           "identifier": "network_issue_form_path",
           "type": "text",
@@ -426,7 +426,7 @@
     },
     {
       "label": "CXI contact details",
-      "variables": [
+      "settings": [
         {
           "identifier": "service_desk_phone_link",
           "type": "text",
@@ -459,7 +459,7 @@
     },
     {
       "label": "External support",
-      "variables": [
+      "settings": [
         {
           "identifier": "external_support_form_url",
           "type": "text",
@@ -471,7 +471,7 @@
     },
     {
       "label": "External support form",
-      "variables": [
+      "settings": [
         {
           "identifier": "external_support_form_id",
           "type": "text",
@@ -483,7 +483,7 @@
     },
     {
       "label": "Request form display",
-      "variables": [
+      "settings": [
         {
           "identifier": "show_form_selector",
           "type": "checkbox",
@@ -495,7 +495,7 @@
     },
     {
       "label": "Digify quick links",
-      "variables": [
+      "settings": [
         {
           "identifier": "policies_root_url",
           "type": "text",
@@ -513,7 +513,7 @@
       ]
     },
     {
-      "name": "Hero and imagery",
+      "label": "Hero and imagery",
       "settings": [
         {
           "identifier": "home_hero_image_url",
@@ -546,7 +546,7 @@
     },
     {
       "label": "Workplace policy articles",
-      "variables": [
+      "settings": [
         {
           "identifier": "drug_policy_url",
           "type": "text",
@@ -593,6 +593,7 @@
     }
   ]
 }
+
 
 
 
