@@ -1,7 +1,7 @@
 {
   "name": "Copenhagen",
   "author": "Zendesk",
-  "version": "4.11.13",
+  "version": "4.11.14",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -213,12 +213,6 @@
     {
       "label": "brand_group_label",
       "variables": [
-        {
-          "identifier": "logo",
-          "type": "file",
-          "label": "Company logo",
-          "description": "Header brand logo"
-        },
         {
           "identifier": "show_brand_name",
           "type": "checkbox",
@@ -519,28 +513,34 @@
       ]
     },
     {
-      "label": "Hero and imagery",
-      "variables": [
+      "name": "Hero and imagery",
+      "settings": [
         {
           "identifier": "home_hero_image_url",
           "type": "image_url",
           "label": "Home hero image URL",
-          "description": "Enter the URL of the hero image for the home page",
+          "description": "URL for the hero image on the home page",
           "default": "{{asset 'hero.jpg'}}"
         },
         {
           "identifier": "community_hero_image_url",
           "type": "image_url",
           "label": "Community hero image URL",
-          "description": "Enter the URL of the community hero image",
-          "default": ""
+          "description": "URL for the hero image on the community topics page",
+          "default": "{{asset 'community.jpg'}}"
+        },
+        {
+          "identifier": "logo",
+          "type": "image",
+          "label": "Company logo",
+          "description": "Upload the header logo"
         },
         {
           "identifier": "card_icon_set_url",
           "type": "text",
           "label": "Card icon image URL",
           "description": "Optional icon image used inside homepage cards.",
-          "value": ""
+          "default": ""
         }
       ]
     },
