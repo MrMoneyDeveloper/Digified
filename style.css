@@ -1376,21 +1376,21 @@ a[href*="/hc/"][href*="activities"],
 
 
 
-.hero-title span.brand,.navbar-brand,
+.hero-title span.brand,
+.navbar-brand,
 h1 span.brand {
   color: #0b2239 !important;
 }
 
-a, .navbar a, .footer a {
+a,
+.navbar a,
+.footer a {
   color: #0f2a4a !important;
-  text-decoration: none !important;
-  font-weight: 600;
 }
 
-a:hover, a:focus {
+a:hover {
   color: #173a66 !important;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  text-decoration-thickness: 1px;
 }
+
+
 

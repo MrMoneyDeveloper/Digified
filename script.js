@@ -694,10 +694,9 @@
   var isRequestsList =
     path === "/requests" ||
     path === "/requests/" ||
-    path.indexOf("/requests?") === 0 ||
-    (/^\/requests\/(?!new)/).test(path);
+    /^\/requests\/(?!new)/.test(path);
   if (isRequestsList) {
-    window.location.replace("/requests/new?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}".replace(localePrefix, localePrefix));
+    window.location.replace("{{#if settings.external_support_form_id}}{{page_path 'new_request' ticket_form_id=settings.external_support_form_id}}{{else}}{{page_path 'new_request' ticket_form_id=23381214703004}}{{/if}}");
   }
 })();
 
