@@ -66,6 +66,11 @@
   color: #9af6f1;
   text-decoration: none;
 }
+.brand-logo {
+  display: block;
+  max-height: 44px;
+  width: auto;
+}
 
 .nav-main {
   display: flex;

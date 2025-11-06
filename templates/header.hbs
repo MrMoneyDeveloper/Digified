@@ -2,7 +2,13 @@
 
 <header class="digify-header">
   <div class="container header-inner">
-    <a class="brand" href="{{help_center.url}}">Digify BPO</a>
+    <a class="brand" href="{{help_center.url}}">
+      {{#if settings.logo}}
+        <img class="brand-logo" src="{{settings.logo}}" alt="Digify BPO logo">
+      {{else}}
+        Digify BPO
+      {{/if}}
+    </a>
 <nav class="top-nav">
   <ul class="menu">
     <li><a href="/hc/{{help_center.locale}}/categories">Policies (Preview)</a></li>
