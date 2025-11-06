@@ -1,8 +1,15 @@
 <div class="container-divider"></div>
 <div class="container">
+  {{!-- Breadcrumbs hidden for end users --}}
+  {{!--
   <div class="sub-nav">
     {{breadcrumbs}}
   </div>
+  --}}
+
+  {{#unless settings.show_form_selector}}
+    <style>.ticket-form-selector { display:none !important; }</style>
+  {{/unless}}
 
   <h1>
     {{t 'submit_a_request'}}

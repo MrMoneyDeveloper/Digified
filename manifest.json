@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "Copenhagen",
   "author": "Zendesk",
   "version": "4.11.5",
@@ -489,6 +489,18 @@
       ]
     },
     {
+      "label": "Request form display",
+      "variables": [
+        {
+          "identifier": "show_form_selector",
+          "type": "checkbox",
+          "label": "Show ticket form selector",
+          "description": "Displays the ticket form dropdown when multiple public forms are available.",
+          "value": false
+        }
+      ]
+    },
+    {
       "label": "Digify quick links",
       "variables": [
         {
@@ -510,6 +522,20 @@
     {
       "label": "Hero and imagery",
       "variables": [
+        {
+          "identifier": "home_hero_image",
+          "type": "image",
+          "label": "Home hero image",
+          "help": "Upload a hero image for the home page",
+          "value": null
+        },
+        {
+          "identifier": "community_hero_image",
+          "type": "image",
+          "label": "Community hero image",
+          "help": "Upload a hero image for the community topics page",
+          "value": null
+        },
         {
           "identifier": "hero_image_url",
           "type": "text",
@@ -572,6 +598,10 @@
           "value": ""
         }
       ]
-    }
+    }  ],
+  "ticket_forms": [
+    23381214703004
   ]
 }
+
+

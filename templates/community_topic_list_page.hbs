@@ -9,6 +9,11 @@
     </svg>
     {{search submit=false class='search search-full' scoped=settings.scoped_community_search}}
   </div>
+  {{#if settings.community_hero_image}}
+    <div class="hero-image-wrap mt-4">
+      <img class="hero-img" src="{{settings.community_hero_image}}" alt="">
+    </div>
+  {{/if}}
 </section>
 
 <div class="container">

@@ -8,7 +8,11 @@
     <li><a href="/hc/{{help_center.locale}}/categories">Policies (Preview)</a></li>
   </ul>
 
-  <a class="btn cta" href="/requests/new?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">Submit a request</a>
+  {{#if settings.external_support_form_id}}
+    {{#link 'new_request' class='btn cta' ticket_form_id=settings.external_support_form_id}}Submit a request{{/link}}
+  {{else}}
+    {{#link 'new_request' class='btn cta' ticket_form_id='23381214703004'}}Submit a request{{/link}}
+  {{/if}}
 </nav>
   </div>
 </header>
