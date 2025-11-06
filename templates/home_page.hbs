@@ -12,14 +12,17 @@
         Welcome to the <span class="brand">Digify BPO</span> Help Centre
       </h1>
       <p class="hero-sub">Find help, report issues, read policies.</p>
-      <div class="hero-actions d-flex flex-wrap gap-3 mt-4">
-        {{#if settings.external_support_form_id}}
-          {{#link 'new_request' class='btn btn-primary btn-lg' ticket_form_id=settings.external_support_form_id}}Report Networking Issue{{/link}}
-          {{#link 'new_request' class='btn btn-outline-primary btn-lg mt-2 mt-md-0' ticket_form_id=settings.external_support_form_id}}Request Access{{/link}}
-        {{else}}
-          {{#link 'new_request' class='btn btn-primary btn-lg' ticket_form_id='23381214703004'}}Report Networking Issue{{/link}}
-          {{#link 'new_request' class='btn btn-outline-primary btn-lg mt-2 mt-md-0' ticket_form_id='23381214703004'}}Request Access{{/link}}
-        {{/if}}
+      <div class="hero-actions d-flex flex-wrap justify-content-center gap-3 mt-4">
+        {{#with settings}}
+          <a class="btn btn-primary btn-lg"
+             href="{{page_path 'new_request'}}?ticket_form_id={{#if external_support_form_id}}{{external_support_form_id}}{{else}}23381214703004{{/if}}{{#if external_support_field_id}}{{#if external_support_network_value}}&tf_{{external_support_field_id}}={{external_support_network_value}}{{/if}}{{/if}}">
+            Network Issue
+          </a>
+          <a class="btn btn-outline-primary btn-lg mt-2 mt-md-0"
+             href="{{page_path 'new_request'}}?ticket_form_id={{#if external_support_form_id}}{{external_support_form_id}}{{else}}23381214703004{{/if}}{{#if external_support_field_id}}{{#if external_support_access_value}}&tf_{{external_support_field_id}}={{external_support_access_value}}{{/if}}{{/if}}">
+            Access Request
+          </a>
+        {{/with}}
         <a class="btn btn-link hero-link mt-2 mt-md-0" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}/hc/{{help_center.locale}}/categories{{/if}}">Read Policies</a>
       </div>
     </div>

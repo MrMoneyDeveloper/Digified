@@ -5,21 +5,23 @@
     {{!-- Brand / logo --}}
     <a class="brand-logo" href="{{help_center.url}}">
       {{#if settings.logo}}
-        <img src="{{settings.logo}}" alt="Digify BPO logo" />
+        <img src="{{settings.logo}}" srcset="{{settings.logo}} 1x, {{settings.logo}} 2x" alt="Digify BPO logo" />
       {{else}}
         <span class="brand-text">Digify BPO</span>
       {{/if}}
     </a>
 <nav class="top-nav">
   <ul class="menu">
-    <li><a href="/hc/{{help_center.locale}}/categories">Policies (Preview)</a></li>
+    <li><a href="{{help_center.url}}">Home</a></li>
+    <li><a href="/hc/{{help_center.locale}}/categories">Policies</a></li>
+    <li>
+      {{#if settings.external_support_form_id}}
+        {{#link 'new_request' class='btn cta' ticket_form_id=settings.external_support_form_id}}Submit a Request{{/link}}
+      {{else}}
+        {{#link 'new_request' class='btn cta' ticket_form_id='23381214703004'}}Submit a Request{{/link}}
+      {{/if}}
+    </li>
   </ul>
-
-  {{#if settings.external_support_form_id}}
-    {{#link 'new_request' class='btn cta' ticket_form_id=settings.external_support_form_id}}Submit a request{{/link}}
-  {{else}}
-    {{#link 'new_request' class='btn cta' ticket_form_id='23381214703004'}}Submit a request{{/link}}
-  {{/if}}
 </nav>
   </div>
 </header>

@@ -677,15 +677,43 @@
 
     // If there are any error notifications below an input field, focus that field
     const notificationElm = document.querySelector(".notification-error");
-    if (
-      notificationElm &&
-      notificationElm.previousElementSibling &&
-      typeof notificationElm.previousElementSibling.focus === "function"
-    ) {
-      notificationElm.previousElementSibling.focus();
-    }
+  if (
+    notificationElm &&
+    notificationElm.previousElementSibling &&
+    typeof notificationElm.previousElementSibling.focus === "function"
+  ) {
+    notificationElm.previousElementSibling.focus();
+  }
   });
 
+})();
+
+(function () {
+  const accordions = document.querySelectorAll(".policy-accordion details");
+  if (!accordions.length) {
+    return;
+  }
+
+  accordions.forEach((detail) => {
+    const content = detail.querySelector(".policy-content");
+    if (!content) {
+      return;
+    }
+
+    const updateHeight = (open) => {
+      if (open) {
+        content.style.maxHeight = content.scrollHeight + "px";
+      } else {
+        content.style.maxHeight = "0px";
+      }
+    };
+
+    updateHeight(detail.open);
+
+    detail.addEventListener("toggle", () => {
+      updateHeight(detail.open);
+    });
+  });
 })();
 
 (function () {

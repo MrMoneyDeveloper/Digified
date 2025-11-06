@@ -478,6 +478,27 @@
           "label": "External support form ID",
           "description": "Ticket form ID used for external support routing.",
           "value": "23381214703004"
+        },
+        {
+          "identifier": "external_support_field_id",
+          "type": "text",
+          "label": "External support field ID",
+          "description": "Custom field ID used to distinguish issue types in the external support form.",
+          "value": ""
+        },
+        {
+          "identifier": "external_support_network_value",
+          "type": "text",
+          "label": "Network issue value",
+          "description": "Value passed to the external support field for network-related requests.",
+          "value": ""
+        },
+        {
+          "identifier": "external_support_access_value",
+          "type": "text",
+          "label": "Access request value",
+          "description": "Value passed to the external support field for access-related requests.",
+          "value": ""
         }
       ]
     },
