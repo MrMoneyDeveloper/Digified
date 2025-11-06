@@ -4,7 +4,6 @@
   "version": "4.11.7",
   "api_version": 4,
   "default_locale": "en-us",
-  "css": "style.css",
   "settings": [
     {
       "label": "colors_group_label",
@@ -597,9 +596,6 @@
         }
       ]
     }
-  ],
-  "ticket_forms": [
-    23381214703004
   ]
 }
 
