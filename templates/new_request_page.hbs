@@ -1,27 +1,13 @@
-<div class="container-divider"></div>
-<div class="container">
-  {{!-- Breadcrumbs hidden for end users --}}
-  {{!--
-  <div class="sub-nav">
-    {{breadcrumbs}}
-  </div>
-  --}}
-
-  {{#unless settings.show_form_selector}}
-    <style>.ticket-form-selector { display:none !important; }</style>
-  {{/unless}}
-
-  <h1>
-    {{t 'submit_a_request'}}
-  </h1>
-  <p class="intro-text">
-    Use this form to report connectivity issues (Network) or request credentials and system access. Choose your issue type below.
-  </p>
-
-  <div id="main-content" class="form">
+<section class="dbpo-request">
+  <div class="container">
+    <h1>{{t 'submit_a_request'}}</h1>
+    <p class="dbpo-request-intro">
+      Use this form to report connectivity issues (Network) or request credentials/access (Access).
+      Choose the correct option in the form below.
+    </p>
     <div id="new-request-form"></div>
   </div>
-</div>
+</section>
 
 <script type="module">
   import { renderNewRequestForm } from "new-request-form";

@@ -2,28 +2,29 @@
 
 <div id="tsparticles"></div>
 
-<main id="main-content" class="home-main">
-  <section class="hero hero-grey">
+<main id="main-content" class="home-main homepage-sections">
+  <section class="dbpo-hero">
+    {{#if settings.home_hero_image_url}}
+      <div class="dbpo-hero-bg" style="background-image:url('{{settings.home_hero_image_url}}');"></div>
+    {{/if}}
+    <div class="dbpo-hero-overlay"></div>
     <div class="container">
-      {{#if settings.home_hero_image_url}}
-        <img class="hero-img" src="{{settings.home_hero_image_url}}" alt="Home hero image" />
-      {{/if}}
-      <h1 class="hero-title">
-        Welcome to the <span class="brand">Digify BPO</span> Help Centre
+      <h1 class="dbpo-hero-title">
+        Welcome to the <span class="dbpo-inline-brand">Digify BPO</span> Help Centre
       </h1>
-      <p class="hero-sub">Find help, report issues, read policies.</p>
-      <div class="hero-actions d-flex flex-wrap justify-content-center gap-3 mt-4">
+      <p class="dbpo-hero-sub">Find help, report issues, read policies.</p>
+      <div class="dbpo-hero-ctas">
         {{#with settings}}
           <a class="btn btn-primary btn-lg"
-             href="{{page_path 'new_request'}}?ticket_form_id={{#if external_support_form_id}}{{external_support_form_id}}{{else}}23381214703004{{/if}}{{#if external_support_field_id}}{{#if external_support_network_value}}&tf_{{external_support_field_id}}={{external_support_network_value}}{{/if}}{{/if}}">
+             href="/hc/{{../help_center.locale}}/requests/new?ticket_form_id={{#if external_support_form_id}}{{external_support_form_id}}{{else}}23381214703004{{/if}}{{#if issue_type_field_id}}&tf_{{issue_type_field_id}}={{#if network_issue_value}}{{network_issue_value}}{{else}}cxi_it_network{{/if}}{{else}}{{#if external_support_field_id}}&tf_{{external_support_field_id}}={{#if external_support_network_value}}{{external_support_network_value}}{{else}}cxi_it_network{{/if}}{{/if}}{{/if}}">
             Network Issue
           </a>
-          <a class="btn btn-outline-primary btn-lg mt-2 mt-md-0"
-             href="{{page_path 'new_request'}}?ticket_form_id={{#if external_support_form_id}}{{external_support_form_id}}{{else}}23381214703004{{/if}}{{#if external_support_field_id}}{{#if external_support_access_value}}&tf_{{external_support_field_id}}={{external_support_access_value}}{{/if}}{{/if}}">
+          <a class="btn btn-outline-primary btn-lg"
+             href="/hc/{{../help_center.locale}}/requests/new?ticket_form_id={{#if external_support_form_id}}{{external_support_form_id}}{{else}}23381214703004{{/if}}{{#if issue_type_field_id}}&tf_{{issue_type_field_id}}={{#if access_request_value}}{{access_request_value}}{{else}}cxi_it_access{{/if}}{{else}}{{#if external_support_field_id}}&tf_{{external_support_field_id}}={{#if external_support_access_value}}{{external_support_access_value}}{{else}}cxi_it_access{{/if}}{{/if}}{{/if}}">
             Access Request
           </a>
         {{/with}}
-        <a class="btn btn-link hero-link mt-2 mt-md-0" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}/hc/{{help_center.locale}}/categories{{/if}}">Read Policies</a>
+        <a class="dbpo-hero-link" href="{{#if settings.policies_url}}{{settings.policies_url}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}/hc/{{help_center.locale}}/categories{{/if}}{{/if}}">Read Policies</a>
       </div>
     </div>
   </section>
@@ -71,6 +72,34 @@
           </article>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- Featured Policies (explicit links) -->
+  <section class="dbpo-policies-teaser">
+    <div class="container">
+      <h2 class="dbpo-section-title">Featured Policies</h2>
+      <ul class="dbpo-policies-list">
+        <li class="dbpo-policy-item">
+          <a href="/hc/en-us/articles/23441597674652-Drug-and-Alcohol-Policy">Drug and Alcohol Policy</a>
+        </li>
+        <li class="dbpo-policy-item">
+          <a href="/hc/en-us/articles/23441604000284-Clean-Desk-Policy">Clean Desk Policy</a>
+        </li>
+        <li class="dbpo-policy-item">
+          <a href="/hc/en-us/articles/23441624276124-Locker-Policy-Contact-Centre-Agents">Locker Policy (Contact Centre Agents)</a>
+        </li>
+        <li class="dbpo-policy-item">
+          <a href="/hc/en-us/articles/23441658995356-PCI-Compliance-Policy">PCI Compliance Policy</a>
+        </li>
+        <li class="dbpo-policy-item">
+          <a href="/hc/en-us/articles/23441672237980-Smoking-Policy">Smoking Policy</a>
+        </li>
+        <li class="dbpo-policy-item">
+          <a href="/hc/en-us/articles/23441684280348-Sexual-Harassment-Policy">Sexual Harassment Policy</a>
+        </li>
+      </ul>
+      <a class="btn btn-link" href="{{#if settings.policies_url}}{{settings.policies_url}}{{else}}/hc/{{help_center.locale}}/categories{{/if}}">View all policies</a>
     </div>
   </section>
 
@@ -211,22 +240,6 @@
       {{/if}}
     </div>
   </section>
-
-  {{#if help_center.community_enabled}}
-    <section class="section home-section community community-highlight py-5">
-      <div class="container">
-        <div class="row align-items-center gy-4">
-          <div class="col-lg-6">
-            <h2>Join the community</h2>
-            {{#link 'community' class='community-link btn btn-outline-light mt-3'}}{{t 'join_conversation'}}{{/link}}
-          </div>
-          <div class="col-lg-6">
-            <div class="community-image" aria-hidden="true"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-  {{/if}}
 
   <section class="section home-section activity py-5">
     <div class="container">

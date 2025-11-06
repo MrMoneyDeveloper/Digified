@@ -1,19 +1,18 @@
 <a class="skip-navigation visually-hidden-focusable" tabindex="1" href="#main-content">{{t 'skip_navigation' }}</a>
 
-<header class="digify-header">
-  <div class="container header-inner">
+<header class="digify-header dbpo-header">
+  <div class="container header-inner dbpo-nav">
     {{!-- Brand / logo --}}
-    <a class="brand-logo" href="{{help_center.url}}">
+    <a class="brand-logo dbpo-brand" href="{{help_center.url}}">
       {{#if settings.logo}}
-        <img src="{{settings.logo}}" srcset="{{settings.logo}} 1x, {{settings.logo}} 2x" alt="Digify BPO logo" />
-      {{else}}
-        <span class="brand-text">Digify BPO</span>
+        <img class="dbpo-logo" src="{{settings.logo}}" srcset="{{settings.logo}} 1x, {{settings.logo}} 2x" alt="Digify BPO logo" />
       {{/if}}
+      <span class="brand-text dbpo-brand-text">Digify BPO</span>
     </a>
 <nav class="top-nav">
-  <ul class="menu">
-    <li><a href="{{help_center.url}}">Home</a></li>
-    <li><a href="/hc/{{help_center.locale}}/categories">Policies</a></li>
+  <ul class="menu dbpo-menu">
+    <li><a class="dbpo-nav-link" href="{{help_center.url}}">Home</a></li>
+    <li><a class="dbpo-nav-link" href="{{#if settings.policies_url}}{{settings.policies_url}}{{else}}/hc/{{help_center.locale}}/categories{{/if}}">Policies</a></li>
     <li>
       {{#if settings.external_support_form_id}}
         {{#link 'new_request' class='btn cta' ticket_form_id=settings.external_support_form_id}}Submit a Request{{/link}}

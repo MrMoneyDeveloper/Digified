@@ -8,6 +8,9 @@
   --digify-navy-700: #173a66;
   --digify-muted-600: #5d6b7a;
   --digify-aqua: #5DB0DF;
+  --dbpo-navy: #002A44;
+  --dbpo-aqua: #5DB0DF;
+  --dbpo-text: #0b2239;
   --cxi-gradient-start: var(--digify-navy);
   --cxi-gradient-mid: #023558;
   --cxi-gradient-end: var(--digify-aqua);
@@ -55,7 +58,7 @@
 }
 
 .digify-header {
-  background: linear-gradient(135deg, var(--digify-navy) 0%, #00385f 55%, var(--digify-aqua) 100%);
+  background: linear-gradient(90deg, var(--dbpo-navy), var(--dbpo-aqua));
 }
 
 .header-inner {
@@ -63,74 +66,70 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 14px 20px;
+  padding: 0.65rem 0;
 }
 
-.brand {
-  font-weight: 800;
-  font-size: 1.05rem;
-  letter-spacing: 0.02em;
-  color: #9af6f1;
-  text-decoration: none;
+.dbpo-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
 }
+
 .brand-logo {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   text-decoration: none;
 }
-.brand-logo img {
+
+.dbpo-logo {
   height: 40px;
   width: auto;
-  object-fit: contain;
   display: block;
 }
-.brand-text {
+
+.dbpo-brand-text {
+  font-size: 1.35rem;
   font-weight: 800;
-  font-size: 1.05rem;
-  letter-spacing: 0.02em;
-  color: var(--digify-aqua);
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
-.nav-main {
+.dbpo-menu {
   display: flex;
+  gap: 1.25rem;
   align-items: center;
-  gap: 20px;
-}
-
-
-.top-nav .menu {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.top-nav .menu li {
+.dbpo-menu li {
   margin: 0;
 }
 
-.top-nav .menu a {
-  font-size: 1rem;
-  font-weight: 700;
+.dbpo-nav-link {
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 0.3px;
   text-transform: uppercase;
-  color: #eaf2ff !important;
+  font-size: 1.05rem;
   text-decoration: none;
-  padding: 0.5rem 1rem;
   display: inline-block;
+  padding: 0.5rem 0.75rem;
 }
 
-.top-nav .menu a:hover {
-  opacity: 1;
-  color: #ffffff !important;
+.dbpo-nav-link:hover,
+.dbpo-nav-link:focus {
+  text-decoration: underline;
 }
 
 .top-nav .menu .btn.cta {
   padding: 12px 20px;
   border-radius: 10px;
-  background: var(--digify-navy);
+  background: var(--dbpo-navy);
   color: #ffffff;
   font-weight: 800;
   text-transform: uppercase;
@@ -142,18 +141,18 @@
 }
 
 @media (max-width: 880px) {
-  .top-nav .menu {
+  .dbpo-menu {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
   }
 
-  .top-nav .menu a {
-    font-size: 0.9rem;
+  .dbpo-nav-link {
+    font-size: 0.95rem;
   }
 
   .top-nav .menu .btn.cta {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
   }
 }
 
@@ -219,6 +218,36 @@ body.new-request .search-container {
 }
 
 /* ===== Hero ===== */
+.dbpo-hero { position: relative; overflow: hidden; padding: 5rem 0 3rem; color: #ffffff; background: var(--digify-navy); text-align: center; }
+.dbpo-hero-bg { position:absolute; inset:0; background-size:cover; background-position:center; opacity:.18; }
+.dbpo-hero-overlay { position:absolute; inset:0; background: linear-gradient(135deg, rgba(0,42,68,.65), rgba(93,176,223,.35)); }
+.dbpo-hero .container { position:relative; z-index:2; text-align:center; }
+.dbpo-hero-title { font-size: clamp(2rem, 4vw, 3.25rem); font-weight: 800; line-height: 1.1; margin: 0 0 0.5rem; }
+.dbpo-inline-brand { font-size: 1em; font-weight: 900; letter-spacing: .2px; color: var(--digify-aqua); }
+.dbpo-hero-sub { font-size: 1.1rem; margin: 0 auto 1.75rem; max-width: 620px; opacity:.9; }
+
+.dbpo-hero-ctas { display:flex; flex-wrap:wrap; gap:1rem; align-items:center; justify-content:center; }
+.dbpo-hero-ctas .btn { padding: .9rem 1.4rem; font-size: 1.05rem; border-radius: .65rem; min-width: 220px; font-weight:700; text-transform:uppercase; }
+.dbpo-hero-ctas .btn-outline-primary { background: rgba(255,255,255,0.1); color: #ffffff; border-color: rgba(255,255,255,0.35); }
+.dbpo-hero-ctas .btn-outline-primary:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.55); }
+.dbpo-hero-link { margin-left: .75rem; font-weight: 600; color: #ffffff; text-decoration: underline; text-underline-offset: 4px; }
+.dbpo-hero-link:hover { color: var(--digify-aqua); }
+
+.homepage-sections { padding-bottom: 3.5rem; }
+
+.dbpo-policies-teaser { background:#f5f7fa; padding:2rem 0; }
+.dbpo-section-title { font-size:1.6rem; font-weight:700; margin:0 0 1rem; color:#0e2746; }
+.dbpo-policies-list { list-style:none; margin:0 0 1rem; padding:0; display:flex; flex-direction:column; gap:.5rem; }
+.dbpo-policy-item a { text-decoration:none; color:#0e2746; font-weight:600; }
+.dbpo-policy-item a:hover { text-decoration:underline; }
+.btn.btn-link { color:#2e8ecf; font-weight:600; }
+
+@media (max-width: 768px) {
+  .dbpo-hero-ctas { flex-direction: column; align-items: stretch; }
+  .dbpo-hero-ctas .btn,
+  .dbpo-hero-link { width: 100%; margin-left: 0; text-align: center; }
+}
+
 .hero {
   position: relative;
   overflow: hidden;
@@ -1589,6 +1618,15 @@ a[href*="/hc/"][href*="activities"],
   color: rgba(17, 32, 68, 0.85);
 }
 
+#request_issue_type_select,
+label[for="request_issue_type_select"] {
+  display: none !important;
+}
+
+.dbpo-request {
+  padding: 2.5rem 0 4rem;
+}
+
 
 .new-request ol.breadcrumb,
 .new-request .breadcrumbs { display: none !important; }
@@ -1608,3 +1646,35 @@ h1 .accent,
   color: var(--digify-navy) !important;
 }
 
+.community-footer,
+.community-nav,
+.community-highlight,
+.link-community,
+a[href*="/hc/{{help_center.locale}}/community"],
+a[href*="/hc/community"] {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .dbpo-logo { height: 36px; }
+  .dbpo-nav-link { font-size: 0.95rem; }
+  .dbpo-hero { padding: 4rem 0 2.25rem; }
+  .dbpo-hero-ctas { gap: 0.75rem; }
+  .dbpo-footer-inner { flex-direction: column; gap: 0.5rem; }
+}
+.dbpo-footer {
+  border-top: 1px solid #e5e8ec;
+  background: #ffffff;
+}
+
+.dbpo-footer-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  color: var(--dbpo-text);
+}
+
+.dbpo-footer a {
+  color: var(--dbpo-navy);
+}

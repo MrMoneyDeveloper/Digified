@@ -1,7 +1,7 @@
 {
   "name": "Copenhagen",
   "author": "Zendesk",
-  "version": "4.11.21",
+  "version": "4.11.23",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -499,6 +499,27 @@
           "label": "Access request value",
           "description": "Value passed to the external support field for access-related requests.",
           "value": ""
+        },
+        {
+          "identifier": "issue_type_field_id",
+          "type": "text",
+          "label": "Issue type field ID",
+          "description": "Custom field ID used for the issue type selector in the external support form.",
+          "value": ""
+        },
+        {
+          "identifier": "network_issue_value",
+          "type": "text",
+          "label": "Network issue value",
+          "description": "Value passed to the issue type field for network-related requests.",
+          "value": "cxi_it_network"
+        },
+        {
+          "identifier": "access_request_value",
+          "type": "text",
+          "label": "Access request value",
+          "description": "Value passed to the issue type field for access-related requests.",
+          "value": "cxi_it_access"
         }
       ]
     },
@@ -522,13 +543,20 @@
           "type": "text",
           "label": "Policies root URL",
           "description": "Destination used for Policies navigation and CTAs.",
-          "value": ""
+          "value": "/hc/en-us/sections/23441547733404-Policies"
         },
         {
           "identifier": "kb_roadmap_url",
           "type": "text",
           "label": "Knowledge base roadmap URL",
           "description": "Optional link for the Knowledge Base (coming soon) card.",
+          "value": ""
+        },
+        {
+          "identifier": "policies_url",
+          "type": "text",
+          "label": "Policies page URL",
+          "description": "Optional link to a consolidated policies page.",
           "value": ""
         }
       ]

@@ -33,3 +33,16 @@
 
   renderFlashNotifications(settings, baseLocale);
 </script>
+<script>
+(function() {
+  var formId = '{{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}';
+  if (!formId) { return; }
+  var path = window.location.pathname;
+  var formRegex = /\/hc\/[^/]+\/requests(?:\/new)?$/;
+  if (formRegex.test(path) && window.location.search.indexOf('ticket_form_id=' + formId) === -1) {
+    var targetPath = path.replace(/\/requests(?:\/new)?$/, '/requests/new');
+    var target = targetPath + '?ticket_form_id=' + formId;
+    window.location.replace(target);
+  }
+})();
+</script>
