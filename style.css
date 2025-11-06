@@ -1627,6 +1627,43 @@ label[for="request_issue_type_select"] {
   padding: 2.5rem 0 4rem;
 }
 
+.policy-card,
+.dbpo-policies-list a {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+
+.policy-card * {
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.policy-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+}
+
+.policy-card:hover * {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.policy-card:hover h3,
+.policy-card:hover p,
+.policy-card:hover .card-link {
+  opacity: 1;
+  visibility: visible;
+}
+
+.section-subtitle {
+  margin-top: 0.35rem;
+  color: #475569;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.breadcrumbs {
+  display: none !important;
+}
+
 
 .new-request ol.breadcrumb,
 .new-request .breadcrumbs { display: none !important; }

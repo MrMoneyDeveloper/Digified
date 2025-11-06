@@ -11,15 +11,9 @@
     </a>
 <nav class="top-nav">
   <ul class="menu dbpo-menu">
-    <li><a class="dbpo-nav-link" href="{{help_center.url}}">Home</a></li>
-    <li><a class="dbpo-nav-link" href="{{#if settings.policies_url}}{{settings.policies_url}}{{else}}/hc/{{help_center.locale}}/categories{{/if}}">Policies</a></li>
-    <li>
-      {{#if settings.external_support_form_id}}
-        {{#link 'new_request' class='btn cta' ticket_form_id=settings.external_support_form_id}}Submit a Request{{/link}}
-      {{else}}
-        {{#link 'new_request' class='btn cta' ticket_form_id='23381214703004'}}Submit a Request{{/link}}
-      {{/if}}
-    </li>
+    <li>{{#link 'home' class='dbpo-nav-link'}}Home{{/link}}</li>
+    <li><a class="dbpo-nav-link" href="/hc/en-us/sections/23441547733404-Policies">Policies</a></li>
+    <li>{{#link 'new_request' class='btn cta'}}Submit a Request{{/link}}</li>
   </ul>
 </nav>
   </div>

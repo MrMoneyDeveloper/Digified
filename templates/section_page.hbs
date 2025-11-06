@@ -1,20 +1,16 @@
 <div class="container-divider"></div>
 <div class="container">
-  <div class="sub-nav">
-    {{breadcrumbs}}
-    <div class="search-container">
-      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" focusable="false" viewBox="0 0 12 12" class="search-icon" aria-hidden="true">
-        <circle cx="4.5" cy="4.5" r="4" fill="none" stroke="currentColor"/>
-        <path stroke="currentColor" stroke-linecap="round" d="M11 11L7.5 7.5"/>
-      </svg>
-      {{search scoped=settings.scoped_kb_search submit=false}}
-    </div>
-  </div>
+  <!-- Breadcrumbs removed per branding guidelines -->
 
   <div class="section-container">
     <section id="main-content" class="section-content">
       <header class="page-header">
-        <h1>{{section.name}}</h1>
+        {{#is section.id 23441547733404}}
+          <h1>Policies</h1>
+          <p class="section-subtitle">All workplace policies for Digify BPO.</p>
+        {{else}}
+          <h1>{{section.name}}</h1>
+        {{/is}}
         {{#if settings.show_follow_section}}
           <div class="section-subscribe">{{subscribe}}</div>
         {{/if}}
