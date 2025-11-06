@@ -191,7 +191,8 @@ body.new-request .search-container {
   color: #0b1224;
 }
 
-.hero-img {
+.hero-img,
+.community-hero-img {
   width: 100%;
   height: auto;
   display: block;

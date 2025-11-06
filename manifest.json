@@ -1,7 +1,7 @@
 {
   "name": "Copenhagen",
   "author": "Zendesk",
-  "version": "4.11.16",
+  "version": "4.11.17",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -517,17 +517,17 @@
       "variables": [
         {
           "identifier": "home_hero_image_url",
-          "type": "image_url",
+          "type": "text",
           "label": "Home hero image URL",
-          "description": "URL for the hero image on the home page",
-          "default": "{{asset 'hero.jpg'}}"
+          "description": "Enter the URL of the image to display as the hero on the home page",
+          "default": ""
         },
         {
           "identifier": "community_hero_image_url",
-          "type": "image_url",
+          "type": "text",
           "label": "Community hero image URL",
-          "description": "URL for the hero image on the community topics page",
-          "default": "{{asset 'community.jpg'}}"
+          "description": "Enter the URL of the image to display on the community topics page",
+          "default": ""
         },
         {
           "identifier": "logo",
