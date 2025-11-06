@@ -1,7 +1,7 @@
 {
   "name": "Copenhagen",
   "author": "Zendesk",
-  "version": "4.11.23",
+  "version": "4.11.25",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -557,7 +557,7 @@
           "type": "text",
           "label": "Policies page URL",
           "description": "Optional link to a consolidated policies page.",
-          "value": ""
+          "value": "/hc/en-us/sections/23441547733404-Policies"
         }
       ]
     },
@@ -601,42 +601,42 @@
           "type": "text",
           "label": "Drug and Alcohol policy URL",
           "description": "Full URL for the Drug and Alcohol policy article.",
-          "value": ""
+          "value": "/hc/en-us/articles/23441597674652-Drug-and-Alcohol-Policy"
         },
         {
           "identifier": "clean_desk_policy_url",
           "type": "text",
           "label": "Clean Desk policy URL",
           "description": "Full URL for the Clean Desk policy article.",
-          "value": ""
+          "value": "/hc/en-us/articles/23441604000284-Clean-Desk-Policy"
         },
         {
           "identifier": "locker_policy_url",
           "type": "text",
           "label": "Locker policy URL",
           "description": "Full URL for the Locker policy article.",
-          "value": ""
+          "value": "/hc/en-us/articles/23441624276124-Locker-Policy-Contact-Centre-Agents"
         },
         {
           "identifier": "pci_policy_url",
           "type": "text",
           "label": "PCI policy URL",
           "description": "Full URL for the PCI compliance policy article.",
-          "value": ""
+          "value": "/hc/en-us/articles/23441658995356-PCI-Compliance-Policy"
         },
         {
           "identifier": "smoking_policy_url",
           "type": "text",
           "label": "Smoking policy URL",
           "description": "Full URL for the Smoking policy article.",
-          "value": ""
+          "value": "/hc/en-us/articles/23441672237980-Smoking-Policy"
         },
         {
           "identifier": "harassment_policy_url",
           "type": "text",
           "label": "Sexual harassment policy URL",
           "description": "Full URL for the Sexual harassment policy article.",
-          "value": ""
+          "value": "/hc/en-us/articles/23441684280348-Sexual-Harassment-Policy"
         }
       ]
     }
