@@ -5,12 +5,8 @@
 <main id="main-content" class="home-main">
   <section class="hero hero-grey">
     <div class="container">
-      {{#if settings.home_hero_image}}
-        <img class="hero-img" src="{{settings.home_hero_image}}" alt="Digify BPO hero" />
-      {{else}}
-        {{#if settings.hero_image_url}}
-          <img class="hero-img" src="{{settings.hero_image_url}}" alt="Digify BPO hero" />
-        {{/if}}
+      {{#if settings.home_hero_image_url}}
+        <img class="hero-img" src="{{settings.home_hero_image_url}}" alt="Digify BPO hero" />
       {{/if}}
       <h1 class="hero-title">
         Welcome to the <span class="brand">Digify BPO</span> Help Centre

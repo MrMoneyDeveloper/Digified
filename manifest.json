@@ -1,7 +1,7 @@
 {
   "name": "Copenhagen",
   "author": "Zendesk",
-  "version": "4.11.12",
+  "version": "4.11.13",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -522,23 +522,18 @@
       "label": "Hero and imagery",
       "variables": [
         {
-          "identifier": "home_hero_image",
-          "type": "file",
-          "label": "Home hero image",
-          "description": "Header hero on the home page"
+          "identifier": "home_hero_image_url",
+          "type": "image_url",
+          "label": "Home hero image URL",
+          "description": "Enter the URL of the hero image for the home page",
+          "default": "{{asset 'hero.jpg'}}"
         },
         {
-          "identifier": "community_hero_image",
-          "type": "file",
-          "label": "Community hero image",
-          "description": "Upload a hero image for the community topics page"
-        },
-        {
-          "identifier": "hero_image_url",
-          "type": "text",
-          "label": "Hero image URL",
-          "description": "Optional image displayed in the homepage hero.",
-          "value": ""
+          "identifier": "community_hero_image_url",
+          "type": "image_url",
+          "label": "Community hero image URL",
+          "description": "Enter the URL of the community hero image",
+          "default": ""
         },
         {
           "identifier": "card_icon_set_url",
