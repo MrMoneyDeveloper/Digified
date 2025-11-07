@@ -1,7 +1,7 @@
 {
   "name": "Copenhagen",
   "author": "Zendesk",
-  "version": "4.11.26",
+  "version": "4.11.27",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -540,7 +540,7 @@
       "variables": [
         {
           "identifier": "policies_root_url",
-          "type": "url",
+          "type": "text",
           "label": "Policies root URL",
           "description": "Destination used for Policies navigation and CTAs.",
           "value": "/hc/en-us/sections/23441547733404-Policies"
@@ -554,7 +554,7 @@
         },
         {
           "identifier": "policies_url",
-          "type": "url",
+          "type": "text",
           "label": "Policies page URL",
           "description": "Optional link to a consolidated policies page.",
           "value": "/hc/en-us/sections/23441547733404-Policies"
@@ -566,14 +566,14 @@
       "variables": [
         {
           "identifier": "home_hero_image_url",
-          "type": "url",
+          "type": "text",
           "label": "Home hero image URL",
           "description": "Enter a URL for the home page hero image",
           "value": ""
         },
         {
           "identifier": "community_hero_image_url",
-          "type": "url",
+          "type": "text",
           "label": "Community hero image URL",
           "description": "Enter a URL for the community topics hero image",
           "value": ""
@@ -586,7 +586,7 @@
         },
         {
           "identifier": "card_icon_set_url",
-          "type": "url",
+          "type": "text",
           "label": "Card icon set URL",
           "description": "URL for the homepage card icons",
           "value": ""
@@ -598,42 +598,42 @@
       "variables": [
         {
           "identifier": "drug_policy_url",
-          "type": "url",
+          "type": "text",
           "label": "Drug and Alcohol policy URL",
           "description": "Full URL for the Drug and Alcohol policy article.",
           "value": "/hc/en-us/articles/23441597674652-Drug-and-Alcohol-Policy"
         },
         {
           "identifier": "clean_desk_policy_url",
-          "type": "url",
+          "type": "text",
           "label": "Clean Desk policy URL",
           "description": "Full URL for the Clean Desk policy article.",
           "value": "/hc/en-us/articles/23441604000284-Clean-Desk-Policy"
         },
         {
           "identifier": "locker_policy_url",
-          "type": "url",
+          "type": "text",
           "label": "Locker policy URL",
           "description": "Full URL for the Locker policy article.",
           "value": "/hc/en-us/articles/23441624276124-Locker-Policy-Contact-Centre-Agents"
         },
         {
           "identifier": "pci_policy_url",
-          "type": "url",
+          "type": "text",
           "label": "PCI policy URL",
           "description": "Full URL for the PCI compliance policy article.",
           "value": "/hc/en-us/articles/23441658995356-PCI-Compliance-Policy"
         },
         {
           "identifier": "smoking_policy_url",
-          "type": "url",
+          "type": "text",
           "label": "Smoking policy URL",
           "description": "Full URL for the Smoking policy article.",
           "value": "/hc/en-us/articles/23441672237980-Smoking-Policy"
         },
         {
           "identifier": "harassment_policy_url",
-          "type": "url",
+          "type": "text",
           "label": "Sexual harassment policy URL",
           "description": "Full URL for the Sexual harassment policy article.",
           "value": "/hc/en-us/articles/23441684280348-Sexual-Harassment-Policy"
