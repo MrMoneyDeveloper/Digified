@@ -9,22 +9,18 @@
     {{/if}}
     <div class="dbpo-hero-overlay"></div>
     <div class="container">
-      <h1 class="dbpo-hero-title">
-        Welcome to the <span class="dbpo-inline-brand">Digify BPO</span> Help Centre
-      </h1>
+      <h1 class="dbpo-hero-title">Welcome to the <span class="dbpo-inline-brand">Digify BPO</span> Help Centre</h1>
       <p class="dbpo-hero-sub">Find help, report issues, read policies.</p>
-      <div class="dbpo-hero-ctas">
-        {{#with settings}}
-          <a class="btn btn-primary btn-lg"
-             href="/hc/{{../help_center.locale}}/requests/new?ticket_form_id={{#if external_support_form_id}}{{external_support_form_id}}{{else}}23381214703004{{/if}}{{#if issue_type_field_id}}&tf_{{issue_type_field_id}}={{#if network_issue_value}}{{network_issue_value}}{{else}}cxi_it_network{{/if}}{{else}}{{#if external_support_field_id}}&tf_{{external_support_field_id}}={{#if external_support_network_value}}{{external_support_network_value}}{{else}}cxi_it_network{{/if}}{{/if}}{{/if}}">
-            Network Issue
-          </a>
-          <a class="btn btn-outline-primary btn-lg"
-             href="/hc/{{../help_center.locale}}/requests/new?ticket_form_id={{#if external_support_form_id}}{{external_support_form_id}}{{else}}23381214703004{{/if}}{{#if issue_type_field_id}}&tf_{{issue_type_field_id}}={{#if access_request_value}}{{access_request_value}}{{else}}cxi_it_access{{/if}}{{else}}{{#if external_support_field_id}}&tf_{{external_support_field_id}}={{#if external_support_access_value}}{{external_support_access_value}}{{else}}cxi_it_access{{/if}}{{/if}}{{/if}}">
-            Access Request
-          </a>
-        {{/with}}
-        <a class="dbpo-hero-link" href="{{#if settings.policies_url}}{{settings.policies_url}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}/hc/{{help_center.locale}}/categories{{/if}}{{/if}}">Read Policies</a>
+      <div class="digify-cta-row">
+        {{#link "new_request" class="btn btn-primary" params='ticket_form_id=23381214703004&tf_issue_type=network'}}
+          Network Issue
+        {{/link}}
+        {{#link "new_request" class="btn btn-outline" params='ticket_form_id=23381214703004&tf_issue_type=access'}}
+          Access Request
+        {{/link}}
+        <a class="btn btn-text" href="{{help_center.base_url}}/hc/en-us/sections/23441547733404-Policies">
+          Read Policies
+        </a>
       </div>
     </div>
   </section>
@@ -54,21 +50,7 @@
             {{/if}}
             <h3>Policies &amp; SOPs</h3>
             <p>Review building use rules, security guidelines, and operating procedures directly in the portal.</p>
-            <a class="link-cta" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}/hc/{{help_center.locale}}/categories{{/if}}">Open policies</a>
-          </article>
-        </div>
-        <div class="col-12 col-md-4">
-          <article class="feature-card card-dark h-100">
-            {{#if settings.card_icon_set_url}}
-              <img class="card-icon-img mb-3" src="{{settings.card_icon_set_url}}" alt="" role="presentation">
-            {{/if}}
-            <h3>Knowledge Base <span class="soft">(coming soon)</span></h3>
-            <p>HR onboarding, admin FAQs, and facilities know-how join the library next.</p>
-            {{#if settings.kb_roadmap_url}}
-              <a class="link-ghost" href="{{settings.kb_roadmap_url}}">Preview roadmap</a>
-            {{else}}
-              <a class="link-ghost" href="/hc/{{help_center.locale}}/categories">Preview roadmap</a>
-            {{/if}}
+            <a class="link-cta" href="{{help_center.base_url}}/hc/en-us/sections/23441547733404-Policies">Open policies</a>
           </article>
         </div>
       </div>
@@ -80,14 +62,14 @@
     <div class="container">
       <h2 class="dbpo-section-title">Featured Policies</h2>
       <ul class="dbpo-policies-list">
-        <li><a href="{{settings.drug_policy_url}}">Drug and Alcohol Policy</a></li>
-        <li><a href="{{settings.clean_desk_policy_url}}">Clean Desk Policy</a></li>
-        <li><a href="{{settings.locker_policy_url}}">Locker Policy (Contact Centre Agents)</a></li>
-        <li><a href="{{settings.pci_policy_url}}">PCI Compliance Policy</a></li>
-        <li><a href="{{settings.smoking_policy_url}}">Smoking Policy</a></li>
-        <li><a href="{{settings.harassment_policy_url}}">Sexual Harassment Policy</a></li>
+        <li><a href="{{help_center.base_url}}/hc/en-us/articles/23441597674652-Drug-and-Alcohol-Policy">Drug and Alcohol Policy</a></li>
+        <li><a href="{{help_center.base_url}}/hc/en-us/articles/23441604000284-Clean-Desk-Policy">Clean Desk Policy</a></li>
+        <li><a href="{{help_center.base_url}}/hc/en-us/articles/23441624276124-Locker-Policy-Contact-Centre-Agents">Locker Policy (Contact Centre Agents)</a></li>
+        <li><a href="{{help_center.base_url}}/hc/en-us/articles/23441658995356-PCI-Compliance-Policy">PCI Compliance Policy</a></li>
+        <li><a href="{{help_center.base_url}}/hc/en-us/articles/23441672237980-Smoking-Policy">Smoking Policy</a></li>
+        <li><a href="{{help_center.base_url}}/hc/en-us/articles/23441684280348-Sexual-Harassment-Policy">Sexual Harassment Policy</a></li>
       </ul>
-      <a class="btn btn-link" href="{{settings.policies_url}}">View all policies</a>
+      <a class="btn btn-link view-all-policies" href="{{help_center.base_url}}/hc/en-us/sections/23441547733404-Policies">View all policies</a>
     </div>
   </section>
 
@@ -104,7 +86,7 @@
             <h3>Drug and Alcohol Policy</h3>
             <p>Maintains a zero-tolerance stance on impairment to protect colleagues, clients, and customers.</p>
             <div class="card-action">
-              <a class="policy-link" href="{{settings.drug_policy_url}}">READ MORE</a>
+              <a class="policy-link" href="{{help_center.base_url}}/hc/en-us/articles/23441597674652-Drug-and-Alcohol-Policy">READ MORE</a>
             </div>
           </article>
         </div>
@@ -114,7 +96,7 @@
             <h3>Clean Desk Policy</h3>
             <p>Requires agents to secure devices and clear sensitive materials whenever desks are unattended.</p>
             <div class="card-action">
-              <a class="policy-link" href="{{settings.clean_desk_policy_url}}">READ MORE</a>
+              <a class="policy-link" href="{{help_center.base_url}}/hc/en-us/articles/23441604000284-Clean-Desk-Policy">READ MORE</a>
             </div>
           </article>
         </div>
@@ -124,7 +106,7 @@
             <h3>Locker Policy for Contact Centre Agents</h3>
             <p>Explains locker assignments, permitted items, and inspection rights to keep operations secure.</p>
             <div class="card-action">
-              <a class="policy-link" href="{{settings.locker_policy_url}}">READ MORE</a>
+              <a class="policy-link" href="{{help_center.base_url}}/hc/en-us/articles/23441624276124-Locker-Policy-Contact-Centre-Agents">READ MORE</a>
             </div>
           </article>
         </div>
@@ -134,7 +116,7 @@
             <h3>PCI Compliance Policy</h3>
             <p>Details cardholder data safeguards, device controls, and monitoring to uphold PCI DSS obligations.</p>
             <div class="card-action">
-              <a class="policy-link" href="{{settings.pci_policy_url}}">READ MORE</a>
+              <a class="policy-link" href="{{help_center.base_url}}/hc/en-us/articles/23441658995356-PCI-Compliance-Policy">READ MORE</a>
             </div>
           </article>
         </div>
@@ -144,7 +126,7 @@
             <h3>Smoking Policy</h3>
             <p>Defines approved smoking areas, break schedules, and penalties for non-compliance.</p>
             <div class="card-action">
-              <a class="policy-link" href="{{settings.smoking_policy_url}}">READ MORE</a>
+              <a class="policy-link" href="{{help_center.base_url}}/hc/en-us/articles/23441672237980-Smoking-Policy">READ MORE</a>
             </div>
           </article>
         </div>
@@ -154,7 +136,7 @@
             <h3>Sexual Harassment Policy</h3>
             <p>Affirms Digified's zero-tolerance approach with reporting channels and investigation steps.</p>
             <div class="card-action">
-              <a class="policy-link" href="{{settings.harassment_policy_url}}">READ MORE</a>
+              <a class="policy-link" href="{{help_center.base_url}}/hc/en-us/articles/23441684280348-Sexual-Harassment-Policy">READ MORE</a>
             </div>
           </article>
         </div>

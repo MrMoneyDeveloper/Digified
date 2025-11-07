@@ -9,11 +9,11 @@
       {{/if}}
       <span class="brand-text dbpo-brand-text">Digify BPO</span>
     </a>
-<nav class="top-nav">
+<nav class="nav top-nav">
   <ul class="menu dbpo-menu">
-    <li>{{#link 'home' class='dbpo-nav-link'}}Home{{/link}}</li>
-    <li><a class="dbpo-nav-link" href="/hc/en-us/sections/23441547733404-Policies">Policies</a></li>
-    <li>{{#link 'new_request' class='btn cta'}}Submit a Request{{/link}}</li>
+    <li>{{#link 'help_center' class='dbpo-nav-link nav-link'}}Home{{/link}}</li>
+    <li><a class="dbpo-nav-link nav-link" href="{{help_center.base_url}}/hc/en-us/sections/23441547733404-Policies">Policies</a></li>
+    <li>{{#link 'new_request' class='dbpo-nav-link nav-link' params='ticket_form_id=23381214703004'}}Request Support{{/link}}</li>
   </ul>
 </nav>
   </div>

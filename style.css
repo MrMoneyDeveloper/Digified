@@ -226,12 +226,12 @@ body.new-request .search-container {
 .dbpo-inline-brand { font-size: 1em; font-weight: 900; letter-spacing: .2px; color: var(--digify-aqua); }
 .dbpo-hero-sub { font-size: 1.1rem; margin: 0 auto 1.75rem; max-width: 620px; opacity:.9; }
 
-.dbpo-hero-ctas { display:flex; flex-wrap:wrap; gap:1rem; align-items:center; justify-content:center; }
-.dbpo-hero-ctas .btn { padding: .9rem 1.4rem; font-size: 1.05rem; border-radius: .65rem; min-width: 220px; font-weight:700; text-transform:uppercase; }
-.dbpo-hero-ctas .btn-outline-primary { background: rgba(255,255,255,0.1); color: #ffffff; border-color: rgba(255,255,255,0.35); }
-.dbpo-hero-ctas .btn-outline-primary:hover { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.55); }
-.dbpo-hero-link { margin-left: .75rem; font-weight: 600; color: #ffffff; text-decoration: underline; text-underline-offset: 4px; }
-.dbpo-hero-link:hover { color: var(--digify-aqua); }
+.digify-cta-row { display:flex; flex-wrap:wrap; gap:1rem; justify-content:center; align-items:center; }
+.digify-cta-row .btn { padding:.9rem 1.4rem; font-size:1.05rem; border-radius:.65rem; min-width:220px; font-weight:700; text-transform:uppercase; }
+.btn.btn-outline { border:2px solid #fff; color:#fff; background:transparent; }
+.btn.btn-outline:hover { background:#fff; color:var(--dbpo-navy); }
+.btn.btn-text { color:#fff; text-transform:uppercase; font-weight:600; text-decoration:underline; text-underline-offset:4px; }
+.btn.btn-text:hover { color:var(--digify-aqua); }
 
 .homepage-sections { padding-bottom: 3.5rem; }
 
@@ -1714,4 +1714,58 @@ a[href*="/hc/community"] {
 
 .dbpo-footer a {
   color: var(--dbpo-navy);
+}
+.policies-landing {
+  padding: 3rem 0;
+}
+
+.policies-landing h1 {
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.policies-landing p {
+  color: #475569;
+  margin-bottom: 1.5rem;
+  max-width: 640px;
+}
+
+.policy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.policy-grid .policy-card {
+  display: block;
+  padding: 1.75rem;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  text-decoration: none;
+  color: #0e2746;
+  font-weight: 700;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.policy-grid .policy-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+.policies-landing .section-subscribe,
+.policies-landing .follow,
+.policies-landing [data-testid="follow-section"] {
+  display: none !important;
+}
+ol.breadcrumbs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+ol.breadcrumbs li::marker,
+ol.breadcrumbs li::before {
+  content: none !important;
 }

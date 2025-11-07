@@ -30,11 +30,12 @@
         </ul>
       </div>
 
-    <div class="col-sm-6 col-lg-4 footer-column footer-links">
+    <div class="col-sm-6 col-lg-4 footer-column footer-links quick-links">
       <h3 class="mb-3">Quick Links</h3>
       <ul class="footer-list list-unstyled mb-0 footer__links">
-        <li><a href="{{#link 'help_center'}}{{/link}}">Home</a></li>
-        <li><a href="/hc/{{help_center.locale}}/categories">Policies (Preview)</a></li>
+        <li><a href="{{help_center.base_url}}/hc/en-us">Home</a></li>
+        <li><a href="{{help_center.base_url}}/hc/en-us/sections/23441547733404-Policies">Policies</a></li>
+        <li>{{#link "new_request" params='ticket_form_id=23381214703004'}}Request Support{{/link}}</li>
       </ul>
       </div>
     </div>
