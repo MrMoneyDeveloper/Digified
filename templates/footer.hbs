@@ -33,9 +33,9 @@
     <div class="col-sm-6 col-lg-4 footer-column footer-links quick-links">
       <h3 class="mb-3">Quick Links</h3>
       <ul class="footer-list list-unstyled mb-0 footer__links">
-        <li><a href="/hc/{{help_center.locale}}">Home</a></li>
-        <li><a href="/hc/{{help_center.locale}}/sections/23441547733404-Policies">Policies</a></li>
-        <li>{{#link "new_request" params='ticket_form_id=23381214703004'}}Request Support{{/link}}</li>
+        <li><a href="{{page_path 'help_center'}}">Home</a></li>
+        <li><a href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}">Policies</a></li>
+        <li><a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">Request Support</a></li>
       </ul>
       </div>
     </div>

@@ -10,6 +10,9 @@
     <section class="policy-accordion">
       <details class="policy-item">
         <summary>
+          {{#if settings.drug_policy_icon_url}}
+            <img class="policy-card-icon" src="{{settings.drug_policy_icon_url}}" alt="" role="presentation">
+          {{/if}}
           <span>Drug and Alcohol Policy</span>
           <span class="toggle-icon" aria-hidden="true"></span>
         </summary>
@@ -28,6 +31,9 @@
 
       <details class="policy-item">
         <summary>
+          {{#if settings.clean_desk_policy_icon_url}}
+            <img class="policy-card-icon" src="{{settings.clean_desk_policy_icon_url}}" alt="" role="presentation">
+          {{/if}}
           <span>Clean Desk Policy</span>
           <span class="toggle-icon" aria-hidden="true"></span>
         </summary>
@@ -46,6 +52,9 @@
 
       <details class="policy-item">
         <summary>
+          {{#if settings.locker_policy_icon_url}}
+            <img class="policy-card-icon" src="{{settings.locker_policy_icon_url}}" alt="" role="presentation">
+          {{/if}}
           <span>Locker Policy for Contact Centre Agents</span>
           <span class="toggle-icon" aria-hidden="true"></span>
         </summary>
@@ -64,6 +73,9 @@
 
       <details class="policy-item">
         <summary>
+          {{#if settings.pci_policy_icon_url}}
+            <img class="policy-card-icon" src="{{settings.pci_policy_icon_url}}" alt="" role="presentation">
+          {{/if}}
           <span>PCI Compliance Policy</span>
           <span class="toggle-icon" aria-hidden="true"></span>
         </summary>
@@ -82,6 +94,9 @@
 
       <details class="policy-item">
         <summary>
+          {{#if settings.smoking_policy_icon_url}}
+            <img class="policy-card-icon" src="{{settings.smoking_policy_icon_url}}" alt="" role="presentation">
+          {{/if}}
           <span>Smoking Policy</span>
           <span class="toggle-icon" aria-hidden="true"></span>
         </summary>
@@ -100,6 +115,9 @@
 
       <details class="policy-item">
         <summary>
+          {{#if settings.harassment_policy_icon_url}}
+            <img class="policy-card-icon" src="{{settings.harassment_policy_icon_url}}" alt="" role="presentation">
+          {{/if}}
           <span>Sexual Harassment Policy</span>
           <span class="toggle-icon" aria-hidden="true"></span>
         </summary>

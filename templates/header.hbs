@@ -6,15 +6,26 @@
     <a class="brand-logo dbpo-brand" href="{{help_center.url}}">
       {{#if settings.logo}}
         <img class="dbpo-logo" src="{{settings.logo}}" srcset="{{settings.logo}} 1x, {{settings.logo}} 2x" alt="Digify BPO logo" />
+      {{else}}
+        <img class="dbpo-logo" src="{{asset 'settings/Logo.png'}}" srcset="{{asset 'settings/Logo.png'}} 1x, {{asset 'settings/Logo.png'}} 2x" alt="Digify BPO logo" />
       {{/if}}
       <span class="brand-text dbpo-brand-text">Digify BPO</span>
     </a>
 <nav class="nav top-nav">
   <ul class="menu dbpo-menu">
-    <li>{{#link 'help_center' class='dbpo-nav-link nav-link'}}Home{{/link}}</li>
-    <li><a class="dbpo-nav-link nav-link" href="/hc/{{help_center.locale}}/sections/23441547733404-Policies">Policies</a></li>
-    <li>{{#link 'new_request' class='dbpo-nav-link nav-link' params='ticket_form_id=23381214703004'}}Request Support{{/link}}</li>
+    <li>{{#link "help_center" class="dbpo-nav-link nav-link"}}Home{{/link}}</li>
+    <li>
+      <a class="dbpo-nav-link nav-link" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}">
+        Policies
+      </a>
+    </li>
+    <li>
+      <a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">
+        Request Support
+      </a>
+    </li>
   </ul>
 </nav>
   </div>
 </header>
+
