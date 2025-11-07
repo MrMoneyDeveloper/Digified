@@ -1,7 +1,7 @@
 {
   "name": "Copenhagen",
   "author": "Zendesk",
-  "version": "4.11.31",
+  "version": "4.11.32",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -562,6 +562,132 @@
       ]
     },
     {
+      "label": "Card icons",
+      "variables": [
+        {
+          "identifier": "network_card_icon_url",
+          "type": "text",
+          "label": "Network card icon URL",
+          "description": "Icon displayed on the Network & Access card.",
+          "value": ""
+        },
+        {
+          "identifier": "policies_card_icon_url",
+          "type": "text",
+          "label": "Policies card icon URL",
+          "description": "Icon displayed on the Policies & SOPs card.",
+          "value": ""
+        },
+        {
+          "identifier": "request_form_icon_url",
+          "type": "text",
+          "label": "Request form icon URL",
+          "description": "Icon displayed on the submit request intro.",
+          "value": ""
+        },
+        {
+          "identifier": "drug_policy_icon_url",
+          "type": "text",
+          "label": "Drug policy icon URL",
+          "description": "Icon for the Drug and Alcohol policy card.",
+          "value": ""
+        },
+        {
+          "identifier": "clean_desk_policy_icon_url",
+          "type": "text",
+          "label": "Clean desk policy icon URL",
+          "description": "Icon for the Clean Desk policy card.",
+          "value": ""
+        },
+        {
+          "identifier": "locker_policy_icon_url",
+          "type": "text",
+          "label": "Locker policy icon URL",
+          "description": "Icon for the Locker policy card.",
+          "value": ""
+        },
+        {
+          "identifier": "pci_policy_icon_url",
+          "type": "text",
+          "label": "PCI policy icon URL",
+          "description": "Icon for the PCI Compliance policy card.",
+          "value": ""
+        },
+        {
+          "identifier": "smoking_policy_icon_url",
+          "type": "text",
+          "label": "Smoking policy icon URL",
+          "description": "Icon for the Smoking policy card.",
+          "value": ""
+        },
+        {
+          "identifier": "harassment_policy_icon_url",
+          "type": "text",
+          "label": "Harassment policy icon URL",
+          "description": "Icon for the Sexual Harassment policy card.",
+          "value": ""
+        }
+      ]
+    },
+        {
+          "identifier": "policies_card_icon_url",
+          "type": "text",
+          "label": "Policies card icon URL",
+          "description": "Icon displayed on the Policies & SOPs card.",
+          "value": ""
+        },
+        {
+          "identifier": "request_form_icon_url",
+          "type": "text",
+          "label": "Request form icon URL",
+          "description": "Icon displayed on the submit request intro.",
+          "value": ""
+        },
+        {
+          "identifier": "drug_policy_icon_url",
+          "type": "text",
+          "label": "Drug policy icon URL",
+          "description": "Icon for the Drug and Alcohol policy card.",
+          "value": ""
+        },
+        {
+          "identifier": "clean_desk_policy_icon_url",
+          "type": "text",
+          "label": "Clean desk policy icon URL",
+          "description": "Icon for the Clean Desk policy card.",
+          "value": ""
+        },
+        {
+          "identifier": "locker_policy_icon_url",
+          "type": "text",
+          "label": "Locker policy icon URL",
+          "description": "Icon for the Locker policy card.",
+          "value": ""
+        },
+        {
+          "identifier": "pci_policy_icon_url",
+          "type": "text",
+          "label": "PCI policy icon URL",
+          "description": "Icon for the PCI Compliance policy card.",
+          "value": ""
+        },
+        {
+          "identifier": "smoking_policy_icon_url",
+          "type": "text",
+          "label": "Smoking policy icon URL",
+          "description": "Icon for the Smoking policy card.",
+          "value": ""
+        },
+        {
+          "identifier": "harassment_policy_icon_url",
+          "type": "text",
+          "label": "Harassment policy icon URL",
+          "description": "Icon for the Sexual Harassment policy card.",
+          "value": ""
+        }
+      ]
+    },
+    {
       "label": "Hero and imagery",
       "variables": [
         {
@@ -642,6 +768,9 @@
     }
   ]
 }
+
+
+
 
 
 

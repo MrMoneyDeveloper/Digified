@@ -1769,3 +1769,22 @@ ol.breadcrumbs li::marker,
 ol.breadcrumbs li::before {
   content: none !important;
 }
+
+.policy-card-icon {
+  width: 48px;
+  height: auto;
+  margin-bottom: 0.75rem;
+}
+
+.policy-grid .policy-card img {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.dbpo-request-icon {
+  width: 56px;
+  height: auto;
+  display: block;
+  margin-bottom: 0.75rem;
+}
+

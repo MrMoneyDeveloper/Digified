@@ -1,6 +1,9 @@
 <section class="dbpo-request">
   <div class="container">
     <h1>{{t 'submit_a_request'}}</h1>
+    {{#if settings.request_form_icon_url}}
+      <img class="dbpo-request-icon" src="{{settings.request_form_icon_url}}" alt="" role="presentation">
+    {{/if}}
     <p class="dbpo-request-intro">
       Use this form to report connectivity issues (Network) or request credentials/access (Access).
       Choose the correct option in the form below.

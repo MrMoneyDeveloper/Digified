@@ -6,21 +6,39 @@
       <p>All workplace policies for Digify BPO.</p>
       <div class="policy-grid">
         <a class="policy-card" href="/hc/{{help_center.locale}}/articles/23441597674652-Drug-and-Alcohol-Policy">
+          {{#if settings.drug_policy_icon_url}}
+            <img class="policy-card-icon" src="{{settings.drug_policy_icon_url}}" alt="" role="presentation">
+          {{/if}}
           <h2>Drug and Alcohol Policy</h2>
         </a>
         <a class="policy-card" href="/hc/{{help_center.locale}}/articles/23441604000284-Clean-Desk-Policy">
+          {{#if settings.clean_desk_policy_icon_url}}
+            <img class="policy-card-icon" src="{{settings.clean_desk_policy_icon_url}}" alt="" role="presentation">
+          {{/if}}
           <h2>Clean Desk Policy</h2>
         </a>
         <a class="policy-card" href="/hc/{{help_center.locale}}/articles/23441624276124-Locker-Policy-Contact-Centre-Agents">
+          {{#if settings.locker_policy_icon_url}}
+            <img class="policy-card-icon" src="{{settings.locker_policy_icon_url}}" alt="" role="presentation">
+          {{/if}}
           <h2>Locker Policy (Contact Centre Agents)</h2>
         </a>
         <a class="policy-card" href="/hc/{{help_center.locale}}/articles/23441658995356-PCI-Compliance-Policy">
+          {{#if settings.pci_policy_icon_url}}
+            <img class="policy-card-icon" src="{{settings.pci_policy_icon_url}}" alt="" role="presentation">
+          {{/if}}
           <h2>PCI Compliance Policy</h2>
         </a>
         <a class="policy-card" href="/hc/{{help_center.locale}}/articles/23441672237980-Smoking-Policy">
+          {{#if settings.smoking_policy_icon_url}}
+            <img class="policy-card-icon" src="{{settings.smoking_policy_icon_url}}" alt="" role="presentation">
+          {{/if}}
           <h2>Smoking Policy</h2>
         </a>
         <a class="policy-card" href="/hc/{{help_center.locale}}/articles/23441684280348-Sexual-Harassment-Policy">
+          {{#if settings.harassment_policy_icon_url}}
+            <img class="policy-card-icon" src="{{settings.harassment_policy_icon_url}}" alt="" role="presentation">
+          {{/if}}
           <h2>Sexual Harassment Policy</h2>
         </a>
       </div>
@@ -88,4 +106,7 @@
     </div>
   {{/is}}
 </div>
+
+
+
 
