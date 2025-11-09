@@ -611,37 +611,37 @@
       "variables": [
         {
           "identifier": "home_hero_image",
-          "type": "image",
+          "type": "file",
           "label": "Home hero image",
           "description": "Upload the home page hero background image"
         },
         {
           "identifier": "community_hero_image",
-          "type": "image",
+          "type": "file",
           "label": "Community hero image",
           "description": "Upload the community topics hero background image"
         },
         {
           "identifier": "community_banner_image",
-          "type": "image",
+          "type": "file",
           "label": "Community banner image",
           "description": "Optional banner image displayed below the community hero"
         },
         {
           "identifier": "featured_policies_image",
-          "type": "image",
+          "type": "file",
           "label": "Featured policies image",
           "description": "Full-width illustration shown in the Featured Policies panel on the home page."
         },
         {
           "identifier": "network_card_background_image",
-          "type": "image",
+          "type": "file",
           "label": "Network card background image",
           "description": "Background image for the Network & Access Requests card."
         },
         {
           "identifier": "policies_card_background_image",
-          "type": "image",
+          "type": "file",
           "label": "Policies card background image",
           "description": "Background image for the Policies & SOPs card."
         },
