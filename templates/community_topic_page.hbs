@@ -1,14 +1,26 @@
-<div class="container-divider"></div>
-<div class="container">
-   <div class="sub-nav">
-    {{breadcrumbs}}
-    <div class="search-container">
+<header
+  class="section hero community-hero cxi-community-hero"
+  style="background-image: url('{{#if settings.community_hero_image_url}}{{settings.community_hero_image_url}}{{else}}{{asset 'settings/Community_hero_image.png'}}{{/if}}');">
+  <div class="cxi-community-hero-overlay"></div>
+  <div class="container cxi-community-hero-body">
+    <h2 class="visibility-hidden">{{ t 'search'}}</h2>
+    <div class="hero-inner">
       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" focusable="false" viewBox="0 0 12 12" class="search-icon" aria-hidden="true">
         <circle cx="4.5" cy="4.5" r="4" fill="none" stroke="currentColor"/>
         <path stroke="currentColor" stroke-linecap="round" d="M11 11L7.5 7.5"/>
       </svg>
-      {{search scoped=settings.scoped_community_search submit=false}}
+      {{search scoped=settings.scoped_community_search submit=false class='search search-full'}}
     </div>
+    {{#if settings.community_banner_url}}
+      <img class="cxi-community-banner" src="{{settings.community_banner_url}}" alt="Community banner">
+    {{/if}}
+  </div>
+</header>
+
+<div class="container-divider"></div>
+<div class="container">
+   <div class="sub-nav">
+    {{breadcrumbs}}
   </div>
 
   <header class="page-header">

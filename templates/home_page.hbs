@@ -37,32 +37,44 @@
       <div class="row g-4">
         <div class="col-12 col-md-4">
           <article class="feature-card card-dark h-100">
-            {{#if settings.network_card_icon_url}}
-              <img class="card-icon-img mb-3" src="{{settings.network_card_icon_url}}" alt="" role="presentation">
-            {{else}}
-              {{#if settings.card_icon_set_url}}
-                <img class="card-icon-img mb-3" src="{{settings.card_icon_set_url}}" alt="" role="presentation">
+            <div class="cxi-card-icon-wrap">
+              {{#if settings.network_card_icon_url}}
+                <img class="card-icon-img cxi-card-icon-img" src="{{settings.network_card_icon_url}}" alt="" role="presentation">
+              {{else}}
+                {{#if settings.card_icon_set_url}}
+                  <img class="card-icon-img cxi-card-icon-img" src="{{settings.card_icon_set_url}}" alt="" role="presentation">
+                {{else}}
+                  <i class="fa-solid fa-network-wired cxi-card-icon" aria-hidden="true"></i>
+                {{/if}}
               {{/if}}
-            {{/if}}
+            </div>
             <h3>Network &amp; Access Requests</h3>
             <p>Fix connectivity issues or request new credentials. The form routes straight to CXI engineers.</p>
-            <a class="link-cta" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">
+            <a class="link-cta cxi-card-btn" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">
               Report or request now
+              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
             </a>
           </article>
         </div>
         <div class="col-12 col-md-4">
           <article class="feature-card card-light h-100">
-            {{#if settings.policies_card_icon_url}}
-              <img class="card-icon-img mb-3" src="{{settings.policies_card_icon_url}}" alt="" role="presentation">
-            {{else}}
-              {{#if settings.card_icon_set_url}}
-                <img class="card-icon-img mb-3" src="{{settings.card_icon_set_url}}" alt="" role="presentation">
+            <div class="cxi-card-icon-wrap">
+              {{#if settings.policies_card_icon_url}}
+                <img class="card-icon-img cxi-card-icon-img" src="{{settings.policies_card_icon_url}}" alt="" role="presentation">
+              {{else}}
+                {{#if settings.card_icon_set_url}}
+                  <img class="card-icon-img cxi-card-icon-img" src="{{settings.card_icon_set_url}}" alt="" role="presentation">
+                {{else}}
+                  <i class="fa-solid fa-file-shield cxi-card-icon" aria-hidden="true"></i>
+                {{/if}}
               {{/if}}
-            {{/if}}
+            </div>
             <h3>Policies &amp; SOPs</h3>
             <p>Review building use rules, security guidelines, and operating procedures directly in the portal.</p>
-            <a class="link-cta" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}">Open policies</a>
+            <a class="link-cta cxi-card-btn" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}">
+              Open policies
+              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+            </a>
           </article>
         </div>
       </div>
@@ -80,7 +92,9 @@
         <li><a href="{{settings.smoking_policy_url}}">Smoking Policy</a></li>
         <li><a href="{{settings.harassment_policy_url}}">Sexual Harassment Policy</a></li>
       </ul>
-      <a class="btn btn-link view-all-policies" href="{{settings.policies_root_url}}">View all policies</a>
+      <a class="btn btn-link view-all-policies" href="{{settings.policies_root_url}}">
+        View all policies <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+      </a>
     </div>
   </section>
 

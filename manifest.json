@@ -236,18 +236,6 @@
           "type": "file",
           "description": "homepage_background_image_description",
           "label": "homepage_background_image_label"
-        },
-        {
-          "identifier": "community_background_image",
-          "type": "file",
-          "description": "community_background_image_description",
-          "label": "community_background_image_label"
-        },
-        {
-          "identifier": "community_image",
-          "type": "file",
-          "description": "community_image_description",
-          "label": "community_image_label"
         }
       ]
     },
@@ -644,6 +632,13 @@
           "type": "text",
           "label": "Community hero image URL",
           "description": "Enter a URL for the community topics hero image",
+          "value": ""
+        },
+        {
+          "identifier": "community_banner_url",
+          "type": "text",
+          "label": "Community banner URL",
+          "description": "Optional banner image displayed below the community hero",
           "value": ""
         },
         {

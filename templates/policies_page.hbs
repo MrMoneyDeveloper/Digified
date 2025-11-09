@@ -3,136 +3,144 @@
     <header class="policies-header text-center mb-5">
       <h1 class="policies-title">Policies</h1>
       <p class="policies-lead">
-        Review Digify BPO workplace policies in one place. Select a policy below to expand its full guidance.
+        Review Digify BPO workplace policies in one place. Choose any card to open the full article.
       </p>
     </header>
 
-    <section class="policy-accordion">
-      <details class="policy-item">
-        <summary>
-          {{#if settings.drug_policy_icon_url}}
-            <img class="policy-card-icon" src="{{settings.drug_policy_icon_url}}" alt="" role="presentation">
-          {{/if}}
-          <span>Drug and Alcohol Policy</span>
-          <span class="toggle-icon" aria-hidden="true"></span>
-        </summary>
-        <div class="policy-content">
-          <p>
-            Digify BPO maintains a zero-tolerance approach to working under the influence of alcohol, illegal substances, or misused prescription medication.
-          </p>
-          <ul>
-            <li>Associates must report to duty fit for work and remain substance-free for the entire shift, including breaks.</li>
-            <li>Random and for-cause testing may be conducted; refusal to comply is treated as a positive result.</li>
-            <li>Any possession, distribution, or sale of illegal substances on company premises results in immediate disciplinary action.</li>
-            <li>Team members who suspect a colleague is impaired should escalate to the Site Lead or HR partner.</li>
-          </ul>
+    <section class="policy-card-grid" aria-label="Key workplace policies">
+      <div class="row row-cols-1 row-cols-md-2 g-4">
+        <div class="col">
+          <article class="policy-card cxi-policy-card h-100">
+            <div class="cxi-card-icon-wrap">
+              {{#if settings.clean_desk_policy_icon_url}}
+                <img class="policy-card-icon cxi-card-icon-img" src="{{settings.clean_desk_policy_icon_url}}" alt="" role="presentation">
+              {{else}}
+                <i class="fa-solid fa-broom cxi-card-icon" aria-hidden="true"></i>
+              {{/if}}
+            </div>
+            <h3>Clean Desk Policy</h3>
+            <p>Keep workstations free of unsecured printouts, badges, or devices to guard customer data around the clock.</p>
+            <ul>
+              <li>Lock your screen any time you step away.</li>
+              <li>Shred or store sensitive notes before leaving.</li>
+            </ul>
+            <a class="link-cta cxi-card-btn" href="{{settings.clean_desk_policy_url}}">
+              Read policy
+              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+            </a>
+          </article>
         </div>
-      </details>
 
-      <details class="policy-item">
-        <summary>
-          {{#if settings.clean_desk_policy_icon_url}}
-            <img class="policy-card-icon" src="{{settings.clean_desk_policy_icon_url}}" alt="" role="presentation">
-          {{/if}}
-          <span>Clean Desk Policy</span>
-          <span class="toggle-icon" aria-hidden="true"></span>
-        </summary>
-        <div class="policy-content">
-          <p>
-            Security of client data depends on keeping shared work areas free from physical and digital clutter at all times.
-          </p>
-          <ul>
-            <li>Lock or log out of all devices whenever stepping away, even for short breaks.</li>
-            <li>Store notebooks, printed tickets, or reference materials in assigned lockers at the end of shift.</li>
-            <li>Shred documents with customer information immediately after use; never place them in regular trash bins.</li>
-            <li>Do not attach passwords, tokens, or personal identifiers to monitors, keyboards, or walls.</li>
-          </ul>
+        <div class="col">
+          <article class="policy-card cxi-policy-card h-100">
+            <div class="cxi-card-icon-wrap">
+              {{#if settings.pci_policy_icon_url}}
+                <img class="policy-card-icon cxi-card-icon-img" src="{{settings.pci_policy_icon_url}}" alt="" role="presentation">
+              {{else}}
+                <i class="fa-solid fa-shield-halved cxi-card-icon" aria-hidden="true"></i>
+              {{/if}}
+            </div>
+            <h3>PCI Compliance Policy</h3>
+            <p>Safeguard cardholder data with segmented tools, approved devices, and immediate incident reporting.</p>
+            <ul>
+              <li>Never store payment data in tickets or chats.</li>
+              <li>Escalate suspected exposure within 15 minutes.</li>
+            </ul>
+            <a class="link-cta cxi-card-btn" href="{{settings.pci_policy_url}}">
+              View PCI standard
+              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+            </a>
+          </article>
         </div>
-      </details>
 
-      <details class="policy-item">
-        <summary>
-          {{#if settings.locker_policy_icon_url}}
-            <img class="policy-card-icon" src="{{settings.locker_policy_icon_url}}" alt="" role="presentation">
-          {{/if}}
-          <span>Locker Policy for Contact Centre Agents</span>
-          <span class="toggle-icon" aria-hidden="true"></span>
-        </summary>
-        <div class="policy-content">
-          <p>
-            Lockers help protect personal belongings and sensitive work materials while on-site.
-          </p>
-          <ul>
-            <li>Each agent receives one assigned locker; keep it locked whenever not retrieving items.</li>
-            <li>Only company-approved padlocks are permitted. Facility staff may remove any other locks for security checks.</li>
-            <li>Food, liquids, or perishable goods are not allowed inside lockers to maintain cleanliness.</li>
-            <li>Report lost keys or access issues to Facilities immediately so the lock can be replaced.</li>
-          </ul>
+        <div class="col">
+          <article class="policy-card cxi-policy-card h-100">
+            <div class="cxi-card-icon-wrap">
+              {{#if settings.harassment_policy_icon_url}}
+                <img class="policy-card-icon cxi-card-icon-img" src="{{settings.harassment_policy_icon_url}}" alt="" role="presentation">
+              {{else}}
+                <i class="fa-solid fa-people-roof cxi-card-icon" aria-hidden="true"></i>
+              {{/if}}
+            </div>
+            <h3>Sexual Harassment Policy</h3>
+            <p>Digify BPO has zero tolerance for harassment; raise concerns immediately and without fear of retaliation.</p>
+            <ul>
+              <li>Report via HR, your leader, or the hotline.</li>
+              <li>Retaliation for reporting is prohibited.</li>
+            </ul>
+            <a class="link-cta cxi-card-btn" href="{{settings.harassment_policy_url}}">
+              Report or review
+              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+            </a>
+          </article>
         </div>
-      </details>
 
-      <details class="policy-item">
-        <summary>
-          {{#if settings.pci_policy_icon_url}}
-            <img class="policy-card-icon" src="{{settings.pci_policy_icon_url}}" alt="" role="presentation">
-          {{/if}}
-          <span>PCI Compliance Policy</span>
-          <span class="toggle-icon" aria-hidden="true"></span>
-        </summary>
-        <div class="policy-content">
-          <p>
-            Protecting cardholder data is essential to maintaining PCI DSS compliance across CX operations.
-          </p>
-          <ul>
-            <li>Never record card numbers, CVVs, or expiration dates in chat logs, notes, or local storage.</li>
-            <li>Only access payment systems with approved, segmented accounts and multifactor authentication.</li>
-            <li>Report suspected data exposure to the PCI Compliance Officer within 15 minutes of discovery.</li>
-            <li>Follow secure desk procedures—no mobile phones, cameras, or personal devices in PCI-zoned areas.</li>
-          </ul>
+        <div class="col">
+          <article class="policy-card cxi-policy-card h-100">
+            <div class="cxi-card-icon-wrap">
+              {{#if settings.smoking_policy_icon_url}}
+                <img class="policy-card-icon cxi-card-icon-img" src="{{settings.smoking_policy_icon_url}}" alt="" role="presentation">
+              {{else}}
+                <i class="fa-solid fa-smoking cxi-card-icon" aria-hidden="true"></i>
+              {{/if}}
+            </div>
+            <h3>Smoking Policy</h3>
+            <p>Maintain clean indoor air by limiting smoking and vaping to approved spaces and schedules.</p>
+            <ul>
+              <li>Smoke only in the designated outdoor zones.</li>
+              <li>Dispose of waste to avoid citations.</li>
+            </ul>
+            <a class="link-cta cxi-card-btn" href="{{settings.smoking_policy_url}}">
+              See smoking rules
+              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+            </a>
+          </article>
         </div>
-      </details>
 
-      <details class="policy-item">
-        <summary>
-          {{#if settings.smoking_policy_icon_url}}
-            <img class="policy-card-icon" src="{{settings.smoking_policy_icon_url}}" alt="" role="presentation">
-          {{/if}}
-          <span>Smoking Policy</span>
-          <span class="toggle-icon" aria-hidden="true"></span>
-        </summary>
-        <div class="policy-content">
-          <p>
-            Smoking, vaping, and e-cigarette use are regulated to keep indoor workspaces clean and compliant with local ordinances.
-          </p>
-          <ul>
-            <li>Smoking is prohibited inside all Digify BPO facilities and within 6 meters of building entrances.</li>
-            <li>Use only designated smoking areas during authorized break times to avoid penalties.</li>
-            <li>Dispose of cigarette waste in the receptacles provided; littering is subject to citation.</li>
-            <li>Repeated non-compliance may lead to loss of break privileges or formal disciplinary action.</li>
-          </ul>
+        <div class="col">
+          <article class="policy-card cxi-policy-card h-100">
+            <div class="cxi-card-icon-wrap">
+              {{#if settings.drug_policy_icon_url}}
+                <img class="policy-card-icon cxi-card-icon-img" src="{{settings.drug_policy_icon_url}}" alt="" role="presentation">
+              {{else}}
+                <i class="fa-solid fa-wine-bottle cxi-card-icon" aria-hidden="true"></i>
+              {{/if}}
+            </div>
+            <h3>Drug and Alcohol Policy</h3>
+            <p>Arrive fit for duty and remain substance-free during every shift, including breaks.</p>
+            <ul>
+              <li>Random or for-cause screening protects teammates.</li>
+              <li>Possession or sale onsite triggers immediate action.</li>
+            </ul>
+            <a class="link-cta cxi-card-btn" href="{{settings.drug_policy_url}}">
+              Review sobriety rules
+              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+            </a>
+          </article>
         </div>
-      </details>
 
-      <details class="policy-item">
-        <summary>
-          {{#if settings.harassment_policy_icon_url}}
-            <img class="policy-card-icon" src="{{settings.harassment_policy_icon_url}}" alt="" role="presentation">
-          {{/if}}
-          <span>Sexual Harassment Policy</span>
-          <span class="toggle-icon" aria-hidden="true"></span>
-        </summary>
-        <div class="policy-content">
-          <p>
-            Digify BPO upholds a zero-tolerance stance against sexual harassment or misconduct, regardless of role or location.
-          </p>
-          <ul>
-            <li>Harassment includes unwelcome advances, suggestive comments, offensive jokes, or any behavior that creates a hostile environment.</li>
-            <li>Report incidents immediately to HR, your manager, or via the confidential hotline. Reports may be anonymous.</li>
-            <li>Retaliation against any individual who files or supports a report is strictly prohibited.</li>
-            <li>Confirmed violations result in disciplinary measures, up to and including termination and legal escalation.</li>
-          </ul>
+        <div class="col">
+          <article class="policy-card cxi-policy-card h-100">
+            <div class="cxi-card-icon-wrap">
+              {{#if settings.locker_policy_icon_url}}
+                <img class="policy-card-icon cxi-card-icon-img" src="{{settings.locker_policy_icon_url}}" alt="" role="presentation">
+              {{else}}
+                <i class="fa-solid fa-door-closed cxi-card-icon" aria-hidden="true"></i>
+              {{/if}}
+            </div>
+            <h3>Locker Policy</h3>
+            <p>Secure personal items and sensitive materials inside assigned lockers to keep operations protected.</p>
+            <ul>
+              <li>Only company-approved locks are permitted.</li>
+              <li>Report lost keys or access issues immediately.</li>
+            </ul>
+            <a class="link-cta cxi-card-btn" href="{{settings.locker_policy_url}}">
+              View locker guidance
+              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+            </a>
+          </article>
         </div>
-      </details>
+      </div>
     </section>
   </div>
 </div>

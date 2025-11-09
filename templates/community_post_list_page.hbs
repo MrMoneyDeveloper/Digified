@@ -1,30 +1,23 @@
 <h1 class="visibility-hidden">{{ t 'community'}}</h1>
 
-<section class="section hero community-hero">
-  <h2 class="visibility-hidden">{{ t 'search'}}</h2>
-  <div class="hero-inner">
-    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" focusable="false" viewBox="0 0 12 12" class="search-icon" aria-hidden="true">
-      <circle cx="4.5" cy="4.5" r="4" fill="none" stroke="currentColor"/>
-      <path stroke="currentColor" stroke-linecap="round" d="M11 11L7.5 7.5"/>
-    </svg>
-    {{search submit=false class='search search-full' scoped=settings.scoped_community_search}}
-  </div>
-  <div class="hero-image-wrap mt-4">
-    {{#if settings.community_background_image}}
-      <img class="community-hero-img" src="{{settings.community_background_image}}" alt="Community hero image">
-    {{else}}
-      {{#if settings.community_image}}
-        <img class="community-hero-img" src="{{settings.community_image}}" alt="Community hero image">
-      {{else}}
-        {{#if settings.community_hero_image_url}}
-          <img class="community-hero-img" src="{{settings.community_hero_image_url}}" alt="Community hero image">
-        {{else}}
-          <img class="community-hero-img" src="{{asset 'settings/Community_hero_image.png'}}" alt="Community hero image">
-        {{/if}}
-      {{/if}}
+<header
+  class="section hero community-hero cxi-community-hero"
+  style="background-image: url('{{#if settings.community_hero_image_url}}{{settings.community_hero_image_url}}{{else}}{{asset 'settings/Community_hero_image.png'}}{{/if}}');">
+  <div class="cxi-community-hero-overlay"></div>
+  <div class="container cxi-community-hero-body">
+    <h2 class="visibility-hidden">{{ t 'search'}}</h2>
+    <div class="hero-inner">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" focusable="false" viewBox="0 0 12 12" class="search-icon" aria-hidden="true">
+        <circle cx="4.5" cy="4.5" r="4" fill="none" stroke="currentColor"/>
+        <path stroke="currentColor" stroke-linecap="round" d="M11 11L7.5 7.5"/>
+      </svg>
+      {{search submit=false class='search search-full' scoped=settings.scoped_community_search}}
+    </div>
+    {{#if settings.community_banner_url}}
+      <img class="cxi-community-banner" src="{{settings.community_banner_url}}" alt="Community banner">
     {{/if}}
   </div>
-</section>
+</header>
 
 <div class="container">
   <div class="sub-nav">
