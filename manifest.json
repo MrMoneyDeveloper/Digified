@@ -683,7 +683,7 @@
           "type": "text",
           "label": "Locker policy URL",
           "description": "Full URL for the Locker policy article.",
-          "value": "/hc/en-us/articles/23441624276124-Locker-Policy-Contact-Centre-Agents"
+          "value": "/hc/en-us/articles/INSERT_ID_HERE-Locker-Policy"
         },
         {
           "identifier": "pci_policy_url",

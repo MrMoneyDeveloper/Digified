@@ -24,7 +24,7 @@
         <a class="btn btn-outline" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}&tf_issue_type={{#if settings.access_request_value}}{{settings.access_request_value}}{{else}}access{{/if}}">
           Access Request
         </a>
-        <a class="btn btn-text" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}">
+        <a class="btn btn-text" href="{{settings.policies_root_url}}">
           Read Policies
         </a>
       </div>
@@ -69,108 +69,18 @@
     </div>
   </section>
 
-  <!-- Featured Policies (explicit links) -->
   <section class="dbpo-policies-teaser">
     <div class="container">
       <h2 class="dbpo-section-title">Featured Policies</h2>
-      <ul class="dbpo-policies-list">
+      <ul class="policy-cards">
         <li><a href="{{settings.drug_policy_url}}">Drug and Alcohol Policy</a></li>
         <li><a href="{{settings.clean_desk_policy_url}}">Clean Desk Policy</a></li>
-        <li><a href="{{settings.locker_policy_url}}">Locker Policy (Contact Centre Agents)</a></li>
+        <li><a href="{{settings.locker_policy_url}}">Locker Policy</a></li>
         <li><a href="{{settings.pci_policy_url}}">PCI Compliance Policy</a></li>
         <li><a href="{{settings.smoking_policy_url}}">Smoking Policy</a></li>
         <li><a href="{{settings.harassment_policy_url}}">Sexual Harassment Policy</a></li>
       </ul>
-      <a class="btn btn-link view-all-policies" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}">View all policies</a>
-    </div>
-  </section>
-
-  <section id="workplace-policies" class="section workplace-policies py-5">
-    <div class="container">
-      <header class="section-header text-center mb-4">
-        <h2><span class="accent-text">Workplace</span> Policies</h2>
-        <p>Stay compliant with Digified standards for safety, security, and respect across our CX operations.</p>
-      </header>
-
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        <div class="col">
-          <article class="policy-card h-100">
-              {{#if settings.drug_policy_icon_url}}
-                <img class="policy-card-icon" src="{{settings.drug_policy_icon_url}}" alt="" role="presentation">
-              {{/if}}
-              <h3>Drug and Alcohol Policy</h3>
-              <p>Maintains a zero-tolerance stance on impairment to protect colleagues, clients, and customers.</p>
-              <div class="card-action">
-              <a class="policy-link" href="{{settings.drug_policy_url}}">READ MORE</a>
-              </div>
-          </article>
-        </div>
-
-        <div class="col">
-          <article class="policy-card h-100">
-              {{#if settings.clean_desk_policy_icon_url}}
-                <img class="policy-card-icon" src="{{settings.clean_desk_policy_icon_url}}" alt="" role="presentation">
-              {{/if}}
-              <h3>Clean Desk Policy</h3>
-              <p>Requires agents to secure devices and clear sensitive materials whenever desks are unattended.</p>
-              <div class="card-action">
-              <a class="policy-link" href="{{settings.clean_desk_policy_url}}">READ MORE</a>
-              </div>
-          </article>
-        </div>
-
-        <div class="col">
-          <article class="policy-card h-100">
-              {{#if settings.locker_policy_icon_url}}
-                <img class="policy-card-icon" src="{{settings.locker_policy_icon_url}}" alt="" role="presentation">
-              {{/if}}
-              <h3>Locker Policy for Contact Centre Agents</h3>
-              <p>Explains locker assignments, permitted items, and inspection rights to keep operations secure.</p>
-              <div class="card-action">
-              <a class="policy-link" href="{{settings.locker_policy_url}}">READ MORE</a>
-              </div>
-          </article>
-        </div>
-
-        <div class="col">
-          <article class="policy-card h-100">
-              {{#if settings.pci_policy_icon_url}}
-                <img class="policy-card-icon" src="{{settings.pci_policy_icon_url}}" alt="" role="presentation">
-              {{/if}}
-              <h3>PCI Compliance Policy</h3>
-              <p>Details cardholder data safeguards, device controls, and monitoring to uphold PCI DSS obligations.</p>
-              <div class="card-action">
-              <a class="policy-link" href="{{settings.pci_policy_url}}">READ MORE</a>
-              </div>
-          </article>
-        </div>
-
-        <div class="col">
-          <article class="policy-card h-100">
-              {{#if settings.smoking_policy_icon_url}}
-                <img class="policy-card-icon" src="{{settings.smoking_policy_icon_url}}" alt="" role="presentation">
-              {{/if}}
-              <h3>Smoking Policy</h3>
-              <p>Defines approved smoking areas, break schedules, and penalties for non-compliance.</p>
-              <div class="card-action">
-              <a class="policy-link" href="{{settings.smoking_policy_url}}">READ MORE</a>
-              </div>
-          </article>
-        </div>
-
-        <div class="col">
-          <article class="policy-card h-100">
-              {{#if settings.harassment_policy_icon_url}}
-                <img class="policy-card-icon" src="{{settings.harassment_policy_icon_url}}" alt="" role="presentation">
-              {{/if}}
-              <h3>Sexual Harassment Policy</h3>
-              <p>Affirms Digified's zero-tolerance approach with reporting channels and investigation steps.</p>
-              <div class="card-action">
-              <a class="policy-link" href="{{settings.harassment_policy_url}}">READ MORE</a>
-              </div>
-          </article>
-        </div>
-      </div>
+      <a class="btn btn-link view-all-policies" href="{{settings.policies_root_url}}">View all policies</a>
     </div>
   </section>
 
