@@ -4,7 +4,7 @@
 
 <main id="main-content" class="home-main homepage-sections">
   <section class="dbpo-hero">
-    <div class="dbpo-hero-bg"{{#if settings.home_hero_image_url}} style="background-image:url('{{settings.home_hero_image_url}}');"{{/if}}></div>
+    <div class="dbpo-hero-bg"{{#if settings.home_hero_image}} style="background-image:url('{{settings.home_hero_image}}');"{{/if}}></div>
     <div class="dbpo-hero-overlay"></div>
     <div class="container">
       <h1 class="dbpo-hero-title">Welcome to the <span class="dbpo-inline-brand">Digify BPO</span> Help Centre</h1>
@@ -29,7 +29,7 @@
       <div class="cxi-support-row">
         <article
           class="feature-card card-dark cxi-support-card network-card"
-          style="{{#if settings.network_card_bg_url}}background-image: linear-gradient(135deg, rgba(3,12,34,0.85), rgba(20,69,135,0.65)), url('{{settings.network_card_bg_url}}');{{/if}}">
+          style="{{#if settings.network_card_background_image}}background-image: linear-gradient(135deg, rgba(3,12,34,0.85), rgba(20,69,135,0.65)), url('{{settings.network_card_background_image}}');{{/if}}">
           <div class="cxi-card-icon-wrap">
             {{#if settings.network_card_icon_url}}
               <img class="card-icon-img cxi-card-icon-img" src="{{settings.network_card_icon_url}}" alt="" role="presentation">
@@ -50,7 +50,7 @@
         </article>
         <article
           class="feature-card card-light cxi-support-card policies-card"
-          style="{{#if settings.policies_card_bg_url}}background-image: linear-gradient(135deg, rgba(9,38,65,0.75), rgba(3,17,46,0.9)), url('{{settings.policies_card_bg_url}}');{{/if}}">
+          style="{{#if settings.policies_card_background_image}}background-image: linear-gradient(135deg, rgba(9,38,65,0.75), rgba(3,17,46,0.9)), url('{{settings.policies_card_background_image}}');{{/if}}">
           <div class="cxi-card-icon-wrap">
             {{#if settings.policies_card_icon_url}}
               <img class="card-icon-img cxi-card-icon-img" src="{{settings.policies_card_icon_url}}" alt="" role="presentation">
@@ -76,8 +76,8 @@
   <section class="dbpo-policies-teaser">
     <div class="container">
       <h2 class="dbpo-section-title">Featured Policies</h2>
-      {{#if settings.featured_policies_image_url}}
-        <img class="cxi-featured-policies-img" src="{{settings.featured_policies_image_url}}" alt="Policies illustration">
+      {{#if settings.featured_policies_image}}
+        <img class="cxi-featured-policies-img" src="{{settings.featured_policies_image}}" alt="Policies illustration">
       {{else}}
         <div class="cxi-featured-policies-placeholder">
           Add a Featured Policies illustration in the theme settings to highlight this section.

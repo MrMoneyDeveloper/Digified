@@ -610,46 +610,40 @@
       "label": "Hero and imagery",
       "variables": [
         {
-          "identifier": "home_hero_image_url",
-          "type": "text",
-          "label": "Home hero image URL",
-          "description": "Enter a URL for the home page hero image",
-          "value": ""
+          "identifier": "home_hero_image",
+          "type": "image",
+          "label": "Home hero image",
+          "description": "Upload the home page hero background image"
         },
         {
-          "identifier": "community_hero_image_url",
-          "type": "text",
-          "label": "Community hero image URL",
-          "description": "Enter a URL for the community topics hero image",
-          "value": ""
+          "identifier": "community_hero_image",
+          "type": "image",
+          "label": "Community hero image",
+          "description": "Upload the community topics hero background image"
         },
         {
-          "identifier": "community_banner_url",
-          "type": "text",
-          "label": "Community banner URL",
-          "description": "Optional banner image displayed below the community hero",
-          "value": ""
+          "identifier": "community_banner_image",
+          "type": "image",
+          "label": "Community banner image",
+          "description": "Optional banner image displayed below the community hero"
         },
         {
-          "identifier": "featured_policies_image_url",
-          "type": "text",
-          "label": "Featured policies image URL",
-          "description": "Full-width illustration shown in the Featured Policies panel on the home page.",
-          "value": ""
+          "identifier": "featured_policies_image",
+          "type": "image",
+          "label": "Featured policies image",
+          "description": "Full-width illustration shown in the Featured Policies panel on the home page."
         },
         {
-          "identifier": "network_card_bg_url",
-          "type": "text",
-          "label": "Network card background image URL",
-          "description": "Background image for the Network & Access Requests card.",
-          "value": ""
+          "identifier": "network_card_background_image",
+          "type": "image",
+          "label": "Network card background image",
+          "description": "Background image for the Network & Access Requests card."
         },
         {
-          "identifier": "policies_card_bg_url",
-          "type": "text",
-          "label": "Policies card background image URL",
-          "description": "Background image for the Policies & SOPs card.",
-          "value": ""
+          "identifier": "policies_card_background_image",
+          "type": "image",
+          "label": "Policies card background image",
+          "description": "Background image for the Policies & SOPs card."
         },
         {
           "identifier": "logo",
