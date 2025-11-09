@@ -4,43 +4,97 @@
     <section id="main-content" class="policies-landing">
       <h1>Workplace Policies</h1>
       <p>All workplace policies for Digify BPO.</p>
-      <div class="policy-grid">
-        <a class="policy-card" href="{{settings.drug_policy_url}}">
-          {{#if settings.drug_policy_icon_url}}
-            <img class="policy-card-icon" src="{{settings.drug_policy_icon_url}}" alt="" role="presentation">
-          {{/if}}
-          <h2>Drug and Alcohol Policy</h2>
-        </a>
-        <a class="policy-card" href="{{settings.clean_desk_policy_url}}">
-          {{#if settings.clean_desk_policy_icon_url}}
-            <img class="policy-card-icon" src="{{settings.clean_desk_policy_icon_url}}" alt="" role="presentation">
-          {{/if}}
-          <h2>Clean Desk Policy</h2>
-        </a>
-        <a class="policy-card" href="{{settings.locker_policy_url}}">
-          {{#if settings.locker_policy_icon_url}}
-            <img class="policy-card-icon" src="{{settings.locker_policy_icon_url}}" alt="" role="presentation">
-          {{/if}}
-          <h2>Locker Policy (Contact Centre Agents)</h2>
-        </a>
-        <a class="policy-card" href="{{settings.pci_policy_url}}">
-          {{#if settings.pci_policy_icon_url}}
-            <img class="policy-card-icon" src="{{settings.pci_policy_icon_url}}" alt="" role="presentation">
-          {{/if}}
-          <h2>PCI Compliance Policy</h2>
-        </a>
-        <a class="policy-card" href="{{settings.smoking_policy_url}}">
-          {{#if settings.smoking_policy_icon_url}}
-            <img class="policy-card-icon" src="{{settings.smoking_policy_icon_url}}" alt="" role="presentation">
-          {{/if}}
-          <h2>Smoking Policy</h2>
-        </a>
-        <a class="policy-card" href="{{settings.harassment_policy_url}}">
-          {{#if settings.harassment_policy_icon_url}}
-            <img class="policy-card-icon" src="{{settings.harassment_policy_icon_url}}" alt="" role="presentation">
-          {{/if}}
-          <h2>Sexual Harassment Policy</h2>
-        </a>
+      <div class="cxi-policy-card-grid">
+        <article class="cxi-policy-card">
+          <div class="cxi-policy-icon-wrap">
+            {{#if settings.drug_policy_icon_url}}
+              <img class="cxi-policy-icon-img" src="{{settings.drug_policy_icon_url}}" alt="" role="presentation">
+            {{else}}
+              <i class="fa-solid fa-wine-bottle cxi-policy-icon" aria-hidden="true"></i>
+            {{/if}}
+          </div>
+          <h3>Drug and Alcohol Policy</h3>
+          <p>Arrive fit for duty and remain substance-free for every shift, including breaks and on-call windows.</p>
+          <a class="cxi-policy-link" href="{{settings.drug_policy_url}}">
+            Read more
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+        </article>
+        <article class="cxi-policy-card">
+          <div class="cxi-policy-icon-wrap">
+            {{#if settings.clean_desk_policy_icon_url}}
+              <img class="cxi-policy-icon-img" src="{{settings.clean_desk_policy_icon_url}}" alt="" role="presentation">
+            {{else}}
+              <i class="fa-solid fa-broom cxi-policy-icon" aria-hidden="true"></i>
+            {{/if}}
+          </div>
+          <h3>Clean Desk Policy</h3>
+          <p>Keep devices, credentials, and paperwork secure whenever you step away or end a shift.</p>
+          <a class="cxi-policy-link" href="{{settings.clean_desk_policy_url}}">
+            Read more
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+        </article>
+        <article class="cxi-policy-card">
+          <div class="cxi-policy-icon-wrap">
+            {{#if settings.locker_policy_icon_url}}
+              <img class="cxi-policy-icon-img" src="{{settings.locker_policy_icon_url}}" alt="" role="presentation">
+            {{else}}
+              <i class="fa-solid fa-lock cxi-policy-icon" aria-hidden="true"></i>
+            {{/if}}
+          </div>
+          <h3>Locker Policy</h3>
+          <p>Store belongings and sensitive media in assigned lockers with approved locks only.</p>
+          <a class="cxi-policy-link" href="{{settings.locker_policy_url}}">
+            Read more
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+        </article>
+        <article class="cxi-policy-card">
+          <div class="cxi-policy-icon-wrap">
+            {{#if settings.pci_policy_icon_url}}
+              <img class="cxi-policy-icon-img" src="{{settings.pci_policy_icon_url}}" alt="" role="presentation">
+            {{else}}
+              <i class="fa-solid fa-shield-halved cxi-policy-icon" aria-hidden="true"></i>
+            {{/if}}
+          </div>
+          <h3>PCI Compliance Policy</h3>
+          <p>Protect cardholder data with segmented tools, approved devices, and rapid incident escalation.</p>
+          <a class="cxi-policy-link" href="{{settings.pci_policy_url}}">
+            Read more
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+        </article>
+        <article class="cxi-policy-card">
+          <div class="cxi-policy-icon-wrap">
+            {{#if settings.smoking_policy_icon_url}}
+              <img class="cxi-policy-icon-img" src="{{settings.smoking_policy_icon_url}}" alt="" role="presentation">
+            {{else}}
+              <i class="fa-solid fa-smoking cxi-policy-icon" aria-hidden="true"></i>
+            {{/if}}
+          </div>
+          <h3>Smoking Policy</h3>
+          <p>Limit smoking and vaping to designated areas and dispose of waste responsibly.</p>
+          <a class="cxi-policy-link" href="{{settings.smoking_policy_url}}">
+            Read more
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+        </article>
+        <article class="cxi-policy-card">
+          <div class="cxi-policy-icon-wrap">
+            {{#if settings.harassment_policy_icon_url}}
+              <img class="cxi-policy-icon-img" src="{{settings.harassment_policy_icon_url}}" alt="" role="presentation">
+            {{else}}
+              <i class="fa-solid fa-people-roof cxi-policy-icon" aria-hidden="true"></i>
+            {{/if}}
+          </div>
+          <h3>Sexual Harassment Policy</h3>
+          <p>Report concerns immediately through HR, leadership, or the hotline&mdash;retaliation is prohibited.</p>
+          <a class="cxi-policy-link" href="{{settings.harassment_policy_url}}">
+            Read more
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </a>
+        </article>
       </div>
     </section>
   {{else}}

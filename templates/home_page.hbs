@@ -4,15 +4,7 @@
 
 <main id="main-content" class="home-main homepage-sections">
   <section class="dbpo-hero">
-    {{#if settings.homepage_background_image}}
-      <div class="dbpo-hero-bg" style="background-image:url('{{settings.homepage_background_image}}');"></div>
-    {{else}}
-      {{#if settings.home_hero_image_url}}
-        <div class="dbpo-hero-bg" style="background-image:url('{{settings.home_hero_image_url}}');"></div>
-      {{else}}
-        <div class="dbpo-hero-bg" style="background-image:url('{{asset 'settings/Home_hero_image.jpg'}}');"></div>
-      {{/if}}
-    {{/if}}
+    <div class="dbpo-hero-bg"{{#if settings.home_hero_image_url}} style="background-image:url('{{settings.home_hero_image_url}}');"{{/if}}></div>
     <div class="dbpo-hero-overlay"></div>
     <div class="container">
       <h1 class="dbpo-hero-title">Welcome to the <span class="dbpo-inline-brand">Digify BPO</span> Help Centre</h1>
@@ -34,49 +26,49 @@
   <section class="quick-paths py-5">
     <div class="container">
       <h2 class="section-title">Get support <span>fast</span></h2>
-      <div class="row g-4">
-        <div class="col-12 col-md-4">
-          <article class="feature-card card-dark h-100">
-            <div class="cxi-card-icon-wrap">
-              {{#if settings.network_card_icon_url}}
-                <img class="card-icon-img cxi-card-icon-img" src="{{settings.network_card_icon_url}}" alt="" role="presentation">
+      <div class="cxi-support-row">
+        <article
+          class="feature-card card-dark cxi-support-card network-card"
+          style="{{#if settings.network_card_bg_url}}background-image: linear-gradient(135deg, rgba(3,12,34,0.85), rgba(20,69,135,0.65)), url('{{settings.network_card_bg_url}}');{{/if}}">
+          <div class="cxi-card-icon-wrap">
+            {{#if settings.network_card_icon_url}}
+              <img class="card-icon-img cxi-card-icon-img" src="{{settings.network_card_icon_url}}" alt="" role="presentation">
+            {{else}}
+              {{#if settings.card_icon_set_url}}
+                <img class="card-icon-img cxi-card-icon-img" src="{{settings.card_icon_set_url}}" alt="" role="presentation">
               {{else}}
-                {{#if settings.card_icon_set_url}}
-                  <img class="card-icon-img cxi-card-icon-img" src="{{settings.card_icon_set_url}}" alt="" role="presentation">
-                {{else}}
-                  <i class="fa-solid fa-network-wired cxi-card-icon" aria-hidden="true"></i>
-                {{/if}}
+                <i class="fa-solid fa-network-wired cxi-card-icon" aria-hidden="true"></i>
               {{/if}}
-            </div>
-            <h3>Network &amp; Access Requests</h3>
-            <p>Fix connectivity issues or request new credentials. The form routes straight to CXI engineers.</p>
-            <a class="link-cta cxi-card-btn" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">
-              Report or request now
-              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
-            </a>
-          </article>
-        </div>
-        <div class="col-12 col-md-4">
-          <article class="feature-card card-light h-100">
-            <div class="cxi-card-icon-wrap">
-              {{#if settings.policies_card_icon_url}}
-                <img class="card-icon-img cxi-card-icon-img" src="{{settings.policies_card_icon_url}}" alt="" role="presentation">
+            {{/if}}
+          </div>
+          <h3>Network &amp; Access Requests</h3>
+          <p>Fix connectivity issues or request new credentials. The form routes straight to CXI engineers.</p>
+          <a class="link-cta cxi-card-btn" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">
+            Report or request now
+            <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+          </a>
+        </article>
+        <article
+          class="feature-card card-light cxi-support-card policies-card"
+          style="{{#if settings.policies_card_bg_url}}background-image: linear-gradient(135deg, rgba(9,38,65,0.75), rgba(3,17,46,0.9)), url('{{settings.policies_card_bg_url}}');{{/if}}">
+          <div class="cxi-card-icon-wrap">
+            {{#if settings.policies_card_icon_url}}
+              <img class="card-icon-img cxi-card-icon-img" src="{{settings.policies_card_icon_url}}" alt="" role="presentation">
+            {{else}}
+              {{#if settings.card_icon_set_url}}
+                <img class="card-icon-img cxi-card-icon-img" src="{{settings.card_icon_set_url}}" alt="" role="presentation">
               {{else}}
-                {{#if settings.card_icon_set_url}}
-                  <img class="card-icon-img cxi-card-icon-img" src="{{settings.card_icon_set_url}}" alt="" role="presentation">
-                {{else}}
-                  <i class="fa-solid fa-file-shield cxi-card-icon" aria-hidden="true"></i>
-                {{/if}}
+                <i class="fa-solid fa-file-shield cxi-card-icon" aria-hidden="true"></i>
               {{/if}}
-            </div>
-            <h3>Policies &amp; SOPs</h3>
-            <p>Review building use rules, security guidelines, and operating procedures directly in the portal.</p>
-            <a class="link-cta cxi-card-btn" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}">
-              Open policies
-              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
-            </a>
-          </article>
-        </div>
+            {{/if}}
+          </div>
+          <h3>Policies &amp; SOPs</h3>
+          <p>Review building use rules, security guidelines, and operating procedures directly in the portal.</p>
+          <a class="link-cta cxi-card-btn" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}">
+            Open policies
+            <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+          </a>
+        </article>
       </div>
     </div>
   </section>
@@ -84,14 +76,13 @@
   <section class="dbpo-policies-teaser">
     <div class="container">
       <h2 class="dbpo-section-title">Featured Policies</h2>
-      <ul class="policy-cards">
-        <li><a href="{{settings.drug_policy_url}}">Drug and Alcohol Policy</a></li>
-        <li><a href="{{settings.clean_desk_policy_url}}">Clean Desk Policy</a></li>
-        <li><a href="{{settings.locker_policy_url}}">Locker Policy</a></li>
-        <li><a href="{{settings.pci_policy_url}}">PCI Compliance Policy</a></li>
-        <li><a href="{{settings.smoking_policy_url}}">Smoking Policy</a></li>
-        <li><a href="{{settings.harassment_policy_url}}">Sexual Harassment Policy</a></li>
-      </ul>
+      {{#if settings.featured_policies_image_url}}
+        <img class="cxi-featured-policies-img" src="{{settings.featured_policies_image_url}}" alt="Policies illustration">
+      {{else}}
+        <div class="cxi-featured-policies-placeholder">
+          Add a Featured Policies illustration in the theme settings to highlight this section.
+        </div>
+      {{/if}}
       <a class="btn btn-link view-all-policies" href="{{settings.policies_root_url}}">
         View all policies <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
       </a>

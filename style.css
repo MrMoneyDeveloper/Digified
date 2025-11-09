@@ -219,7 +219,7 @@ body.new-request .search-container {
 
 /* ===== Hero ===== */
 .dbpo-hero { position: relative; overflow: hidden; padding: 5rem 0 3rem; color: #ffffff; background: var(--digify-navy); text-align: center; }
-.dbpo-hero-bg { position:absolute; inset:0; background-size:cover; background-position:center; opacity:.18; }
+.dbpo-hero-bg { position:absolute; inset:0; background-size:cover; background-position:center; background-repeat:no-repeat; opacity:.18; }
 .dbpo-hero-overlay { position:absolute; inset:0; background: linear-gradient(135deg, rgba(0,42,68,.65), rgba(93,176,223,.35)); }
 .dbpo-hero .container { position:relative; z-index:2; text-align:center; }
 .dbpo-hero-title { font-size: clamp(2rem, 4vw, 3.25rem); font-weight: 800; line-height: 1.1; margin: 0 0 0.5rem; }
@@ -312,6 +312,7 @@ body.new-request .search-container {
   padding: 3rem 0 3.5rem;
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
   background-color: var(--digify-navy, #071c34);
   margin-bottom: 2rem;
   color: #fff;
@@ -361,11 +362,13 @@ body.new-request .search-container {
 .cxi-community-banner {
   width: 100%;
   max-width: 720px;
+  height: auto;
   border-radius: 18px;
   display: block;
   margin-top: 0.5rem;
   border: 2px solid rgba(255, 255, 255, 0.35);
   box-shadow: 0 18px 35px rgba(9, 24, 48, 0.35);
+  object-fit: cover;
 }
 
 .policies-page {
@@ -500,6 +503,10 @@ body.new-request .search-container {
     align-items: stretch;
     border-radius: 24px;
   }
+
+  .cxi-support-card {
+    flex: 1 1 100%;
+  }
 }
 
 .quick-paths {
@@ -527,6 +534,28 @@ body.new-request .search-container {
   flex-direction: column;
   gap: 12px;
   min-height: 100%;
+}
+
+.cxi-support-row {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.cxi-support-card {
+  flex: 1 1 45%;
+  min-width: 280px;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  color: inherit;
+}
+
+.cxi-support-card p {
+  margin-bottom: 0.5rem;
 }
 
 .card-dark {
@@ -581,6 +610,26 @@ body.new-request .search-container {
 .card-light .link-cta {
   color: #0e1d49;
   border-bottom: 2px solid #0e1d49;
+}
+
+.cxi-featured-policies-img {
+  width: 100%;
+  border-radius: 20px;
+  object-fit: cover;
+  max-height: 360px;
+  margin: 1rem 0 1.5rem;
+  box-shadow: 0 18px 35px rgba(8, 26, 55, 0.18);
+}
+
+.cxi-featured-policies-placeholder {
+  margin: 1rem 0 1.5rem;
+  padding: 1.75rem;
+  border-radius: 20px;
+  border: 2px dashed rgba(15, 26, 56, 0.25);
+  background: rgba(248, 250, 255, 0.8);
+  color: #475569;
+  font-weight: 600;
+  text-align: center;
 }
 
 .cxi-card-btn {
@@ -1470,24 +1519,54 @@ ul {
   line-height: 1.6;
 }
 
-.cxi-policy-card ul {
-  margin: 0;
-  padding-left: 1.25rem;
-  color: #4b5775;
-  font-size: 0.95rem;
-  line-height: 1.5;
+.cxi-policy-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
 }
 
-.cxi-policy-card ul li {
-  margin-bottom: 0.3rem;
+.cxi-policy-card {
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 1.75rem;
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
 }
 
-.cxi-policy-card ul li:last-child {
-  margin-bottom: 0;
+.cxi-policy-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
-.cxi-policy-card .cxi-card-btn {
+.cxi-policy-icon-img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.cxi-policy-icon {
+  font-size: 2rem;
+  color: var(--digify-navy, #14213d);
+}
+
+.cxi-policy-link {
   margin-top: auto;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--digify-navy, #14213d);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cxi-policy-link i {
+  font-size: 0.95em;
 }
 
 .policy-placeholder {

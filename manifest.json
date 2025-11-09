@@ -229,17 +229,6 @@
       ]
     },
     {
-      "label": "images_group_label",
-      "variables": [
-        {
-          "identifier": "homepage_background_image",
-          "type": "file",
-          "description": "homepage_background_image_description",
-          "label": "homepage_background_image_label"
-        }
-      ]
-    },
-    {
       "label": "search_group_label",
       "variables": [
         {
@@ -639,6 +628,27 @@
           "type": "text",
           "label": "Community banner URL",
           "description": "Optional banner image displayed below the community hero",
+          "value": ""
+        },
+        {
+          "identifier": "featured_policies_image_url",
+          "type": "text",
+          "label": "Featured policies image URL",
+          "description": "Full-width illustration shown in the Featured Policies panel on the home page.",
+          "value": ""
+        },
+        {
+          "identifier": "network_card_bg_url",
+          "type": "text",
+          "label": "Network card background image URL",
+          "description": "Background image for the Network & Access Requests card.",
+          "value": ""
+        },
+        {
+          "identifier": "policies_card_bg_url",
+          "type": "text",
+          "label": "Policies card background image URL",
+          "description": "Background image for the Policies & SOPs card.",
           "value": ""
         },
         {
