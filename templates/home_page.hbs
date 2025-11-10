@@ -89,40 +89,6 @@
     </div>
   </section>
 
-  <section id="knowledge-base" class="knowledge-highlight py-5">
-    <div class="container">
-      <header class="section-header text-center mb-4">
-        <h2><span class="accent-text">Knowledge</span> base spotlight</h2>
-        <p>Browse categories, featured articles, and policy updates as they go live.</p>
-      </header>
-
-      <div class="kb-spotlight">
-        <a href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}">Workplace Policies</a>
-      </div>
-      {{pagination}}
-
-      {{#if promoted_articles}}
-        <section class="articles promoted-spotlight mt-4">
-          <h3 class="mb-3">Featured updates</h3>
-          <ul class="article-list promoted-articles row row-cols-1 row-cols-md-2 g-3 list-unstyled">
-            {{#each promoted_articles}}
-              <li class="promoted-articles-item col">
-                <a href="{{url}}" class="d-flex align-items-center gap-2">
-                  {{title}}
-                  {{#if internal}}
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" focusable="false" viewBox="0 0 16 16" class="icon-lock" title="{{t 'internal'}}">
-                      <rect width="12" height="9" x="2" y="7" fill="currentColor" rx="1" ry="1"/>
-                      <path fill="none" stroke="currentColor" d="M4.5 7.5V4a3.5 3.5 0 0 1 7 0v3.5"/>
-                    </svg>
-                  {{/if}}
-                </a>
-              </li>
-            {{/each}}
-          </ul>
-        </section>
-      {{/if}}
-    </div>
-  </section>
 
   <section class="section home-section activity py-5">
     <div class="container">

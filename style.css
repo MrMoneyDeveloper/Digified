@@ -220,7 +220,7 @@ body.new-request .search-container {
 /* ===== Hero ===== */
 .dbpo-hero { position: relative; overflow: hidden; padding: 5rem 0 3rem; color: #ffffff; background: var(--digify-navy); text-align: center; }
 .dbpo-hero-bg { position:absolute; inset:0; background-size:cover; background-position:center; background-repeat:no-repeat; opacity:.18; }
-.dbpo-hero-overlay { position:absolute; inset:0; background: linear-gradient(135deg, rgba(0,42,68,.65), rgba(93,176,223,.35)); }
+.dbpo-hero-overlay { position:absolute; inset:0; background: linear-gradient(135deg, rgba(0,42,68,.45), rgba(93,176,223,.15)); }
 .dbpo-hero .container { position:relative; z-index:2; text-align:center; }
 .dbpo-hero-title { font-size: clamp(2rem, 4vw, 3.25rem); font-weight: 800; line-height: 1.1; margin: 0 0 0.5rem; }
 .dbpo-inline-brand { font-size: 1em; font-weight: 900; letter-spacing: .2px; color: var(--digify-aqua); }
