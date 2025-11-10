@@ -32,13 +32,13 @@
       </li>
     {{/unless}}
     {{#if signed_in}}
-      {{#if current_user.agent}}
+      {{#is current_user.role "agent"}}
         <li>
           <a class="dbpo-nav-link nav-link" href="/agent/home/tickets">
             Agent Console
           </a>
         </li>
-      {{/if}}
+      {{/is}}
     {{/if}}
   </ul>
 </nav>
