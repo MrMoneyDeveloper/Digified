@@ -31,12 +31,14 @@
         </a>
       </li>
     {{/unless}}
-    {{#if current_user.agent}}
-      <li>
-        <a class="dbpo-nav-link nav-link" href="/agent/home/tickets">
-          Agent Console
-        </a>
-      </li>
+    {{#if signed_in}}
+      {{#if current_user.agent}}
+        <li>
+          <a class="dbpo-nav-link nav-link" href="/agent/home/tickets">
+            Agent Console
+          </a>
+        </li>
+      {{/if}}
     {{/if}}
   </ul>
 </nav>
