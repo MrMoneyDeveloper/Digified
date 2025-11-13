@@ -3,98 +3,31 @@
 <div id="tsparticles"></div>
 
 <main id="main-content" class="home-main homepage-sections">
-  <section class="dbpo-hero">
-    <div class="dbpo-hero-bg"{{#if settings.home_hero_image}} style="background-image:url('{{settings.home_hero_image}}');"{{/if}}></div>
-    <div class="dbpo-hero-overlay"></div>
-    <div class="container">
-      <h1 class="dbpo-hero-title">Welcome to the <span class="dbpo-inline-brand">Digify BPO</span> Help Centre</h1>
-      <p class="dbpo-hero-sub">Find help, report issues, read policies.</p>
-      <div class="digify-cta-row">
-        <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}&tf_issue_type={{#if settings.network_issue_value}}{{settings.network_issue_value}}{{else}}network{{/if}}">
-          Network Issue
-        </a>
-        <a class="btn btn-outline" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}&tf_issue_type={{#if settings.access_request_value}}{{settings.access_request_value}}{{else}}access{{/if}}">
-          Access Request
-        </a>
-        <a class="btn btn-text" href="{{settings.policies_root_url}}">
-          Read Policies
-        </a>
+  <section class="hero-cards">
+    <div class="container hero-cards__inner">
+      <div class="hero-cards__content">
+        <p class="hero-cards__eyebrow">DigifyCX access hub</p>
+        <h1 class="hero-cards__title">Choose the right sign-up experience</h1>
+        <p class="hero-cards__subtitle">
+          Staff and tenants have dedicated forms so requests get routed to the right CXI team instantly.
+        </p>
       </div>
-    </div>
-  </section>
-
-  <section class="quick-paths py-5">
-    <div class="container">
-      <h2 class="section-title">Get support <span>fast</span></h2>
-      <div class="cxi-support-row">
-        <article
-          class="feature-card card-dark cxi-support-card network-card"
-          style="{{#if settings.network_card_background_image}}background-image: linear-gradient(135deg, rgba(3,12,34,0.85), rgba(20,69,135,0.65)), url('{{settings.network_card_background_image}}');{{/if}}">
-          <div class="cxi-card-icon-wrap">
-            {{#if settings.network_card_icon_url}}
-              <img class="card-icon-img cxi-card-icon-img" src="{{settings.network_card_icon_url}}" alt="" role="presentation">
-            {{else}}
-              {{#if settings.card_icon_set_url}}
-                <img class="card-icon-img cxi-card-icon-img" src="{{settings.card_icon_set_url}}" alt="" role="presentation">
-              {{else}}
-                <i class="fa-solid fa-network-wired cxi-card-icon" aria-hidden="true"></i>
-              {{/if}}
-            {{/if}}
-          </div>
-          <h3>Network &amp; Access Requests</h3>
-          <p>Fix connectivity issues or request new credentials. The form routes straight to CXI engineers.</p>
-          <a class="link-cta cxi-card-btn" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">
-            Report or request now
-            <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+      <div class="hero-cards__grid">
+        <div class="card card--staff">
+          <h2>Digify Staff / Internal</h2>
+          <p>Request DigifyCX internal access.</p>
+          <a class="btn card-btn" href="{{page_path 'new_request'}}?ticket_form_id=235503209936348">
+            Internal sign-up
           </a>
-        </article>
-        <article
-          class="feature-card card-light cxi-support-card policies-card"
-          style="{{#if settings.policies_card_background_image}}background-image: linear-gradient(135deg, rgba(9,38,65,0.75), rgba(3,17,46,0.9)), url('{{settings.policies_card_background_image}}');{{/if}}">
-          <div class="cxi-card-icon-wrap">
-            {{#if settings.policies_card_icon_url}}
-              <img class="card-icon-img cxi-card-icon-img" src="{{settings.policies_card_icon_url}}" alt="" role="presentation">
-            {{else}}
-              {{#if settings.card_icon_set_url}}
-                <img class="card-icon-img cxi-card-icon-img" src="{{settings.card_icon_set_url}}" alt="" role="presentation">
-              {{else}}
-                <i class="fa-solid fa-file-shield cxi-card-icon" aria-hidden="true"></i>
-              {{/if}}
-            {{/if}}
-          </div>
-          <h3>Policies &amp; SOPs</h3>
-          <p>Review building use rules, security guidelines, and operating procedures directly in the portal.</p>
-          <a class="link-cta cxi-card-btn" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}">
-            Open policies
-            <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
-          </a>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="dbpo-policies-teaser">
-    <div class="container">
-      <h2 class="dbpo-section-title">Featured Policies</h2>
-      {{#if settings.featured_policies_image}}
-        <img class="cxi-featured-policies-img" src="{{settings.featured_policies_image}}" alt="Policies illustration">
-      {{else}}
-        <div class="cxi-featured-policies-placeholder">
-          Add a Featured Policies illustration in the theme settings to highlight this section.
         </div>
-      {{/if}}
-      <a class="btn btn-link view-all-policies" href="{{settings.policies_root_url}}">
-        View all policies <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
-      </a>
-    </div>
-  </section>
-
-
-  <section class="section home-section activity py-5">
-    <div class="container">
-      {{#if settings.show_recent_activity}}
-        {{recent_activity}}
-      {{/if}}
+        <div class="card card--tenant">
+          <h2>Tenant / External</h2>
+          <p>Request tenant access for external users.</p>
+          <a class="btn card-btn" href="{{page_path 'new_request'}}?ticket_form_id=23550348234908">
+            Tenant sign-up
+          </a>
+        </div>
+      </div>
     </div>
   </section>
 </main>
