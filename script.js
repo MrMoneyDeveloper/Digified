@@ -84,91 +84,81 @@
     });
 
     (function () {
-      const localePrefixMatch = window.location.pathname.match(/^\/hc\/[^/]+/);
-      const localePrefix = localePrefixMatch ? localePrefixMatch[0] : "";
-      const newRequestPathPattern = new RegExp(
-        `^${localePrefix.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}\\/requests\\/new$`
-      );
-
-      if (!newRequestPathPattern.test(window.location.pathname)) {
+      if (!/\/requests\/new/.test(window.location.pathname)) {
         return;
       }
 
       const params = new URLSearchParams(window.location.search);
-      const ticketFormId = params.get("ticket_form_id");
-      if (!ticketFormId) {
+      const lockedId = params.get("ticket_form_id");
+      if (!lockedId) {
         return;
       }
 
-      const forceSelectForm = (formSelect) => {
-        if (!formSelect) {
-          return;
-        }
-
-        if (formSelect.value !== ticketFormId) {
-          formSelect.value = ticketFormId;
-          const changeEvent = new Event("change", { bubbles: true });
-          formSelect.dispatchEvent(changeEvent);
-        }
-      };
-
-      const hideFormSelector = (formSelect) => {
-        if (!formSelect) {
-          return;
-        }
-
+      const hideChooser = () => {
         document.body.classList.add("ticket-form-locked", "form-locked");
 
-        formSelect.style.setProperty("display", "none", "important");
-        formSelect.setAttribute("aria-hidden", "true");
-        formSelect.setAttribute("tabindex", "-1");
+        const wrap = document.querySelector(".request_ticket_form_id");
+        if (wrap) {
+          wrap.style.setProperty("display", "none", "important");
+          wrap.classList.add("ticket-form-selector-hidden");
+        }
 
-        const selectorField =
-          document.querySelector(".request_ticket_form_id") ||
-          formSelect.closest(".form-field");
-        if (selectorField) {
-          selectorField.classList.add("ticket-form-selector-hidden");
-          selectorField.style.setProperty("display", "none", "important");
+        const formSelect = document.getElementById("request_issue_type_select");
+        if (formSelect) {
+          formSelect.style.setProperty("display", "none", "important");
+          formSelect.setAttribute("aria-hidden", "true");
+          formSelect.setAttribute("tabindex", "-1");
         }
 
         const formRow = document.getElementById("request_issue_type_row");
         if (formRow) {
           formRow.style.setProperty("display", "none", "important");
-          formRow.classList.add("ticket-form-selector-hidden");
         }
 
         const formLabel = document.querySelector(
           "label[for='request_issue_type_select']"
         );
         if (formLabel) {
-          formLabel.remove();
+          formLabel.style.setProperty("display", "none", "important");
         }
       };
 
-      const tryLockForm = () => {
+      const setForm = () => {
         const formSelect = document.getElementById("request_issue_type_select");
-        if (!formSelect) {
+        if (!formSelect || !formSelect.options.length) {
           return false;
         }
 
-        forceSelectForm(formSelect);
-        hideFormSelector(formSelect);
+        const optionExists = Array.from(formSelect.options).some(
+          (option) => option.value === lockedId
+        );
+
+        if (!optionExists) {
+          return false;
+        }
+
+        if (formSelect.value !== lockedId) {
+          formSelect.value = lockedId;
+          formSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+
+        hideChooser();
         return true;
       };
 
-      let attempts = 0;
-      const maxAttempts = 40;
-      const attemptLock = () => {
-        if (tryLockForm()) {
-          return;
-        }
-        attempts += 1;
-        if (attempts < maxAttempts) {
-          window.setTimeout(attemptLock, 150);
-        }
-      };
+      if (!setForm()) {
+        hideChooser();
+        const observer = new MutationObserver(() => {
+          if (setForm()) {
+            observer.disconnect();
+          }
+        });
 
-      attemptLock();
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true,
+        });
+      }
     })();
   });
 
