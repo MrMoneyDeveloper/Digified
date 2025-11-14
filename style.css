@@ -2014,6 +2014,10 @@ body.ticket-form-locked .ticket-form-selector-hidden {
   display: none !important;
 }
 
+body.form-locked .request_ticket_form_id {
+  display: none !important;
+}
+
 .dbpo-request {
   padding: 2.5rem 0 4rem;
 }

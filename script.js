@@ -83,8 +83,13 @@
       }
     });
 
-    const lockTicketFormSelector = () => {
-      const newRequestPathPattern = /\/hc\/[^/]+\/requests\/new/;
+    (function () {
+      const localePrefixMatch = window.location.pathname.match(/^\/hc\/[^/]+/);
+      const localePrefix = localePrefixMatch ? localePrefixMatch[0] : "";
+      const newRequestPathPattern = new RegExp(
+        `^${localePrefix.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}\\/requests\\/new$`
+      );
+
       if (!newRequestPathPattern.test(window.location.pathname)) {
         return;
       }
@@ -95,21 +100,35 @@
         return;
       }
 
-      const hideFormSelector = () => {
-        const formSelect = document.getElementById("request_issue_type_select");
+      const forceSelectForm = (formSelect) => {
         if (!formSelect) {
-          return false;
+          return;
         }
 
-        document.body.classList.add("ticket-form-locked");
+        if (formSelect.value !== ticketFormId) {
+          formSelect.value = ticketFormId;
+          const changeEvent = new Event("change", { bubbles: true });
+          formSelect.dispatchEvent(changeEvent);
+        }
+      };
+
+      const hideFormSelector = (formSelect) => {
+        if (!formSelect) {
+          return;
+        }
+
+        document.body.classList.add("ticket-form-locked", "form-locked");
 
         formSelect.style.setProperty("display", "none", "important");
         formSelect.setAttribute("aria-hidden", "true");
         formSelect.setAttribute("tabindex", "-1");
 
-        const selectorField = formSelect.closest(".form-field");
+        const selectorField =
+          document.querySelector(".request_ticket_form_id") ||
+          formSelect.closest(".form-field");
         if (selectorField) {
           selectorField.classList.add("ticket-form-selector-hidden");
+          selectorField.style.setProperty("display", "none", "important");
         }
 
         const formRow = document.getElementById("request_issue_type_row");
@@ -124,27 +143,33 @@
         if (formLabel) {
           formLabel.remove();
         }
+      };
 
+      const tryLockForm = () => {
+        const formSelect = document.getElementById("request_issue_type_select");
+        if (!formSelect) {
+          return false;
+        }
+
+        forceSelectForm(formSelect);
+        hideFormSelector(formSelect);
         return true;
       };
 
       let attempts = 0;
       const maxAttempts = 40;
-
-      const tryHide = () => {
-        if (hideFormSelector()) {
+      const attemptLock = () => {
+        if (tryLockForm()) {
           return;
         }
         attempts += 1;
         if (attempts < maxAttempts) {
-          window.setTimeout(tryHide, 150);
+          window.setTimeout(attemptLock, 150);
         }
       };
 
-      tryHide();
-    };
-
-    lockTicketFormSelector();
+      attemptLock();
+    })();
   });
 
   const isPrintableChar = (str) => {
