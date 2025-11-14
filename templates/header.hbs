@@ -19,15 +19,10 @@
         Policies
       </a>
     </li>
-    <li>
-      <a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">
-        Request Support
-      </a>
-    </li>
     {{#unless signed_in}}
-      <li>
-        <a class="dbpo-nav-link nav-link" href="/hc/en-us/signin?return_to=/agent/home/tickets">
-          Agent sign in
+      <li class="nav-signin">
+        <a class="btn nav-signin-btn" href="/hc/en-us/signin">
+          Sign in
         </a>
       </li>
     {{/unless}}

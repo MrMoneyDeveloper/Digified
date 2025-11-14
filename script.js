@@ -82,6 +82,69 @@
         });
       }
     });
+
+    const lockTicketFormSelector = () => {
+      const newRequestPathPattern = /\/hc\/[^/]+\/requests\/new/;
+      if (!newRequestPathPattern.test(window.location.pathname)) {
+        return;
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const ticketFormId = params.get("ticket_form_id");
+      if (!ticketFormId) {
+        return;
+      }
+
+      const hideFormSelector = () => {
+        const formSelect = document.getElementById("request_issue_type_select");
+        if (!formSelect) {
+          return false;
+        }
+
+        document.body.classList.add("ticket-form-locked");
+
+        formSelect.style.setProperty("display", "none", "important");
+        formSelect.setAttribute("aria-hidden", "true");
+        formSelect.setAttribute("tabindex", "-1");
+
+        const selectorField = formSelect.closest(".form-field");
+        if (selectorField) {
+          selectorField.classList.add("ticket-form-selector-hidden");
+        }
+
+        const formRow = document.getElementById("request_issue_type_row");
+        if (formRow) {
+          formRow.style.setProperty("display", "none", "important");
+          formRow.classList.add("ticket-form-selector-hidden");
+        }
+
+        const formLabel = document.querySelector(
+          "label[for='request_issue_type_select']"
+        );
+        if (formLabel) {
+          formLabel.remove();
+        }
+
+        return true;
+      };
+
+      let attempts = 0;
+      const maxAttempts = 40;
+
+      const tryHide = () => {
+        if (hideFormSelector()) {
+          return;
+        }
+        attempts += 1;
+        if (attempts < maxAttempts) {
+          window.setTimeout(tryHide, 150);
+        }
+      };
+
+      tryHide();
+    };
+
+    lockTicketFormSelector();
   });
 
   const isPrintableChar = (str) => {

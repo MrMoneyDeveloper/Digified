@@ -3,28 +3,27 @@
 <div id="tsparticles"></div>
 
 <main id="main-content" class="home-main homepage-sections">
-  <section class="hero-cards">
-    <div class="container hero-cards__inner">
-      <div class="hero-cards__content">
-        <p class="hero-cards__eyebrow">DigifyCX access hub</p>
-        <h1 class="hero-cards__title">Choose the right sign-up experience</h1>
-        <p class="hero-cards__subtitle">
-          Staff and tenants have dedicated forms so requests get routed to the right CXI team instantly.
-        </p>
-      </div>
-      <div class="hero-cards__grid">
-        <div class="card card--staff">
+  <section class="access-hub-hero"{{#if settings.home_hero_image}} style="background-image:url('{{settings.home_hero_image}}');"{{/if}}>
+    <div class="access-hub-hero__overlay"></div>
+    <div class="access-hub-content container">
+      <p class="access-hub-eyebrow">DigifyCX access hub</p>
+      <h1>Choose the right sign-up experience</h1>
+      <p class="access-hub-subtitle">
+        Staff and tenants have dedicated forms so requests get routed to the right CXI team instantly.
+      </p>
+      <div class="access-hub-cards">
+        <div class="access-hub-card access-hub-card-internal">
           <h2>Digify Staff / Internal</h2>
           <p>Request DigifyCX internal access.</p>
-          <a class="btn card-btn" href="{{page_path 'new_request'}}?ticket_form_id=235503209936348">
-            Internal sign-up
+          <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id=23550320936348">
+            Internal Sign-up
           </a>
         </div>
-        <div class="card card--tenant">
+        <div class="access-hub-card access-hub-card-tenant">
           <h2>Tenant / External</h2>
           <p>Request tenant access for external users.</p>
-          <a class="btn card-btn" href="{{page_path 'new_request'}}?ticket_form_id=23550348234908">
-            Tenant sign-up
+          <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id=23550348234908">
+            Tenant Sign-up
           </a>
         </div>
       </div>
