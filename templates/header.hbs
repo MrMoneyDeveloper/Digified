@@ -22,13 +22,7 @@
       </li>
     {{/unless}}
     {{#if signed_in}}
-      {{#is user.role "agent"}}
-        <li>
-          <a class="dbpo-nav-link nav-link" href="/agent/home/tickets">
-            Agent Console
-          </a>
-        </li>
-      {{/is}}
+      {{!-- Only show Home when signed in; no extra nav items --}}
     {{/if}}
   </ul>
 </nav>
