@@ -90,7 +90,7 @@
 
       const params = new URLSearchParams(window.location.search);
       const lockedId = params.get("ticket_form_id");
-      if (!lockedId) {
+      if (!lockedId || !/^\d+$/.test(lockedId)) {
         return;
       }
 
@@ -123,10 +123,39 @@
         }
       };
 
+      const showChooser = () => {
+        document.body.classList.remove("ticket-form-locked", "form-locked");
+
+        const wrap = document.querySelector(".request_ticket_form_id");
+        if (wrap) {
+          wrap.style.removeProperty("display");
+          wrap.classList.remove("ticket-form-selector-hidden");
+        }
+
+        const formSelect = document.getElementById("request_issue_type_select");
+        if (formSelect) {
+          formSelect.style.removeProperty("display");
+          formSelect.removeAttribute("aria-hidden");
+          formSelect.removeAttribute("tabindex");
+        }
+
+        const formRow = document.getElementById("request_issue_type_row");
+        if (formRow) {
+          formRow.style.removeProperty("display");
+        }
+
+        const formLabel = document.querySelector(
+          "label[for='request_issue_type_select']"
+        );
+        if (formLabel) {
+          formLabel.style.removeProperty("display");
+        }
+      };
+
       const setForm = () => {
         const formSelect = document.getElementById("request_issue_type_select");
         if (!formSelect || !formSelect.options.length) {
-          return false;
+          return "pending";
         }
 
         const optionExists = Array.from(formSelect.options).some(
@@ -134,7 +163,8 @@
         );
 
         if (!optionExists) {
-          return false;
+          showChooser();
+          return "invalid";
         }
 
         if (formSelect.value !== lockedId) {
@@ -143,13 +173,15 @@
         }
 
         hideChooser();
-        return true;
+        return "locked";
       };
 
-      if (!setForm()) {
-        hideChooser();
+      const initialStatus = setForm();
+
+      if (initialStatus === "pending") {
         const observer = new MutationObserver(() => {
-          if (setForm()) {
+          const status = setForm();
+          if (status !== "pending") {
             observer.disconnect();
           }
         });
@@ -162,33 +194,6 @@
     })();
   });
 
-  // Optional redirect after a successful request submission
-  const handleRequestFormSubmitted = () => {
-    const isNewRequestPath = /^\/hc\/[^/]+\/requests\/new/.test(
-      window.location.pathname
-    );
-
-    if (!isNewRequestPath) {
-      return;
-    }
-
-    window.location.href = "/hc/en-us";
-  };
-
-  // Support both native and jQuery-triggered custom events
-  if (typeof document !== "undefined") {
-    document.addEventListener(
-      "ZendeskRequestFormSubmitted",
-      handleRequestFormSubmitted
-    );
-  }
-
-  if (typeof window !== "undefined") {
-    window.addEventListener(
-      "ZendeskRequestFormSubmitted",
-      handleRequestFormSubmitted
-    );
-  }
 
   const isPrintableChar = (str) => {
     return str.length === 1 && str.match(/^\S$/);
