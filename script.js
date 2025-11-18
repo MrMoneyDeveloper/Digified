@@ -11,52 +11,80 @@
   };
 
   const helpCenterUser = (window.HelpCenter && window.HelpCenter.user) || {};
-  const userTags = helpCenterUser.tags || [];
-  const userOrganizations = helpCenterUser.organizations || [];
 
-  const hasOrg = (orgId) => {
-    if (!orgId) {
+  /**
+   * Determine if the current user is internal or tenant based on tags or organization IDs.
+   * If neither tags nor organizations are available yet, return false so we can retry later.
+   */
+  function detectSegment() {
+    const helpCenterUser = window.HelpCenter && window.HelpCenter.user;
+    if (!helpCenterUser || (!helpCenterUser.tags && !helpCenterUser.organizations)) {
+      console.info("[DigifiedSegments] HelpCenter.user not ready yet", helpCenterUser);
       return false;
     }
-    return userOrganizations.some((org) => String(org.id) === String(orgId));
-  };
 
-  const isInternalUser =
-    (segmentSettings.internalTag &&
-      userTags.includes(segmentSettings.internalTag)) ||
-    hasOrg(segmentSettings.internalOrgId);
+    const userTags = helpCenterUser.tags || [];
+    const userOrganizations = helpCenterUser.organizations || [];
 
-  const isTenantUser =
-    (segmentSettings.tenantTag &&
-      userTags.includes(segmentSettings.tenantTag)) ||
-    hasOrg(segmentSettings.tenantOrgId);
+    const hasOrg = (orgId) => {
+      if (!orgId) {
+        return false;
+      }
+      return userOrganizations.some((org) => String(org.id) === String(orgId));
+    };
 
-  window.DigifiedSegments = {
-    isInternalUser,
-    isTenantUser,
-    hasOrg,
-    userTags,
-    userOrganizations
-  };
+    const isInternalUser =
+      (segmentSettings.internalTag && userTags.includes(segmentSettings.internalTag)) ||
+      hasOrg(segmentSettings.internalOrgId);
+    const isTenantUser =
+      (segmentSettings.tenantTag && userTags.includes(segmentSettings.tenantTag)) ||
+      hasOrg(segmentSettings.tenantOrgId);
 
-  if (isInternalUser) {
-    console.info("[DigifiedSegments] Internal user detected", {
+    // Expose for debugging
+    window.DigifiedSegments = {
+      isInternalUser,
+      isTenantUser,
+      hasOrg,
       userTags,
       userOrganizations
-    });
-    document.documentElement.classList.add("hc-internal-user");
-  } else if (isTenantUser) {
-    console.info("[DigifiedSegments] Tenant user detected", {
-      userTags,
-      userOrganizations
-    });
-    document.documentElement.classList.add("hc-tenant-user");
-  } else {
-    console.warn("[DigifiedSegments] Unknown user \u2013 no matching tag or org", {
-      userTags,
-      userOrganizations
-    });
-    document.documentElement.classList.add("hc-unknown-user");
+    };
+
+    if (isInternalUser) {
+      console.info("[DigifiedSegments] Internal user detected", {
+        userTags,
+        userOrganizations
+      });
+      document.documentElement.classList.add("hc-internal-user");
+      document.documentElement.classList.remove("hc-tenant-user", "hc-unknown-user");
+    } else if (isTenantUser) {
+      console.info("[DigifiedSegments] Tenant user detected", {
+        userTags,
+        userOrganizations
+      });
+      document.documentElement.classList.add("hc-tenant-user");
+      document.documentElement.classList.remove("hc-internal-user", "hc-unknown-user");
+    } else {
+      console.warn("[DigifiedSegments] Unknown user \u2013 no matching tag or org", {
+        userTags,
+        userOrganizations
+      });
+      document.documentElement.classList.add("hc-unknown-user");
+      document.documentElement.classList.remove("hc-internal-user", "hc-tenant-user");
+    }
+
+    return true;
+  }
+
+  // Try to detect the segment immediately. If tags/orgs are not ready, retry for a short time.
+  if (!detectSegment()) {
+    let attempts = 0;
+    const maxAttempts = 10;
+    const retryInterval = setInterval(() => {
+      attempts += 1;
+      if (detectSegment() || attempts >= maxAttempts) {
+        clearInterval(retryInterval);
+      }
+    }, 500);
   }
 
   // Key map
@@ -76,7 +104,8 @@
   }
 
   const hideUnknownNavItems = () => {
-    if (!isInternalUser && !isTenantUser) {
+    const segments = window.DigifiedSegments || {};
+    if (!segments.isInternalUser && !segments.isTenantUser) {
       const navItems = document.querySelectorAll(".nav-internal, .nav-tenant");
       navItems.forEach((item) => {
         item.style.display = "none";
