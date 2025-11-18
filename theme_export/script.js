@@ -162,34 +162,6 @@
     })();
   });
 
-  // Optional redirect after a successful request submission
-  const handleRequestFormSubmitted = () => {
-    const isNewRequestPath = /^\/hc\/[^/]+\/requests\/new/.test(
-      window.location.pathname
-    );
-
-    if (!isNewRequestPath) {
-      return;
-    }
-
-    window.location.href = "/hc/en-us";
-  };
-
-  // Support both native and jQuery-triggered custom events
-  if (typeof document !== "undefined") {
-    document.addEventListener(
-      "ZendeskRequestFormSubmitted",
-      handleRequestFormSubmitted
-    );
-  }
-
-  if (typeof window !== "undefined") {
-    window.addEventListener(
-      "ZendeskRequestFormSubmitted",
-      handleRequestFormSubmitted
-    );
-  }
-
   const isPrintableChar = (str) => {
     return str.length === 1 && str.match(/^\S$/);
   };

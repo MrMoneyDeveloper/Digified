@@ -1,0 +1,31 @@
+<a class="skip-navigation visually-hidden-focusable" tabindex="1" href="#main-content">{{t 'skip_navigation' }}</a>
+
+<header class="digify-header dbpo-header">
+  <div class="container header-inner dbpo-nav">
+    {{!-- Brand / logo --}}
+    <a class="brand-logo dbpo-brand" href="{{help_center.url}}">
+      {{#if settings.logo}}
+        <img class="dbpo-logo" src="{{settings.logo}}" srcset="{{settings.logo}} 1x, {{settings.logo}} 2x" alt="Digify BPO logo" />
+      {{else}}
+        <img class="dbpo-logo" src="{{asset 'settings/Logo.png'}}" srcset="{{asset 'settings/Logo.png'}} 1x, {{asset 'settings/Logo.png'}} 2x" alt="Digify BPO logo" />
+      {{/if}}
+      <span class="brand-text dbpo-brand-text">Digify BPO</span>
+    </a>
+<nav class="nav top-nav">
+  <ul class="menu dbpo-menu">
+    <li>{{#link "help_center" class="dbpo-nav-link nav-link"}}Home{{/link}}</li>
+    {{#unless signed_in}}
+      <li class="nav-signin">
+        <a class="btn nav-signin-btn" href="/hc/en-us/signin">
+          Sign in
+        </a>
+      </li>
+    {{/unless}}
+    {{#if signed_in}}
+      {{!-- Only show Home when signed in; no extra nav items --}}
+    {{/if}}
+  </ul>
+</nav>
+  </div>
+</header>
+

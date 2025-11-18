@@ -1,0 +1,32 @@
+<h1 class="visibility-hidden">{{ help_center.name }}</h1>
+
+<div id="tsparticles"></div>
+
+<main id="main-content" class="home-main homepage-sections">
+  <section class="access-hub-hero"{{#if settings.home_hero_image}} style="background-image:url('{{settings.home_hero_image}}');"{{/if}}>
+    <div class="access-hub-hero__overlay"></div>
+    <div class="access-hub-content container">
+      <p class="access-hub-eyebrow">DigifyCX access hub</p>
+      <h1>Choose the right sign-up experience</h1>
+      <p class="access-hub-subtitle">
+        Staff and tenants have dedicated forms so requests get routed to the right CXI team instantly.
+      </p>
+      <div class="access-hub-cards">
+        <div class="access-hub-card access-hub-card-internal">
+          <h2>Digify Staff / Internal</h2>
+          <p>Request DigifyCX internal access.</p>
+          <a class="btn btn-primary" href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=23590656709788">
+            Internal Sign-up
+          </a>
+        </div>
+        <div class="access-hub-card access-hub-card-tenant">
+          <h2>Tenant / External</h2>
+          <p>Request tenant access for external users.</p>
+          <a class="btn btn-primary" href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=23590702845724">
+            Tenant Sign-up
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
