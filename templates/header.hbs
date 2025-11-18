@@ -11,21 +11,52 @@
       {{/if}}
       <span class="brand-text dbpo-brand-text">Digify BPO</span>
     </a>
-<nav class="nav top-nav">
-  <ul class="menu dbpo-menu">
-    <li>{{#link "help_center" class="dbpo-nav-link nav-link"}}Home{{/link}}</li>
-    {{#unless signed_in}}
-      <li class="nav-signin">
-        <a class="btn nav-signin-btn" href="/hc/en-us/signin">
-          Sign in
-        </a>
-      </li>
-    {{/unless}}
-    {{#if signed_in}}
-      {{!-- Only show Home when signed in; no extra nav items --}}
-    {{/if}}
-  </ul>
-</nav>
+    <nav class="nav top-nav">
+      <ul class="menu dbpo-menu">
+        <li>{{#link "help_center" class="dbpo-nav-link nav-link"}}Home{{/link}}</li>
+        {{#if signed_in}}
+          {{#contains HelpCenter.user.tags settings.internal_tag}}
+            <li><a class="dbpo-nav-link nav-link" href="{{#if settings.internal_policies_category_id}}{{page_path 'category' id=settings.internal_policies_category_id}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}">Internal Policies</a></li>
+            <li><a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}">IT Support</a></li>
+            <li><a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}&topic=facilities">Facilities Requests</a></li>
+          {{else}}
+            {{#contains (json HelpCenter.user.organizations) settings.internal_org_id}}
+              <li><a class="dbpo-nav-link nav-link" href="{{#if settings.internal_policies_category_id}}{{page_path 'category' id=settings.internal_policies_category_id}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}">Internal Policies</a></li>
+              <li><a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}">IT Support</a></li>
+              <li><a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}&topic=facilities">Facilities Requests</a></li>
+            {{else}}
+              {{#contains HelpCenter.user.tags settings.tenant_tag}}
+                <li><a class="dbpo-nav-link nav-link" href="{{#if settings.tenant_policies_category_id}}{{page_path 'category' id=settings.tenant_policies_category_id}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}">Tenant Policies</a></li>
+                <li><a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}">Tenant Support</a></li>
+                <li><a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}&topic=facilities">Facilities Requests</a></li>
+              {{else}}
+                {{#contains (json HelpCenter.user.organizations) settings.tenant_org_id}}
+                  <li><a class="dbpo-nav-link nav-link" href="{{#if settings.tenant_policies_category_id}}{{page_path 'category' id=settings.tenant_policies_category_id}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}">Tenant Policies</a></li>
+                  <li><a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}">Tenant Support</a></li>
+                  <li><a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}&topic=facilities">Facilities Requests</a></li>
+                {{else}}
+                  <li><a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}">Request Internal Access</a></li>
+                  <li><a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}">Request Tenant Access</a></li>
+                {{/contains}}
+              {{/contains}}
+            {{/contains}}
+          {{/contains}}
+          <li class="nav-signout">
+            <a class="btn nav-signout-btn" href="/hc/{{help_center.locale}}/signout">
+              Sign out
+            </a>
+          </li>
+        {{else}}
+          <li><a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}">Request Internal Access</a></li>
+          <li><a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}">Request Tenant Access</a></li>
+          <li class="nav-signin">
+            <a class="btn nav-signin-btn" href="/hc/{{help_center.locale}}/signin">
+              Sign in
+            </a>
+          </li>
+        {{/if}}
+      </ul>
+    </nav>
   </div>
 </header>
 

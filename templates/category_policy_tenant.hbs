@@ -1,0 +1,97 @@
+<div class="container-divider"></div>
+<div class="container">
+  <div class="sub-nav">
+    {{breadcrumbs}}
+    <div class="search-container">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" focusable="false" viewBox="0 0 12 12" class="search-icon" aria-hidden="true">
+        <circle cx="4.5" cy="4.5" r="4" fill="none" stroke="currentColor"/>
+        <path stroke="currentColor" stroke-linecap="round" d="M11 11L7.5 7.5"/>
+      </svg>
+      {{search scoped=settings.scoped_kb_search submit=false}}
+    </div>
+  </div>
+
+  {{#contains HelpCenter.user.tags settings.tenant_tag}}
+    <div class="category-container policy-category">
+      <div class="category-content">
+        <header class="page-header">
+          <p class="eyebrow">Tenant</p>
+          <h1>{{category.name}}</h1>
+          <p class="page-header-description">
+            Partner-ready policies that cover shared spaces, security checkpoints, and tenant obligations.
+          </p>
+        </header>
+
+        <div id="main-content" class="section-tree">
+          {{#each sections}}
+            <section class="section">
+              <h2 class="section-tree-title">
+                <a href="{{url}}">{{name}}</a>
+              </h2>
+              {{#if articles}}
+                <ul class="article-list">
+                  {{#each articles}}
+                    <li class="article-list-item{{#if promoted}} article-promoted{{/if}}">
+                      <a href="{{url}}" class="article-list-link">{{title}}</a>
+                    </li>
+                  {{/each}}
+                </ul>
+              {{/if}}
+            </section>
+          {{else}}
+            <i class="category-empty">
+              <a href="{{category.url}}">{{t 'empty'}}</a>
+            </i>
+          {{/each}}
+        </div>
+      </div>
+    </div>
+  {{else}}
+    {{#contains (json HelpCenter.user.organizations) settings.tenant_org_id}}
+      <div class="category-container policy-category">
+        <div class="category-content">
+          <header class="page-header">
+            <p class="eyebrow">Tenant</p>
+            <h1>{{category.name}}</h1>
+            <p class="page-header-description">
+              Partner-ready policies that cover shared spaces, security checkpoints, and tenant obligations.
+            </p>
+          </header>
+
+          <div id="main-content" class="section-tree">
+            {{#each sections}}
+              <section class="section">
+                <h2 class="section-tree-title">
+                  <a href="{{url}}">{{name}}</a>
+                </h2>
+                {{#if articles}}
+                  <ul class="article-list">
+                    {{#each articles}}
+                      <li class="article-list-item{{#if promoted}} article-promoted{{/if}}">
+                        <a href="{{url}}" class="article-list-link">{{title}}</a>
+                      </li>
+                    {{/each}}
+                  </ul>
+                {{/if}}
+              </section>
+            {{else}}
+              <i class="category-empty">
+                <a href="{{category.url}}">{{t 'empty'}}</a>
+              </i>
+            {{/each}}
+          </div>
+        </div>
+      </div>
+    {{else}}
+      <section class="policy-locked">
+        <div class="alert alert-info">
+          <h2>Tenant policies are limited to approved partners</h2>
+          <p>Sign in with a tenant profile or request tenant access to continue.</p>
+          <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}">
+            Request tenant access
+          </a>
+        </div>
+      </section>
+    {{/contains}}
+  {{/contains}}
+</div>

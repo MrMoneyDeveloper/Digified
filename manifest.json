@@ -211,6 +211,72 @@
       ]
     },
     {
+      "label": "User segmentation",
+      "variables": [
+        {
+          "identifier": "internal_org_id",
+          "type": "text",
+          "label": "Internal organization ID",
+          "description": "ID for the internal organization used to segment Help Center content.",
+          "value": "23530444315804"
+        },
+        {
+          "identifier": "tenant_org_id",
+          "type": "text",
+          "label": "Tenant organization ID",
+          "description": "ID for the tenant organization used to segment Help Center content.",
+          "value": "23530712292892"
+        },
+        {
+          "identifier": "internal_tag",
+          "type": "text",
+          "label": "Internal user tag",
+          "description": "User tag applied to staff/internal users.",
+          "value": "segment_internal"
+        },
+        {
+          "identifier": "tenant_tag",
+          "type": "text",
+          "label": "Tenant user tag",
+          "description": "User tag applied to tenant/external users.",
+          "value": "segment_tenant"
+        },
+        {
+          "identifier": "internal_form_id",
+          "type": "text",
+          "label": "Internal form ID",
+          "description": "Ticket form ID for internal/staff sign-up requests.",
+          "value": "23590656709788"
+        },
+        {
+          "identifier": "tenant_form_id",
+          "type": "text",
+          "label": "Tenant form ID",
+          "description": "Ticket form ID for tenant/external sign-up requests.",
+          "value": "23590702845724"
+        }
+      ]
+    },
+    {
+      "label": "Segment destinations",
+      "variables": [
+        {
+          "identifier": "internal_policies_category_id",
+          "type": "text",
+          "label": "Internal policies category ID",
+          "description": "Category ID that hosts internal-only policies.",
+          "value": ""
+        },
+        {
+          "identifier": "tenant_policies_category_id",
+          "type": "text",
+          "label": "Tenant policies category ID",
+          "description": "Category ID that hosts tenant/external policies.",
+          "value": ""
+        }
+      ]
+    },
+    {
       "label": "brand_group_label",
       "variables": [
         {

@@ -1,6 +1,50 @@
 (function () {
   'use strict';
 
+  const segmentSettings = {
+    internalOrgId: "{{settings.internal_org_id}}",
+    tenantOrgId: "{{settings.tenant_org_id}}",
+    internalTag: "{{settings.internal_tag}}",
+    tenantTag: "{{settings.tenant_tag}}",
+    internalFormId: "{{settings.internal_form_id}}",
+    tenantFormId: "{{settings.tenant_form_id}}"
+  };
+
+  const helpCenterUser = (window.HelpCenter && window.HelpCenter.user) || {};
+  const userTags = helpCenterUser.tags || [];
+  const userOrganizations = helpCenterUser.organizations || [];
+
+  const hasOrg = (orgId) => {
+    if (!orgId) {
+      return false;
+    }
+    return userOrganizations.some((org) => String(org.id) === String(orgId));
+  };
+
+  const isInternalUser =
+    (segmentSettings.internalTag &&
+      userTags.indexOf(segmentSettings.internalTag) > -1) ||
+    hasOrg(segmentSettings.internalOrgId);
+
+  const isTenantUser =
+    (segmentSettings.tenantTag &&
+      userTags.indexOf(segmentSettings.tenantTag) > -1) ||
+    hasOrg(segmentSettings.tenantOrgId);
+
+  window.DigifiedSegments = {
+    isInternalUser,
+    isTenantUser,
+    hasOrg
+  };
+
+  if (isInternalUser) {
+    document.documentElement.classList.add("hc-internal-user");
+  } else if (isTenantUser) {
+    document.documentElement.classList.add("hc-tenant-user");
+  } else {
+    document.documentElement.classList.add("hc-unknown-user");
+  }
+
   // Key map
   const ENTER = 13;
   const ESCAPE = 27;
@@ -88,9 +132,68 @@
         return;
       }
 
+      const removeIneligibleForms = () => {
+        if (!segmentSettings.internalFormId && !segmentSettings.tenantFormId) {
+          return true;
+        }
+
+        const select = document.getElementById("request_issue_type_select");
+        if (!select) {
+          return false;
+        }
+
+        if (isInternalUser && segmentSettings.tenantFormId) {
+          const tenantOption = select.querySelector(
+            `option[value="${segmentSettings.tenantFormId}"]`
+          );
+          if (tenantOption) {
+            tenantOption.remove();
+          }
+        } else if (isTenantUser && segmentSettings.internalFormId) {
+          const internalOption = select.querySelector(
+            `option[value="${segmentSettings.internalFormId}"]`
+          );
+          if (internalOption) {
+            internalOption.remove();
+          }
+        }
+
+        const selected = select.value;
+        if (
+          (isInternalUser && selected === segmentSettings.tenantFormId) ||
+          (isTenantUser && selected === segmentSettings.internalFormId)
+        ) {
+          const nextId = isInternalUser
+            ? segmentSettings.internalFormId
+            : segmentSettings.tenantFormId;
+          if (nextId) {
+            select.value = nextId;
+            const changeEvent = document.createEvent("HTMLEvents");
+            changeEvent.initEvent("change", true, false);
+            select.dispatchEvent(changeEvent);
+          }
+        }
+
+        return true;
+      };
+
+      const ensureFormPruning = () => {
+        if (removeIneligibleForms()) {
+          return;
+        }
+        let attempts = 0;
+        const interval = window.setInterval(() => {
+          attempts += 1;
+          if (removeIneligibleForms() || attempts > 20) {
+            window.clearInterval(interval);
+          }
+        }, 150);
+      };
+
       const params = new URLSearchParams(window.location.search);
       const lockedId = params.get("ticket_form_id");
       if (!lockedId || !/^\d+$/.test(lockedId)) {
+        ensureFormPruning();
         return;
       }
 
@@ -191,6 +294,7 @@
           subtree: true,
         });
       }
+      ensureFormPruning();
     })();
   });
 
