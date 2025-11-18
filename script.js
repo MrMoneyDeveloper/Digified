@@ -788,13 +788,33 @@
 
     // If there are any error notifications below an input field, focus that field
     const notificationElm = document.querySelector(".notification-error");
-  if (
-    notificationElm &&
-    notificationElm.previousElementSibling &&
-    typeof notificationElm.previousElementSibling.focus === "function"
-  ) {
-    notificationElm.previousElementSibling.focus();
-  }
+    if (
+      notificationElm &&
+      notificationElm.previousElementSibling &&
+      typeof notificationElm.previousElementSibling.focus === "function"
+    ) {
+      notificationElm.previousElementSibling.focus();
+    }
+
+    const form = document.querySelector("form#new_request");
+    if (form) {
+      form.addEventListener("submit", () => {
+        window.setTimeout(() => {
+          const notif = document.querySelector(".notification-error");
+          if (notif) {
+            console.error(
+              "[HC form error]",
+              (notif.textContent || notif.innerText || "").trim()
+            );
+          } else {
+            console.log(
+              "[HC form]",
+              "Submitted without visible notification-error."
+            );
+          }
+        }, 500);
+      });
+    }
   });
 
 })();
