@@ -1,48 +1,12 @@
 <section class="dbpo-request">
   <div class="container">
-    {{#contains user.tags settings.internal_tag}}
-      <h1>Internal support request</h1>
-      <p class="dbpo-request-intro">
-        You're signed in as Digify staff, so only internal ticket forms are available below.
-      </p>
-    {{else}}
-      {{#contains user.organizations settings.internal_org_id}}
-        <h1>Internal support request</h1>
-        <p class="dbpo-request-intro">
-          You're signed in under the internal organization, so tenant-only forms are hidden.
-        </p>
-      {{else}}
-        {{#contains user.tags settings.tenant_tag}}
-          <h1>Tenant request centre</h1>
-          <p class="dbpo-request-intro">
-            You're viewing the tenant portal. Only the tenant ticket form remains in the dropdown.
-          </p>
-        {{else}}
-          {{#contains user.organizations settings.tenant_org_id}}
-            <h1>Tenant request centre</h1>
-            <p class="dbpo-request-intro">
-              You're associated with a tenant organization, so internal-only forms are hidden.
-            </p>
-          {{else}}
-            <h1>{{t 'submit_a_request'}}</h1>
-            <p class="dbpo-request-intro">
-              Not sure which form to use? Choose internal staff if you work for Digify. External partners should use the tenant request option.
-            </p>
-            <div class="btn-group gap-2 mb-4">
-              <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}">
-                Request internal access
-              </a>
-              <a class="btn btn-outline-primary" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}">
-                Request tenant access
-              </a>
-            </div>
-          {{/contains}}
-        {{/contains}}
-      {{/contains}}
-    {{/contains}}
+    <h1>{{t 'submit_a_request'}}</h1>
     {{#if settings.request_form_icon_url}}
       <img class="dbpo-request-icon" src="{{settings.request_form_icon_url}}" alt="" role="presentation">
     {{/if}}
+    <p class="dbpo-request-intro">
+      Use this form to request DigifyCX tenant or internal access. When you arrive from the home page cards the correct form loads automatically.
+    </p>
     <div id="new-request-form"></div>
   </div>
 </section>
