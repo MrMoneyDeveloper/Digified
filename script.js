@@ -90,6 +90,13 @@
       );
     }
 
+    // Update signed-in home hero once we know the segment.
+    try {
+      showSegmentHero();
+    } catch (e) {
+      // no-op: hero helper not available yet
+    }
+
     return true;
   }
 
@@ -208,18 +215,19 @@
 
     hideAll();
 
-    if (document.documentElement.classList.contains("hc-internal-user")) {
+    const isInternalUser = !!window.isInternalUser;
+    const isTenantUser = !!window.isTenantUser;
+
+    if (isInternalUser) {
       if (internalHero) {
         internalHero.classList.remove("is-hidden");
       }
-    } else if (document.documentElement.classList.contains("hc-tenant-user")) {
+    } else if (isTenantUser) {
       if (tenantHero) {
         tenantHero.classList.remove("is-hidden");
       }
-    } else {
-      if (genericHero) {
-        genericHero.classList.remove("is-hidden");
-      }
+    } else if (genericHero) {
+      genericHero.classList.remove("is-hidden");
     }
   }
 
