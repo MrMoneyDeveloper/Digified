@@ -10,22 +10,24 @@
     tenantFormId: "{{settings.tenant_form_id}}"
   };
 
-  const helpCenterUser = (window.HelpCenter && window.HelpCenter.user) || {};
+  // Initialize global segment flags so other functions can safely read them.
+  window.isInternalUser = false;
+  window.isTenantUser = false;
+  window.DigifiedSegments =
+    window.DigifiedSegments || {
+      isInternalUser: false,
+      isTenantUser: false,
+      hasOrg: function () {
+        return false;
+      },
+      userTags: [],
+      userOrganizations: []
+    };
 
-  /**
-   * Determine if the current user is internal or tenant based on tags or organization IDs.
-   * If neither tags nor organizations are available yet, return false so we can retry later.
-   */
-  function detectSegment() {
-    const helpCenterUser = window.HelpCenter && window.HelpCenter.user;
-    if (!helpCenterUser || (!helpCenterUser.tags && !helpCenterUser.organizations)) {
-      console.info("[DigifiedSegments] HelpCenter.user not ready yet", helpCenterUser);
-      return false;
-    }
+  const baseHelpCenterUser =
+    (window.HelpCenter && window.HelpCenter.user) || {};
 
-    const userTags = helpCenterUser.tags || [];
-    const userOrganizations = helpCenterUser.organizations || [];
-
+  function applySegment(userTags, userOrganizations) {
     const hasOrg = (orgId) => {
       if (!orgId) {
         return false;
@@ -34,13 +36,17 @@
     };
 
     const isInternalUser =
-      (segmentSettings.internalTag && userTags.includes(segmentSettings.internalTag)) ||
+      (segmentSettings.internalTag &&
+        userTags.includes(segmentSettings.internalTag)) ||
       hasOrg(segmentSettings.internalOrgId);
     const isTenantUser =
-      (segmentSettings.tenantTag && userTags.includes(segmentSettings.tenantTag)) ||
+      (segmentSettings.tenantTag &&
+        userTags.includes(segmentSettings.tenantTag)) ||
       hasOrg(segmentSettings.tenantOrgId);
 
-    // Expose for debugging
+    window.isInternalUser = isInternalUser;
+    window.isTenantUser = isTenantUser;
+
     window.DigifiedSegments = {
       isInternalUser,
       isTenantUser,
@@ -55,37 +61,106 @@
         userOrganizations
       });
       document.documentElement.classList.add("hc-internal-user");
-      document.documentElement.classList.remove("hc-tenant-user", "hc-unknown-user");
+      document.documentElement.classList.remove(
+        "hc-tenant-user",
+        "hc-unknown-user"
+      );
     } else if (isTenantUser) {
       console.info("[DigifiedSegments] Tenant user detected", {
         userTags,
         userOrganizations
       });
       document.documentElement.classList.add("hc-tenant-user");
-      document.documentElement.classList.remove("hc-internal-user", "hc-unknown-user");
+      document.documentElement.classList.remove(
+        "hc-internal-user",
+        "hc-unknown-user"
+      );
     } else {
-      console.warn("[DigifiedSegments] Unknown user \u2013 no matching tag or org", {
-        userTags,
-        userOrganizations
-      });
+      console.warn(
+        "[DigifiedSegments] Unknown user \u2013 no matching tag or org",
+        {
+          userTags,
+          userOrganizations
+        }
+      );
       document.documentElement.classList.add("hc-unknown-user");
-      document.documentElement.classList.remove("hc-internal-user", "hc-tenant-user");
+      document.documentElement.classList.remove(
+        "hc-internal-user",
+        "hc-tenant-user"
+      );
     }
 
     return true;
   }
 
+  /**
+   * Determine if the current user is internal or tenant based on tags or organization IDs.
+   * If neither tags nor organizations are available yet, return false so we can retry later.
+   */
+  function detectSegment() {
+    const helpCenterUser = window.HelpCenter && window.HelpCenter.user;
+    if (!helpCenterUser || (!helpCenterUser.tags && !helpCenterUser.organizations)) {
+      console.info(
+        "[DigifiedSegments] HelpCenter.user not ready yet",
+        helpCenterUser
+      );
+      return false;
+    }
+
+    const userTags = helpCenterUser.tags || [];
+    const userOrganizations = helpCenterUser.organizations || [];
+
+    return applySegment(userTags, userOrganizations);
+  }
+
+  async function fetchCurrentUserAndDetectSegment() {
+    try {
+      const response = await fetch("/api/v2/users/me.json", {
+        credentials: "same-origin"
+      });
+      if (!response.ok) {
+        console.warn(
+          "[DigifiedSegments] /api/v2/users/me.json request failed",
+          response.status
+        );
+        applySegment([], []);
+        return;
+      }
+
+      const data = await response.json();
+      const user = data && data.user ? data.user : {};
+      const userTags = user.tags || [];
+      const orgIds = user.organization_ids || [];
+      const userOrganizations = orgIds.map((id) => ({ id }));
+
+      applySegment(userTags, userOrganizations);
+    } catch (e) {
+      console.warn("[DigifiedSegments] Fetching /api/v2/users/me.json failed", e);
+      applySegment([], []);
+    }
+  }
+
   // Try to detect the segment immediately. If tags/orgs are not ready, retry for a short time.
-  if (!detectSegment()) {
+  (function () {
+    if (detectSegment()) {
+      return;
+    }
+
     let attempts = 0;
     const maxAttempts = 10;
     const retryInterval = setInterval(() => {
       attempts += 1;
-      if (detectSegment() || attempts >= maxAttempts) {
+      if (detectSegment()) {
         clearInterval(retryInterval);
+        return;
+      }
+
+      if (attempts >= maxAttempts) {
+        clearInterval(retryInterval);
+        fetchCurrentUserAndDetectSegment();
       }
     }, 500);
-  }
+  })();
 
   // Key map
   const ENTER = 13;
@@ -230,6 +305,9 @@
         if (!select) {
           return false;
         }
+
+        const isInternalUser = !!window.isInternalUser;
+        const isTenantUser = !!window.isTenantUser;
 
         if (isInternalUser && segmentSettings.tenantFormId) {
           const tenantOption = select.querySelector(
