@@ -273,6 +273,48 @@
           "label": "Tenant policies category ID",
           "description": "Category ID that hosts tenant/external policies.",
           "value": ""
+        },
+        {
+          "identifier": "hr_resources_section_id",
+          "type": "text",
+          "label": "HR resources section ID",
+          "description": "Section ID for internal HR resources.",
+          "value": ""
+        },
+        {
+          "identifier": "internal_news_category_id",
+          "type": "text",
+          "label": "Internal news category ID",
+          "description": "Category ID for internal announcements/news.",
+          "value": ""
+        },
+        {
+          "identifier": "tenant_service_form_id",
+          "type": "text",
+          "label": "Tenant service form ID",
+          "description": "Ticket form ID for tenant service requests.",
+          "value": ""
+        },
+        {
+          "identifier": "tenant_news_category_id",
+          "type": "text",
+          "label": "Tenant news category ID",
+          "description": "Category ID for tenant-facing updates and announcements.",
+          "value": ""
+        },
+        {
+          "identifier": "public_policies_category_id",
+          "type": "text",
+          "label": "Public policies category ID",
+          "description": "Category ID for public or generic policies.",
+          "value": ""
+        },
+        {
+          "identifier": "generic_form_id",
+          "type": "text",
+          "label": "Generic support form ID",
+          "description": "Ticket form ID for generic support requests.",
+          "value": ""
         }
       ]
     },
