@@ -1,13 +1,21 @@
 (function () {
   'use strict';
 
+  const segmentDefaults = window.DigifiedSegmentSettings || {};
+
   const segmentSettings = {
-    internalOrgId: "{{settings.internal_org_id}}",
-    tenantOrgId: "{{settings.tenant_org_id}}",
-    internalTag: "{{settings.internal_tag}}",
-    tenantTag: "{{settings.tenant_tag}}",
-    internalFormId: "{{settings.internal_form_id}}",
-    tenantFormId: "{{settings.tenant_form_id}}"
+    internalOrgId:
+      segmentDefaults.internalOrgId || "{{settings.internal_org_id}}",
+    tenantOrgId:
+      segmentDefaults.tenantOrgId || "{{settings.tenant_org_id}}",
+    internalTag:
+      segmentDefaults.internalTag || "{{settings.internal_tag}}",
+    tenantTag:
+      segmentDefaults.tenantTag || "{{settings.tenant_tag}}",
+    internalFormId:
+      segmentDefaults.internalFormId || "{{settings.internal_form_id}}",
+    tenantFormId:
+      segmentDefaults.tenantFormId || "{{settings.tenant_form_id}}"
   };
 
   // Initialize global segment flags so other functions can safely read them.
