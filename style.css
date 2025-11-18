@@ -57,6 +57,10 @@
   font-weight: 600;
 }
 
+.is-hidden {
+  display: none !important;
+}
+
 .digify-header {
   background: linear-gradient(90deg, var(--dbpo-navy), var(--dbpo-aqua));
 }

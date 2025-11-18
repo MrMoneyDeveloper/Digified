@@ -113,10 +113,46 @@
     }
   };
 
+  function showSegmentHero() {
+    const isSignedIn = !!(window.HelpCenter && window.HelpCenter.user);
+    if (!isSignedIn) {
+      return;
+    }
+
+    const internalHero = document.querySelector(".js-internal-hero");
+    const tenantHero = document.querySelector(".js-tenant-hero");
+    const genericHero = document.querySelector(".js-generic-hero");
+
+    const hideAll = () => {
+      [internalHero, tenantHero, genericHero].forEach((el) => {
+        if (el) {
+          el.classList.add("is-hidden");
+        }
+      });
+    };
+
+    hideAll();
+
+    if (document.documentElement.classList.contains("hc-internal-user")) {
+      if (internalHero) {
+        internalHero.classList.remove("is-hidden");
+      }
+    } else if (document.documentElement.classList.contains("hc-tenant-user")) {
+      if (tenantHero) {
+        tenantHero.classList.remove("is-hidden");
+      }
+    } else {
+      if (genericHero) {
+        genericHero.classList.remove("is-hidden");
+      }
+    }
+  }
+
   // Navigation
 
   window.addEventListener("DOMContentLoaded", () => {
     hideUnknownNavItems();
+    showSegmentHero();
     const menuButton = document.querySelector(".header .menu-button-mobile");
     const menuList = document.querySelector("#user-nav-mobile");
 

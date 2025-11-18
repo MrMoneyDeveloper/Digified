@@ -3,31 +3,117 @@
 <div id="tsparticles"></div>
 
 <main id="main-content" class="home-main homepage-sections">
-  <section class="access-hub-hero"{{#if settings.home_hero_image}} style="background-image:url('{{settings.home_hero_image}}');"{{/if}}>
-    <div class="access-hub-hero__overlay"></div>
-    <div class="access-hub-content container">
-      <p class="access-hub-eyebrow">DigifyCX access hub</p>
-      <h1>Choose the right sign-up experience</h1>
-      <p class="access-hub-subtitle">
-        Staff and tenants have dedicated forms so requests get routed to the right CXI team instantly.
-      </p>
-      <div class="access-hub-cards">
-        <div class="access-hub-card access-hub-card-internal">
-          <h2>Digify Staff / Internal</h2>
-          <p>Request DigifyCX internal access.</p>
-          <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}">
-            Internal Sign-up
-          </a>
-        </div>
-        <div class="access-hub-card access-hub-card-tenant">
-          <h2>Tenant / External</h2>
-          <p>Request tenant access for external users.</p>
-          <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}">
-            Tenant Sign-up
-          </a>
+  {{!-- Anonymous users: existing sign-up hero --}}
+  {{#unless signed_in}}
+    <section class="access-hub-hero"{{#if settings.home_hero_image}} style="background-image:url('{{settings.home_hero_image}}');"{{/if}}>
+      <div class="access-hub-hero__overlay"></div>
+      <div class="access-hub-content container">
+        <p class="access-hub-eyebrow">DigifyCX access hub</p>
+        <h1>Choose the right sign-up experience</h1>
+        <p class="access-hub-subtitle">
+          Staff and tenants have dedicated forms so requests get routed to the right CXI team instantly.
+        </p>
+        <div class="access-hub-cards">
+          <div class="access-hub-card access-hub-card-internal">
+            <h2>Digify Staff / Internal</h2>
+            <p>Request DigifyCX internal access.</p>
+            <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}">
+              Internal Sign-up
+            </a>
+          </div>
+          <div class="access-hub-card access-hub-card-tenant">
+            <h2>Tenant / External</h2>
+            <p>Request tenant access for external users.</p>
+            <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}">
+              Tenant Sign-up
+            </a>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
-</main>
+    </section>
+  {{/unless}}
 
+  {{!-- Signed-in users: segment-specific heroes (JS will toggle visibility) --}}
+  {{#if signed_in}}
+    <section class="access-hub-hero digify-hero digify-hero--internal js-internal-hero is-hidden"{{#if settings.home_hero_image}} style="background-image:url('{{settings.home_hero_image}}');"{{/if}}>
+      <div class="access-hub-hero__overlay"></div>
+      <div class="access-hub-content container">
+        <p class="access-hub-eyebrow">DigifyCX internal</p>
+        <h1>Welcome back, DigifyCX team</h1>
+        <p class="access-hub-subtitle">
+          Access internal policies or log a support request with HR, IT or CX Experts.
+        </p>
+        <div class="access-hub-cards">
+          <div class="access-hub-card access-hub-card-internal">
+            <h2>View internal policies</h2>
+            <p>Browse HR, IT and CX policies for Digify staff.</p>
+            <a class="btn btn-primary" href="{{#if settings.internal_policies_category_id}}{{page_path 'category' id=settings.internal_policies_category_id}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}">
+              Open policies
+            </a>
+          </div>
+          <div class="access-hub-card access-hub-card-tenant">
+            <h2>Request internal support</h2>
+            <p>Submit a request for HR, IT or CX internal support.</p>
+            <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}">
+              Open support portal
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="access-hub-hero digify-hero digify-hero--tenant js-tenant-hero is-hidden"{{#if settings.home_hero_image}} style="background-image:url('{{settings.home_hero_image}}');"{{/if}}>
+      <div class="access-hub-hero__overlay"></div>
+      <div class="access-hub-content container">
+        <p class="access-hub-eyebrow">DigifyCX tenant</p>
+        <h1>Welcome back, DigifyCX tenant</h1>
+        <p class="access-hub-subtitle">
+          Review your tenant policies or contact support for help with your account.
+        </p>
+        <div class="access-hub-cards">
+          <div class="access-hub-card access-hub-card-internal">
+            <h2>View tenant policies</h2>
+            <p>Read policies and documentation for DigifyCX tenants.</p>
+            <a class="btn btn-primary" href="{{#if settings.tenant_policies_category_id}}{{page_path 'category' id=settings.tenant_policies_category_id}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}">
+              View tenant policies
+            </a>
+          </div>
+          <div class="access-hub-card access-hub-card-tenant">
+            <h2>Contact tenant support</h2>
+            <p>Raise a support request with the DigifyCX team.</p>
+            <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}">
+              Contact support
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="access-hub-hero digify-hero digify-hero--generic js-generic-hero is-hidden"{{#if settings.home_hero_image}} style="background-image:url('{{settings.home_hero_image}}');"{{/if}}>
+      <div class="access-hub-hero__overlay"></div>
+      <div class="access-hub-content container">
+        <p class="access-hub-eyebrow">DigifyCX access hub</p>
+        <h1>Welcome to DigifyCX Access Hub</h1>
+        <p class="access-hub-subtitle">
+          Use the options below to browse policies or contact support.
+        </p>
+        <div class="access-hub-cards">
+          <div class="access-hub-card access-hub-card-internal">
+            <h2>Browse policies</h2>
+            <p>Open the policies library for DigifyCX.</p>
+            <a class="btn btn-primary" href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}">
+              Browse policies
+            </a>
+          </div>
+          <div class="access-hub-card access-hub-card-tenant">
+            <h2>Contact support</h2>
+            <p>Submit a request to the DigifyCX support team.</p>
+            <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">
+              Contact support
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  {{/if}}
+</main>
