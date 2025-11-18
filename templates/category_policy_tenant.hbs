@@ -11,7 +11,7 @@
     </div>
   </div>
 
-  {{#contains HelpCenter.user.tags settings.tenant_tag}}
+  {{#contains user.tags settings.tenant_tag}}
     <div class="category-container policy-category">
       <div class="category-content">
         <header class="page-header">
@@ -47,7 +47,7 @@
       </div>
     </div>
   {{else}}
-    {{#contains (json HelpCenter.user.organizations) settings.tenant_org_id}}
+    {{#contains user.organizations settings.tenant_org_id}}
       <div class="category-container policy-category">
         <div class="category-content">
           <header class="page-header">

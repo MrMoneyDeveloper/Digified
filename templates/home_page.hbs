@@ -1,5 +1,5 @@
 {{#if signed_in}}
-  {{#contains HelpCenter.user.tags settings.internal_tag}}
+  {{#contains user.tags settings.internal_tag}}
     <h1 class="visibility-hidden">{{ help_center.name }} — Internal</h1>
 
     <div id="tsparticles"></div>
@@ -64,7 +64,7 @@
       </section>
     </main>
   {{else}}
-    {{#contains (json HelpCenter.user.organizations) settings.internal_org_id}}
+    {{#contains user.organizations settings.internal_org_id}}
       <h1 class="visibility-hidden">{{ help_center.name }} — Internal</h1>
 
       <div id="tsparticles"></div>
@@ -129,7 +129,7 @@
         </section>
       </main>
     {{else}}
-      {{#contains HelpCenter.user.tags settings.tenant_tag}}
+      {{#contains user.tags settings.tenant_tag}}
         <h1 class="visibility-hidden">{{ help_center.name }} — Tenant</h1>
 
         <div id="tsparticles"></div>
@@ -194,7 +194,7 @@
           </section>
         </main>
       {{else}}
-        {{#contains (json HelpCenter.user.organizations) settings.tenant_org_id}}
+        {{#contains user.organizations settings.tenant_org_id}}
           <h1 class="visibility-hidden">{{ help_center.name }} — Tenant</h1>
 
           <div id="tsparticles"></div>

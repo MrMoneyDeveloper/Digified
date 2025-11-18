@@ -1,24 +1,24 @@
 <section class="dbpo-request">
   <div class="container">
-    {{#contains HelpCenter.user.tags settings.internal_tag}}
+    {{#contains user.tags settings.internal_tag}}
       <h1>Internal support request</h1>
       <p class="dbpo-request-intro">
         You're signed in as Digify staff, so only internal ticket forms are available below.
       </p>
     {{else}}
-      {{#contains (json HelpCenter.user.organizations) settings.internal_org_id}}
+      {{#contains user.organizations settings.internal_org_id}}
         <h1>Internal support request</h1>
         <p class="dbpo-request-intro">
           You're signed in under the internal organization, so tenant-only forms are hidden.
         </p>
       {{else}}
-        {{#contains HelpCenter.user.tags settings.tenant_tag}}
+        {{#contains user.tags settings.tenant_tag}}
           <h1>Tenant request centre</h1>
           <p class="dbpo-request-intro">
             You're viewing the tenant portal. Only the tenant ticket form remains in the dropdown.
           </p>
         {{else}}
-          {{#contains (json HelpCenter.user.organizations) settings.tenant_org_id}}
+          {{#contains user.organizations settings.tenant_org_id}}
             <h1>Tenant request centre</h1>
             <p class="dbpo-request-intro">
               You're associated with a tenant organization, so internal-only forms are hidden.
