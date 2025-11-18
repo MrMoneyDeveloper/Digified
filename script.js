@@ -23,25 +23,39 @@
 
   const isInternalUser =
     (segmentSettings.internalTag &&
-      userTags.indexOf(segmentSettings.internalTag) > -1) ||
+      userTags.includes(segmentSettings.internalTag)) ||
     hasOrg(segmentSettings.internalOrgId);
 
   const isTenantUser =
     (segmentSettings.tenantTag &&
-      userTags.indexOf(segmentSettings.tenantTag) > -1) ||
+      userTags.includes(segmentSettings.tenantTag)) ||
     hasOrg(segmentSettings.tenantOrgId);
 
   window.DigifiedSegments = {
     isInternalUser,
     isTenantUser,
-    hasOrg
+    hasOrg,
+    userTags,
+    userOrganizations
   };
 
   if (isInternalUser) {
+    console.info("[DigifiedSegments] Internal user detected", {
+      userTags,
+      userOrganizations
+    });
     document.documentElement.classList.add("hc-internal-user");
   } else if (isTenantUser) {
+    console.info("[DigifiedSegments] Tenant user detected", {
+      userTags,
+      userOrganizations
+    });
     document.documentElement.classList.add("hc-tenant-user");
   } else {
+    console.warn("[DigifiedSegments] Unknown user \u2013 no matching tag or org", {
+      userTags,
+      userOrganizations
+    });
     document.documentElement.classList.add("hc-unknown-user");
   }
 
@@ -61,9 +75,19 @@
     toggle.focus();
   }
 
+  const hideUnknownNavItems = () => {
+    if (!isInternalUser && !isTenantUser) {
+      const navItems = document.querySelectorAll(".nav-internal, .nav-tenant");
+      navItems.forEach((item) => {
+        item.style.display = "none";
+      });
+    }
+  };
+
   // Navigation
 
   window.addEventListener("DOMContentLoaded", () => {
+    hideUnknownNavItems();
     const menuButton = document.querySelector(".header .menu-button-mobile");
     const menuList = document.querySelector("#user-nav-mobile");
 

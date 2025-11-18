@@ -15,30 +15,28 @@
       <ul class="menu dbpo-menu">
         <li>{{#link "help_center" class="dbpo-nav-link nav-link"}}Home{{/link}}</li>
         {{#if signed_in}}
-          <li>
+          <li class="nav-internal">
             <a class="dbpo-nav-link nav-link" href="{{#if settings.internal_policies_category_id}}{{page_path 'category' id=settings.internal_policies_category_id}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}">
               Internal Policies
             </a>
           </li>
-          <li>
+          <li class="nav-internal">
             <a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}">
               IT Support
             </a>
           </li>
-          <li>
+          <li class="nav-tenant">
             <a class="dbpo-nav-link nav-link" href="{{#if settings.tenant_policies_category_id}}{{page_path 'category' id=settings.tenant_policies_category_id}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}">
               Tenant Policies
             </a>
           </li>
-          <li>
+          <li class="nav-tenant">
             <a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}">
               Tenant Support
             </a>
           </li>
           <li class="nav-signout">
-            <a class="btn nav-signout-btn" href="/hc/{{help_center.locale}}/signout">
-              Sign out
-            </a>
+            {{#link 'sign_out' class='btn nav-signout-btn'}}Sign out{{/link}}
           </li>
         {{else}}
           <li>
