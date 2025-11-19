@@ -1017,18 +1017,25 @@
     window.location.replace("{{#if settings.external_support_form_id}}{{page_path 'new_request' ticket_form_id=settings.external_support_form_id}}{{else}}{{page_path 'new_request' ticket_form_id=23381214703004}}{{/if}}");
   }
 })();
+(function () {
+  const imgsToWatch = document.querySelectorAll("img[data-digify-check]");
 
-document.addEventListener('DOMContentLoaded', function () {
-  var imgs = document.querySelectorAll('img');
+  imgsToWatch.forEach((img) => {
+    img.addEventListener("error", () => {
+      console.warn("[DIGIFY-THEME] Image failed to load", {
+        alt: img.alt,
+        src: img.src,
+        check: img.getAttribute("data-digify-check"),
+      });
+    });
 
-  imgs.forEach(function (img) {
-    img.addEventListener(
-      'error',
-      function () {
-        console.error('[DIGIFY-THEME] Image failed to load:', this.src);
-      },
-      { once: true }
-    );
+    if (img.complete && img.naturalWidth === 0) {
+      console.warn("[DIGIFY-THEME] Image failed to load (initial)", {
+        alt: img.alt,
+        src: img.src,
+        check: img.getAttribute("data-digify-check"),
+      });
+    }
   });
-});
+})();
 

@@ -2,7 +2,8 @@
 
 <header
   class="section hero community-hero cxi-community-hero"
-  style="background-image: url('{{asset 'settings/community_hero_image.png'}}');">
+  style="background-image: url('{{asset 'settings/community_hero_image.png'}}');"
+  data-digify-check="community-hero">
   <div class="cxi-community-hero-overlay"></div>
   <div class="container cxi-community-hero-body">
     <h2 class="visibility-hidden">{{ t 'search'}}</h2>
@@ -13,7 +14,7 @@
       </svg>
       {{search submit=false class='search search-full' scoped=settings.scoped_community_search}}
     </div>
-    <img class="cxi-community-banner" src="{{asset 'settings/community_banner_image.png'}}" alt="Community banner">
+    <img class="cxi-community-banner" src="{{asset 'settings/community_banner_image.png'}}" alt="Community banner" data-digify-check="community-banner">
   </div>
 </header>
 
