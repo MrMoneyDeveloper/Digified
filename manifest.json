@@ -254,6 +254,20 @@
           "label": "Tenant form ID",
           "description": "Ticket form ID for tenant/external sign-up requests.",
           "value": "23590702845724"
+        },
+        {
+          "identifier": "internal_request_form_id",
+          "type": "text",
+          "label": "Internal request form ID",
+          "description": "Ticket form ID used for internal Support & Requests hero CTA.",
+          "value": ""
+        },
+        {
+          "identifier": "tenant_request_form_id",
+          "type": "text",
+          "label": "Tenant request form ID",
+          "description": "Ticket form ID used for tenant Support & Requests hero CTA.",
+          "value": ""
         }
       ]
     },
@@ -315,6 +329,27 @@
           "label": "Generic support form ID",
           "description": "Ticket form ID for generic support requests.",
           "value": ""
+        },
+        {
+          "identifier": "category_shared_policies_id",
+          "type": "text",
+          "label": "Category ID \u2013 Shared Building Policies",
+          "description": "Category ID for shared building policies.",
+          "value": ""
+        },
+        {
+          "identifier": "category_internal_policies_id",
+          "type": "text",
+          "label": "Category ID \u2013 Internal Policies",
+          "description": "Category ID for internal staff policies.",
+          "value": ""
+        },
+        {
+          "identifier": "category_tenant_policies_id",
+          "type": "text",
+          "label": "Category ID \u2013 Tenant Policies",
+          "description": "Category ID for tenant policies and SLAs.",
+          "value": ""
         }
       ]
     },
@@ -332,7 +367,8 @@
           "identifier": "favicon",
           "type": "file",
           "description": "favicon_description",
-          "label": "favicon_label"
+          "label": "favicon_label",
+          "default": "assets/settings/favicon.png"
         }
       ]
     },
@@ -719,45 +755,93 @@
       "variables": [
         {
           "identifier": "home_hero_image",
-          "type": "file",
-          "label": "Home hero image",
-          "description": "Upload the home page hero background image"
+          "type": "image",
+          "label": "Home hero image (Digify CX)",
+          "description": "Home page hero background image for Digify CX.",
+          "default": "assets/settings/digify-cx-hero.jpg"
         },
         {
           "identifier": "community_hero_image",
-          "type": "file",
+          "type": "image",
           "label": "Community hero image",
-          "description": "Upload the community topics hero background image"
+          "description": "Community topics hero background image.",
+          "default": "assets/settings/community_hero_image.png"
         },
         {
           "identifier": "community_banner_image",
-          "type": "file",
+          "type": "image",
           "label": "Community banner image",
-          "description": "Optional banner image displayed below the community hero"
+          "description": "Optional banner image displayed below the community hero.",
+          "default": "assets/settings/community_banner_image.png"
         },
         {
           "identifier": "featured_policies_image",
-          "type": "file",
-          "label": "Featured policies image",
-          "description": "Full-width illustration shown in the Featured Policies panel on the home page."
-        },
-        {
-          "identifier": "network_card_background_image",
-          "type": "file",
-          "label": "Network card background image",
-          "description": "Background image for the Network & Access Requests card."
+          "type": "image",
+          "label": "Featured policies card image",
+          "description": "Illustration shown on the Featured Policies card on the home page.",
+          "default": "assets/settings/featured_policies_image.png"
         },
         {
           "identifier": "policies_card_background_image",
-          "type": "file",
-          "label": "Policies card background image",
-          "description": "Background image for the Policies & SOPs card."
+          "type": "image",
+          "label": "Policies card background",
+          "description": "Background image for the Policies card.",
+          "default": "assets/settings/policies_card_background_image.png"
+        },
+        {
+          "identifier": "network_card_background_image",
+          "type": "image",
+          "label": "Network / IT card background",
+          "description": "Background image for the Network / IT card.",
+          "default": "assets/settings/network_card_background_image.png"
+        },
+        {
+          "identifier": "building_footer_image",
+          "type": "image",
+          "label": "Footer building image",
+          "description": "Image of the Digify CX building used in the footer.",
+          "default": "assets/settings/digify-cx-building.jpg"
+        },
+        {
+          "identifier": "digify_cx_logo",
+          "type": "image",
+          "label": "Digify CX logo",
+          "description": "Primary Digify CX logo used in the header and brand strip.",
+          "default": "assets/settings/digify-cx-logo.png"
+        },
+        {
+          "identifier": "logo_cx_experts",
+          "type": "image",
+          "label": "Logo \u2013 CX Experts",
+          "description": "Logo for CX Experts.",
+          "default": "assets/settings/logo-cx-experts.png"
+        },
+        {
+          "identifier": "logo_cx_leads",
+          "type": "image",
+          "label": "Logo \u2013 CX Leads",
+          "description": "Logo for CX Leads.",
+          "default": "assets/settings/logo-cx-leads.png"
+        },
+        {
+          "identifier": "logo_digify_bpo",
+          "type": "image",
+          "label": "Logo \u2013 Digify BPO",
+          "description": "Logo for Digify BPO.",
+          "default": "assets/settings/logo-digify-bpo.png"
+        },
+        {
+          "identifier": "logo_outbound_cx",
+          "type": "image",
+          "label": "Logo \u2013 Outbound CX",
+          "description": "Logo for Outbound CX.",
+          "default": "assets/settings/logo-outbound-cx.png"
         },
         {
           "identifier": "logo",
           "type": "file",
-          "label": "Company logo",
-          "description": "Upload the header logo"
+          "label": "Company logo (legacy)",
+          "description": "Legacy header logo setting kept for backwards compatibility."
         },
         {
           "identifier": "card_icon_set_url",
