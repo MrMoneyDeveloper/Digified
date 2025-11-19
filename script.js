@@ -1018,3 +1018,17 @@
   }
 })();
 
+document.addEventListener('DOMContentLoaded', function () {
+  var imgs = document.querySelectorAll('img');
+
+  imgs.forEach(function (img) {
+    img.addEventListener(
+      'error',
+      function () {
+        console.error('[DIGIFY-THEME] Image failed to load:', this.src);
+      },
+      { once: true }
+    );
+  });
+});
+
