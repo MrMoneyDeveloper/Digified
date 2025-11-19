@@ -2433,24 +2433,6 @@ ol.breadcrumbs li::before {
   display: none;
 }
 
-.home-variant {
-  display: none;
-}
-
-.home-variant--default {
-  display: block;
-}
-
-.hc-internal-user .home-variant--internal,
-.hc-tenant-user .home-variant--tenant {
-  display: block;
-}
-
-.hc-internal-user .home-variant--default,
-.hc-tenant-user .home-variant--default {
-  display: none;
-}
-
 /* Policies cards */
 .accesshub-policies {
   display: grid;
@@ -2465,6 +2447,195 @@ ol.breadcrumbs li::before {
   padding: 1.5rem;
   box-shadow: 0 20px 40px rgba(16, 22, 43, 0.08);
   border: 1px solid #e7ebf5;
+}
+
+/* Digify CX landing refresh */
+.digify-header {
+  background-color: #1F1E3A;
+  color: #FFFFFF;
+}
+
+.digify-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+}
+
+.digify-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: #FFFFFF;
+}
+
+.digify-header__logo {
+  height: 32px;
+}
+
+.digify-header__brand-text {
+  font-weight: 600;
+}
+
+.btn.btn-primary {
+  background-color: #78EED6;
+  color: #1F1E3A;
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1.4rem;
+  font-weight: 600;
+}
+
+.btn.btn-secondary {
+  background-color: transparent;
+  color: #78EED6;
+  border: 1px solid #78EED6;
+  border-radius: 999px;
+  padding: 0.6rem 1.4rem;
+  font-weight: 500;
+}
+
+.digify-landing--anon,
+.digify-landing--internal,
+.digify-landing--tenant {
+  display: none;
+}
+
+.hc-unknown-user .digify-landing--anon {
+  display: block;
+}
+
+.hc-internal-user .digify-landing--internal {
+  display: block;
+}
+
+.hc-tenant-user .digify-landing--tenant {
+  display: block;
+}
+
+.digify-landing--anon {
+  background-color: #FFFFFF;
+  color: #000000;
+}
+
+.digify-landing--internal,
+.digify-landing--tenant {
+  background-color: #1F1E3A;
+  color: #FFFFFF;
+}
+
+.digify-hero {
+  position: relative;
+  color: #FFFFFF;
+  overflow: hidden;
+}
+
+.digify-hero__background {
+  position: absolute;
+  inset: 0;
+}
+
+.digify-hero__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.digify-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #A0ADD6 0%, #78EED6 40%, #1F1E3A 100%);
+  opacity: 0.9;
+}
+
+.digify-hero__content {
+  position: relative;
+  padding: 4rem 1.5rem 3rem;
+}
+
+.digify-hero__cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.digify-brands {
+  padding: 2rem 0 3rem;
+}
+
+.digify-brands__title {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.digify-brands__list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+}
+
+.digify-brands__list img {
+  max-height: 40px;
+  object-fit: contain;
+}
+
+.digify-cards {
+  display: grid;
+  gap: 1.5rem;
+  padding: 2rem 0 3rem;
+}
+
+@media (min-width: 768px) {
+  .digify-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.digify-card {
+  background-color: #FFFFFF;
+  color: #000000;
+  border-radius: 12px;
+  padding: 1.75rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.digify-card--primary {
+  background: linear-gradient(180deg, #A0ADD6 0%, #78EED6 100%);
+  color: #1F1E3A;
+}
+
+.digify-footer {
+  background-color: #1F1E3A;
+  color: #FFFFFF;
+  border-top: 2px solid #78EED6;
+  margin-top: 2rem;
+}
+
+.digify-footer__inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.digify-footer__logo {
+  height: 32px;
+  margin-bottom: 0.5rem;
+}
+
+.digify-footer__building img {
+  max-height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
 }
 
 .accesshub-policies__image {

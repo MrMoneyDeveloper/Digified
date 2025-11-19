@@ -1,19 +1,19 @@
-<footer class="digifycx-footer">
-  <div class="digifycx-footer__image-wrapper">
-    <img
-      src="{{#if settings.footer_building_image}}{{settings.footer_building_image}}{{else}}{{asset 'settings/digify-cx-building.jpg'}}{{/if}}"
-      alt="Digify CX building"
-      class="digifycx-footer__image"
-      data-digify-check="footer-building"
-      data-digify-fallback="{{asset 'settings/digify-cx-building.jpg'}}"
-    >
-  </div>
+<footer class="digify-footer">
+  <div class="digify-footer__inner container">
+    <div class="digify-footer__brand">
+      <img
+        src="{{asset 'settings/digify-cx-logo.png'}}"
+        alt="Digify CX"
+        class="digify-footer__logo"
+      >
+      <p>One Group. One Stack. Every CX Touch Point.</p>
+    </div>
 
-  <div class="digifycx-footer__content">
-    <p class="digifycx-footer__title">Digify CX Group</p>
-    <p>Digital customer experience across Digify BPO, CX Experts, CX Leads and Outbound CX.</p>
-    <p class="digifycx-footer__legal">
-      &copy; {{date 'now' format='YYYY'}} Digify CX. All rights reserved.
-    </p>
+    <div class="digify-footer__building">
+      <img
+        src="{{asset 'settings/digify-cx-building.jpg'}}"
+        alt="Digify CX building"
+      >
+    </div>
   </div>
 </footer>

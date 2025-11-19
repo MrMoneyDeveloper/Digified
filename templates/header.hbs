@@ -1,39 +1,16 @@
-<a class="skip-navigation visually-hidden-focusable" tabindex="1" href="#main-content">{{t 'skip_navigation' }}</a>
-
 <header class="digify-header">
-  <div class="container header-inner">
-    <a class="brand" href="{{help_center.url}}">
+  <div class="digify-header__inner container">
+    <a class="digify-header__brand" href="{{home_path}}">
       <img
-        src="{{#if settings.logo}}{{settings.logo}}{{else}}{{asset 'settings/logo-placeholder.png'}}{{/if}}"
-        data-digify-fallback="{{asset 'settings/logo-placeholder.png'}}"
-        alt="Company logo"
-        class="digifycx-logo"
-        data-digify-check="header-logo"
+        src="{{asset 'settings/digify-cx-logo.png'}}"
+        alt="Digify CX"
+        class="digify-header__logo"
       >
+      <span class="digify-header__brand-text">Digify CX Group</span>
     </a>
 
-    <nav class="topnav">
-      <a href="{{help_center.url}}">Support &amp; Requests</a>
-      <a
-        href="{{#if settings.category_shared_policies_id}}{{page_path 'category' id=settings.category_shared_policies_id}}{{else}}{{page_path 'help_center'}}{{/if}}"
-      >
-        Policies
-      </a>
-      {{#if help_center.community_enabled}}
-        <a href="/hc/{{help_center.locale}}/community/topics">Community</a>
-      {{/if}}
-    </nav>
-
-    <div class="header-auth">
-      {{#if signed_in}}
-        <span class="header-auth__name">{{user_name}}</span>
-        {{#link 'sign_out' class='btn header-auth__action'}}{{t 'sign_out'}}{{/link}}
-      {{else}}
-        <a class="btn header-auth__action" href="/hc/{{help_center.locale}}/signin">
-          {{t 'sign_in'}}
-        </a>
-      {{/if}}
+    <div class="digify-header__nav">
+      {{> user_profile}}
     </div>
   </div>
 </header>
-
