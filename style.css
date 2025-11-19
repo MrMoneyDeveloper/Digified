@@ -2433,6 +2433,24 @@ ol.breadcrumbs li::before {
   display: none;
 }
 
+.home-variant {
+  display: none;
+}
+
+.home-variant--default {
+  display: block;
+}
+
+.hc-internal-user .home-variant--internal,
+.hc-tenant-user .home-variant--tenant {
+  display: block;
+}
+
+.hc-internal-user .home-variant--default,
+.hc-tenant-user .home-variant--default {
+  display: none;
+}
+
 /* Policies cards */
 .accesshub-policies {
   display: grid;

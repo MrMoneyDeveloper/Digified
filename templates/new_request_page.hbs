@@ -1,9 +1,14 @@
 <section class="dbpo-request">
   <div class="container">
     <h1>{{t 'submit_a_request'}}</h1>
-    {{#if settings.request_form_icon_url}}
-      <img class="dbpo-request-icon" src="{{settings.request_form_icon_url}}" alt="" role="presentation">
-    {{/if}}
+    <img
+      class="dbpo-request-icon"
+      src="{{#if settings.request_form_icon_url}}{{settings.request_form_icon_url}}{{else}}{{asset 'settings/icon-placeholder.png'}}{{/if}}"
+      alt=""
+      role="presentation"
+      data-digify-check="request-icon"
+      data-digify-fallback="{{asset 'settings/icon-placeholder.png'}}"
+    >
     <p class="dbpo-request-intro">
       Use this form to request DigifyCX tenant or internal access. When you arrive from the home page cards the correct form loads automatically.
     </p>

@@ -1,10 +1,11 @@
 <footer class="digifycx-footer">
   <div class="digifycx-footer__image-wrapper">
     <img
-      src="{{asset 'settings/digify-cx-building.jpg'}}"
+      src="{{#if settings.footer_building_image}}{{settings.footer_building_image}}{{else}}{{asset 'settings/digify-cx-building.jpg'}}{{/if}}"
       alt="Digify CX building"
       class="digifycx-footer__image"
       data-digify-check="footer-building"
+      data-digify-fallback="{{asset 'settings/digify-cx-building.jpg'}}"
     >
   </div>
 

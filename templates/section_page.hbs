@@ -7,11 +7,14 @@
       <div class="cxi-policy-card-grid">
         <article class="cxi-policy-card">
           <div class="cxi-policy-icon-wrap">
-            {{#if settings.drug_policy_icon_url}}
-              <img class="cxi-policy-icon-img" src="{{settings.drug_policy_icon_url}}" alt="" role="presentation">
-            {{else}}
-              <i class="fa-solid fa-wine-bottle cxi-policy-icon" aria-hidden="true"></i>
-            {{/if}}
+            <img
+              class="cxi-policy-icon-img"
+              src="{{#if settings.drug_policy_icon_url}}{{settings.drug_policy_icon_url}}{{else}}{{asset 'settings/icon-placeholder.png'}}{{/if}}"
+              alt=""
+              role="presentation"
+              data-digify-check="policy-drug-icon"
+              data-digify-fallback="{{asset 'settings/icon-placeholder.png'}}"
+            >
           </div>
           <h3>Drug and Alcohol Policy</h3>
           <p>Arrive fit for duty and remain substance-free for every shift, including breaks and on-call windows.</p>
@@ -22,11 +25,14 @@
         </article>
         <article class="cxi-policy-card">
           <div class="cxi-policy-icon-wrap">
-            {{#if settings.clean_desk_policy_icon_url}}
-              <img class="cxi-policy-icon-img" src="{{settings.clean_desk_policy_icon_url}}" alt="" role="presentation">
-            {{else}}
-              <i class="fa-solid fa-broom cxi-policy-icon" aria-hidden="true"></i>
-            {{/if}}
+            <img
+              class="cxi-policy-icon-img"
+              src="{{#if settings.clean_desk_policy_icon_url}}{{settings.clean_desk_policy_icon_url}}{{else}}{{asset 'settings/icon-placeholder.png'}}{{/if}}"
+              alt=""
+              role="presentation"
+              data-digify-check="policy-clean-desk-icon"
+              data-digify-fallback="{{asset 'settings/icon-placeholder.png'}}"
+            >
           </div>
           <h3>Clean Desk Policy</h3>
           <p>Keep devices, credentials, and paperwork secure whenever you step away or end a shift.</p>
@@ -37,11 +43,14 @@
         </article>
         <article class="cxi-policy-card">
           <div class="cxi-policy-icon-wrap">
-            {{#if settings.locker_policy_icon_url}}
-              <img class="cxi-policy-icon-img" src="{{settings.locker_policy_icon_url}}" alt="" role="presentation">
-            {{else}}
-              <i class="fa-solid fa-lock cxi-policy-icon" aria-hidden="true"></i>
-            {{/if}}
+            <img
+              class="cxi-policy-icon-img"
+              src="{{#if settings.locker_policy_icon_url}}{{settings.locker_policy_icon_url}}{{else}}{{asset 'settings/icon-placeholder.png'}}{{/if}}"
+              alt=""
+              role="presentation"
+              data-digify-check="policy-locker-icon"
+              data-digify-fallback="{{asset 'settings/icon-placeholder.png'}}"
+            >
           </div>
           <h3>Locker Policy</h3>
           <p>Store belongings and sensitive media in assigned lockers with approved locks only.</p>
@@ -52,11 +61,14 @@
         </article>
         <article class="cxi-policy-card">
           <div class="cxi-policy-icon-wrap">
-            {{#if settings.pci_policy_icon_url}}
-              <img class="cxi-policy-icon-img" src="{{settings.pci_policy_icon_url}}" alt="" role="presentation">
-            {{else}}
-              <i class="fa-solid fa-shield-halved cxi-policy-icon" aria-hidden="true"></i>
-            {{/if}}
+            <img
+              class="cxi-policy-icon-img"
+              src="{{#if settings.pci_policy_icon_url}}{{settings.pci_policy_icon_url}}{{else}}{{asset 'settings/icon-placeholder.png'}}{{/if}}"
+              alt=""
+              role="presentation"
+              data-digify-check="policy-pci-icon"
+              data-digify-fallback="{{asset 'settings/icon-placeholder.png'}}"
+            >
           </div>
           <h3>PCI Compliance Policy</h3>
           <p>Protect cardholder data with segmented tools, approved devices, and rapid incident escalation.</p>
@@ -67,11 +79,14 @@
         </article>
         <article class="cxi-policy-card">
           <div class="cxi-policy-icon-wrap">
-            {{#if settings.smoking_policy_icon_url}}
-              <img class="cxi-policy-icon-img" src="{{settings.smoking_policy_icon_url}}" alt="" role="presentation">
-            {{else}}
-              <i class="fa-solid fa-smoking cxi-policy-icon" aria-hidden="true"></i>
-            {{/if}}
+            <img
+              class="cxi-policy-icon-img"
+              src="{{#if settings.smoking_policy_icon_url}}{{settings.smoking_policy_icon_url}}{{else}}{{asset 'settings/icon-placeholder.png'}}{{/if}}"
+              alt=""
+              role="presentation"
+              data-digify-check="policy-smoking-icon"
+              data-digify-fallback="{{asset 'settings/icon-placeholder.png'}}"
+            >
           </div>
           <h3>Smoking Policy</h3>
           <p>Limit smoking and vaping to designated areas and dispose of waste responsibly.</p>
@@ -82,11 +97,14 @@
         </article>
         <article class="cxi-policy-card">
           <div class="cxi-policy-icon-wrap">
-            {{#if settings.harassment_policy_icon_url}}
-              <img class="cxi-policy-icon-img" src="{{settings.harassment_policy_icon_url}}" alt="" role="presentation">
-            {{else}}
-              <i class="fa-solid fa-people-roof cxi-policy-icon" aria-hidden="true"></i>
-            {{/if}}
+            <img
+              class="cxi-policy-icon-img"
+              src="{{#if settings.harassment_policy_icon_url}}{{settings.harassment_policy_icon_url}}{{else}}{{asset 'settings/icon-placeholder.png'}}{{/if}}"
+              alt=""
+              role="presentation"
+              data-digify-check="policy-harassment-icon"
+              data-digify-fallback="{{asset 'settings/icon-placeholder.png'}}"
+            >
           </div>
           <h3>Sexual Harassment Policy</h3>
           <p>Report concerns immediately through HR, leadership, or the hotline&mdash;retaliation is prohibited.</p>

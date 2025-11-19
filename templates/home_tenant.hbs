@@ -1,9 +1,9 @@
-<h1 class="visibility-hidden">{{ help_center.name }} — Tenant</h1>
+﻿<h1 class="visibility-hidden">{{ help_center.name }} - Tenant</h1>
 
 <div id="tsparticles"></div>
 
 <main id="main-content" class="home-main homepage-sections">
-  <section class="access-hub-hero" style="background-image:url('{{asset 'settings/digify-cx-hero.jpg'}}');">
+  <section class="access-hub-hero" style="background-image:url('{{#if settings.home_hero_image}}{{settings.home_hero_image}}{{else}}{{asset 'settings/digify-cx-hero.jpg'}}{{/if}}');">
     <div class="access-hub-hero__overlay"></div>
     <div class="access-hub-content container">
       <p class="access-hub-eyebrow">Tenant experience</p>
@@ -61,3 +61,4 @@
     </div>
   </section>
 </main>
+

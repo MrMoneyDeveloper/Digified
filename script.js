@@ -1018,24 +1018,52 @@
   }
 })();
 (function () {
-  const imgsToWatch = document.querySelectorAll("img[data-digify-check]");
-
-  imgsToWatch.forEach((img) => {
-    img.addEventListener("error", () => {
-      console.warn("[DIGIFY-THEME] Image failed to load", {
-        alt: img.alt,
-        src: img.src,
-        check: img.getAttribute("data-digify-check"),
-      });
+  function logFailure(img, phase) {
+    console.warn("[DIGIFY-THEME] Image failed to load", {
+      alt: img.alt,
+      src: img.src,
+      check: img.getAttribute("data-digify-check"),
+      phase,
     });
+  }
 
-    if (img.complete && img.naturalWidth === 0) {
-      console.warn("[DIGIFY-THEME] Image failed to load (initial)", {
-        alt: img.alt,
-        src: img.src,
+  function handleFailure(img, phase) {
+    logFailure(img, phase);
+
+    const fallback = img.getAttribute("data-digify-fallback");
+    const fallbackApplied = img.dataset.digifyFallbackApplied === "true";
+
+    if (fallback && !fallbackApplied && img.src !== fallback) {
+      img.dataset.digifyFallbackApplied = "true";
+      console.warn("[DIGIFY-THEME] Applying fallback image", {
         check: img.getAttribute("data-digify-check"),
+        fallback,
       });
+      img.src = fallback;
+      return;
     }
-  });
+
+    img.classList.add("digify-image-error");
+    img.setAttribute("aria-hidden", "true");
+    img.style.display = "none";
+  }
+
+  function watchImages() {
+    const imgsToWatch = document.querySelectorAll("img[data-digify-check]");
+
+    imgsToWatch.forEach((img) => {
+      img.addEventListener("error", () => handleFailure(img, "error"));
+
+      if (img.complete && img.naturalWidth === 0) {
+        handleFailure(img, "initial");
+      }
+    });
+  }
+
+  if (document.readyState === "loading") {
+    window.addEventListener("DOMContentLoaded", watchImages, { once: true });
+  } else {
+    watchImages();
+  }
 })();
 
