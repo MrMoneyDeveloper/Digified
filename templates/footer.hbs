@@ -11,39 +11,7 @@
     <p class="digifycx-footer__title">Digify CX Group</p>
     <p>Digital customer experience across Digify BPO, CX Experts, CX Leads and Outbound CX.</p>
     <p class="digifycx-footer__legal">
-      © {{year}} Digify CX. All rights reserved.
+      &copy; {{date 'now' format='YYYY'}} Digify CX. All rights reserved.
     </p>
   </div>
 </footer>
-
-<script src="{{asset 'bootstrap.bundle.min.js'}}"></script>
-<script src="https://cdn.jsdelivr.net/npm/tsparticles@3/tsparticles.bundle.min.js"></script>
-<script>
-  (function () {
-    function initParticles() {
-      if (!window.tsParticles) {
-        window.setTimeout(initParticles, 120);
-        return;
-      }
-      if (!document.getElementById("tsparticles")) {
-        return;
-      }
-      window.tsParticles.load("tsparticles", {
-        fullScreen: { enable: true },
-        detectRetina: true,
-        particles: {
-          number: { value: 60, density: { enable: true, area: 800 } },
-          move: { enable: true, speed: 1.2 },
-          size: { value: { min: 1, max: 3 } },
-          links: { enable: true, distance: 140, opacity: 0.4 }
-        }
-      });
-    }
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initParticles);
-    } else {
-      initParticles();
-    }
-  })();
-</script>

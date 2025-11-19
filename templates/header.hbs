@@ -2,12 +2,12 @@
 
 <header class="digify-header">
   <div class="container header-inner">
-    <a class="brand" href="{{home_url}}">
+    <a class="brand" href="{{help_center.url}}">
       <img src="{{asset 'settings/digify-cx-logo.png'}}" alt="Digify CX">
     </a>
 
     <nav class="topnav">
-      <a href="{{home_url}}">Support &amp; Requests</a>
+      <a href="{{help_center.url}}">Support &amp; Requests</a>
       <a
         href="{{#if settings.category_shared_policies_id}}{{page_path 'category' id=settings.category_shared_policies_id}}{{else}}{{page_path 'help_center'}}{{/if}}"
       >
