@@ -333,21 +333,21 @@
         {
           "identifier": "category_shared_policies_id",
           "type": "text",
-          "label": "Category ID \u2013 Shared Building Policies",
+          "label": "Category ID – Shared Building Policies",
           "description": "Category ID for shared building policies.",
           "value": ""
         },
         {
           "identifier": "category_internal_policies_id",
           "type": "text",
-          "label": "Category ID \u2013 Internal Policies",
+          "label": "Category ID – Internal Policies",
           "description": "Category ID for internal staff policies.",
           "value": ""
         },
         {
           "identifier": "category_tenant_policies_id",
           "type": "text",
-          "label": "Category ID \u2013 Tenant Policies",
+          "label": "Category ID – Tenant Policies",
           "description": "Category ID for tenant policies and SLAs.",
           "value": ""
         }
@@ -367,15 +367,13 @@
           "identifier": "favicon",
           "type": "file",
           "description": "favicon_description",
-          "label": "favicon_label",
-          "value": "favicon.png"
+          "label": "favicon_label"
         },
         {
           "identifier": "logo",
           "type": "file",
           "description": "logo_description",
-          "label": "logo_label",
-          "value": "logo-placeholder.png"
+          "label": "logo_label"
         }
       ]
     },
@@ -764,85 +762,73 @@
           "identifier": "home_hero_image",
           "type": "file",
           "label": "Home hero image URL",
-          "description": "Hero illustration used on the Access Hub home templates.",
-          "value": "digify-cx-hero.jpg"
+          "description": "Hero illustration used on the Access Hub home templates."
         },
         {
           "identifier": "home_brand_banner_image",
           "type": "file",
           "label": "Home brand banner image URL",
-          "description": "Wide banner displayed under the Access Hub hero.",
-          "value": "logo.png"
+          "description": "Wide banner displayed under the Access Hub hero."
         },
         {
           "identifier": "home_logo_digify_bpo",
           "type": "file",
           "label": "Digify BPO logo URL",
-          "description": "Overrides the Digify BPO logo shown on the home page.",
-          "value": "logo-digify-bpo.png"
+          "description": "Overrides the Digify BPO logo shown on the home page."
         },
         {
           "identifier": "home_logo_cx_leads",
           "type": "file",
           "label": "CX Leads logo URL",
-          "description": "Overrides the CX Leads logo shown on the home page.",
-          "value": "logo-cx-leads.png"
+          "description": "Overrides the CX Leads logo shown on the home page."
         },
         {
           "identifier": "home_logo_outbound_cx",
           "type": "file",
           "label": "Outbound CX logo URL",
-          "description": "Overrides the Outbound CX logo shown on the home page.",
-          "value": "logo-outbound-cx.png"
+          "description": "Overrides the Outbound CX logo shown on the home page."
         },
         {
           "identifier": "home_logo_cx_experts",
           "type": "file",
           "label": "CX Experts logo URL",
-          "description": "Overrides the CX Experts logo shown on the home page.",
-          "value": "logo-cx-experts.png"
+          "description": "Overrides the CX Experts logo shown on the home page."
         },
         {
           "identifier": "home_shared_policies_image",
           "type": "file",
           "label": "Shared policies card image URL",
-          "description": "Overrides the first home page policy card image.",
-          "value": "policies_card_background_image.png"
+          "description": "Overrides the first home page policy card image."
         },
         {
           "identifier": "home_internal_policies_image",
           "type": "file",
           "label": "Internal policies card image URL",
-          "description": "Overrides the second home page policy card image.",
-          "value": "featured_policies_image.png"
+          "description": "Overrides the second home page policy card image."
         },
         {
           "identifier": "home_tenant_policies_image",
           "type": "file",
           "label": "Tenant policies card image URL",
-          "description": "Overrides the third home page policy card image.",
-          "value": "network_card_background_image.png"
+          "description": "Overrides the third home page policy card image."
         },
         {
           "identifier": "footer_building_image",
           "type": "file",
           "label": "Footer building image URL",
-          "description": "Optional image shown above the footer copy.",
-          "value": "digify-cx-building.jpg"
+          "description": "Optional image shown above the footer copy."
         },
         {
           "identifier": "community_hero_image",
           "type": "file",
           "label": "Community hero image URL",
-          "description": "Background image for community landing headers.",
-          "value": "community_hero_image.png"
+          "description": "Background image for community landing headers."
         },
         {
           "identifier": "community_banner_image",
           "type": "file",
           "label": "Community banner image URL",
-          "description": "Foreground banner image for community headers.",
-          "value": "community_banner_image.png"
+          "description": "Foreground banner image for community headers."
         }
       ]
     },
@@ -895,12 +881,3 @@
     }
   ]
 }
-
-
-
-
-
-
-
-
-
