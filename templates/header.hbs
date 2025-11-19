@@ -1,6 +1,6 @@
 <header class="digify-header">
   <div class="digify-header__inner container">
-    <a class="digify-header__brand" href="{{home_path}}">
+    <a class="digify-header__brand" href="{{page_path 'help_center'}}">
       <img
         src="{{asset 'settings/digify-cx-logo.png'}}"
         alt="Digify CX"
@@ -10,7 +10,15 @@
     </a>
 
     <div class="digify-header__nav">
-      {{> user_profile}}
+      {{#if signed_in}}
+        <span class="digify-header__user">{{user_name}}</span>
+        {{#link 'new_request' class='btn btn-secondary'}}{{t 'submit_a_request'}}{{/link}}
+        {{#link 'sign_out' class='btn btn-primary'}}{{t 'sign_out'}}{{/link}}
+      {{else}}
+        <a class="btn btn-primary" href="/hc/{{help_center.locale}}/signin">
+          {{t 'sign_in'}}
+        </a>
+      {{/if}}
     </div>
   </div>
 </header>

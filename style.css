@@ -2478,6 +2478,16 @@ ol.breadcrumbs li::before {
   font-weight: 600;
 }
 
+.digify-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.digify-header__user {
+  font-weight: 500;
+}
+
 .btn.btn-primary {
   background-color: #78EED6;
   color: #1F1E3A;
