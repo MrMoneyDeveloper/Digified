@@ -368,14 +368,14 @@
           "type": "file",
           "description": "favicon_description",
           "label": "favicon_label",
-          "default": "favicon.png"
+          "value": "favicon.png"
         },
         {
           "identifier": "logo",
           "type": "file",
           "description": "logo_description",
           "label": "logo_label",
-          "default": "logo-placeholder.png"
+          "value": "logo-placeholder.png"
         }
       ]
     },
@@ -765,84 +765,84 @@
           "type": "file",
           "label": "Home hero image URL",
           "description": "Hero illustration used on the Access Hub home templates.",
-          "default": "digify-cx-hero.jpg"
+          "value": "digify-cx-hero.jpg"
         },
         {
           "identifier": "home_brand_banner_image",
           "type": "file",
           "label": "Home brand banner image URL",
           "description": "Wide banner displayed under the Access Hub hero.",
-          "default": "logo.png"
+          "value": "logo.png"
         },
         {
           "identifier": "home_logo_digify_bpo",
           "type": "file",
           "label": "Digify BPO logo URL",
           "description": "Overrides the Digify BPO logo shown on the home page.",
-          "default": "logo-digify-bpo.png"
+          "value": "logo-digify-bpo.png"
         },
         {
           "identifier": "home_logo_cx_leads",
           "type": "file",
           "label": "CX Leads logo URL",
           "description": "Overrides the CX Leads logo shown on the home page.",
-          "default": "logo-cx-leads.png"
+          "value": "logo-cx-leads.png"
         },
         {
           "identifier": "home_logo_outbound_cx",
           "type": "file",
           "label": "Outbound CX logo URL",
           "description": "Overrides the Outbound CX logo shown on the home page.",
-          "default": "logo-outbound-cx.png"
+          "value": "logo-outbound-cx.png"
         },
         {
           "identifier": "home_logo_cx_experts",
           "type": "file",
           "label": "CX Experts logo URL",
           "description": "Overrides the CX Experts logo shown on the home page.",
-          "default": "logo-cx-experts.png"
+          "value": "logo-cx-experts.png"
         },
         {
           "identifier": "home_shared_policies_image",
           "type": "file",
           "label": "Shared policies card image URL",
           "description": "Overrides the first home page policy card image.",
-          "default": "policies_card_background_image.png"
+          "value": "policies_card_background_image.png"
         },
         {
           "identifier": "home_internal_policies_image",
           "type": "file",
           "label": "Internal policies card image URL",
           "description": "Overrides the second home page policy card image.",
-          "default": "featured_policies_image.png"
+          "value": "featured_policies_image.png"
         },
         {
           "identifier": "home_tenant_policies_image",
           "type": "file",
           "label": "Tenant policies card image URL",
           "description": "Overrides the third home page policy card image.",
-          "default": "network_card_background_image.png"
+          "value": "network_card_background_image.png"
         },
         {
           "identifier": "footer_building_image",
           "type": "file",
           "label": "Footer building image URL",
           "description": "Optional image shown above the footer copy.",
-          "default": "digify-cx-building.jpg"
+          "value": "digify-cx-building.jpg"
         },
         {
           "identifier": "community_hero_image",
           "type": "file",
           "label": "Community hero image URL",
           "description": "Background image for community landing headers.",
-          "default": "community_hero_image.png"
+          "value": "community_hero_image.png"
         },
         {
           "identifier": "community_banner_image",
           "type": "file",
           "label": "Community banner image URL",
           "description": "Foreground banner image for community headers.",
-          "default": "community_banner_image.png"
+          "value": "community_banner_image.png"
         }
       ]
     },
