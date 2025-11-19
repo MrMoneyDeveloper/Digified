@@ -367,8 +367,7 @@
           "identifier": "favicon",
           "type": "file",
           "description": "favicon_description",
-          "label": "favicon_label",
-          "default": "assets/settings/favicon.png"
+          "label": "favicon_label"
         }
       ]
     },
