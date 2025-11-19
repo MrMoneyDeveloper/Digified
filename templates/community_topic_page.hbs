@@ -1,6 +1,6 @@
 <header
   class="section hero community-hero cxi-community-hero"
-  {{#if settings.community_hero_image}}style="background-image: url('{{settings.community_hero_image}}');"{{/if}}>
+  style="background-image: url('{{asset 'settings/community_hero_image.png'}}');">
   <div class="cxi-community-hero-overlay"></div>
   <div class="container cxi-community-hero-body">
     <h2 class="visibility-hidden">{{ t 'search'}}</h2>
@@ -11,9 +11,7 @@
       </svg>
       {{search scoped=settings.scoped_community_search submit=false class='search search-full'}}
     </div>
-    {{#if settings.community_banner_image}}
-      <img class="cxi-community-banner" src="{{settings.community_banner_image}}" alt="Community banner">
-    {{/if}}
+    <img class="cxi-community-banner" src="{{asset 'settings/community_banner_image.png'}}" alt="Community banner">
   </div>
 </header>
 

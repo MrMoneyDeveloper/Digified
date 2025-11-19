@@ -1,177 +1,132 @@
 <h1 class="visibility-hidden">{{ help_center.name }}</h1>
 
-<div id="tsparticles"></div>
-
 <main id="main-content" class="home-main homepage-sections">
-  {{!-- Anonymous users: existing sign-up hero --}}
-  {{#unless signed_in}}
-    <section class="access-hub-hero"{{#if settings.home_hero_image}} style="background-image:url('{{settings.home_hero_image}}');"{{/if}}>
-      <div class="access-hub-hero__overlay"></div>
-      <div class="access-hub-content container">
-        <p class="access-hub-eyebrow">DigifyCX access hub</p>
-        <h1>Choose the right sign-up experience</h1>
-        <p class="access-hub-subtitle">
-          Staff and tenants have dedicated forms so requests get routed to the right CXI team instantly.
-        </p>
-        <div class="access-hub-cards">
-          <div class="access-hub-card access-hub-card-internal">
-            <h2>Digify Staff / Internal</h2>
-            <p>Request DigifyCX internal access.</p>
-            <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}">
-              Internal Sign-up
-            </a>
-          </div>
-          <div class="access-hub-card access-hub-card-tenant">
-            <h2>Tenant / External</h2>
-            <p>Request tenant access for external users.</p>
-            <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}">
-              Tenant Sign-up
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-  {{/unless}}
+  <section class="accesshub-request-strip">
+    <article class="accesshub-request-card">
+      <p class="accesshub-request-card__eyebrow">Digify CX internal</p>
+      <h2>Request internal access</h2>
+      <p>Employees can raise IT, HR, or facilities requests directly with the Digify CX support team.</p>
+      <a
+        class="btn btn-primary"
+        href="{{#if settings.internal_request_form_id}}{{page_path 'new_request' ticket_form_id=settings.internal_request_form_id}}{{else}}{{page_path 'new_request'}}?ticket_form_id=23590656709788{{/if}}"
+      >
+        Submit internal request
+      </a>
+    </article>
 
-  {{!-- Signed-in users: segment-specific heroes (JS will toggle visibility) --}}
-  {{#if signed_in}}
-    <section class="access-hub-hero digify-hero digify-hero--internal js-internal-hero is-hidden"{{#if settings.home_hero_image}} style="background-image:url('{{settings.home_hero_image}}');"{{/if}}>
-      <div class="access-hub-hero__overlay"></div>
-      <div class="access-hub-content container">
-        <p class="access-hub-eyebrow">DigifyCX internal</p>
-        <h1>Welcome back, DigifyCX team</h1>
-        <p class="access-hub-subtitle">
-          Select an option below to access internal resources.
-        </p>
-        <div class="card-grid">
-          <div class="card">
-            <h3>Browse internal policies</h3>
-            <p>Open the complete library of HR, IT, and CX policies.</p>
-            <a
-              href="{{#if settings.internal_policies_category_id}}{{page_path 'category' id=settings.internal_policies_category_id}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}"
-              class="btn"
-            >
-              VIEW POLICIES
-            </a>
-          </div>
-          <div class="card">
-            <h3>Access HR resources</h3>
-            <p>Download forms and review employee benefits.</p>
-            <a
-              href="{{#if settings.hr_resources_section_id}}{{page_path 'section' id=settings.hr_resources_section_id}}{{else}}{{#if settings.internal_policies_category_id}}{{page_path 'category' id=settings.internal_policies_category_id}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}"
-              class="btn"
-            >
-              HR RESOURCES
-            </a>
-          </div>
-          <div class="card">
-            <h3>Submit an IT/Facilities request</h3>
-            <p>Log an IT issue or facilities request with our support team.</p>
-            <a
-              href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}"
-              class="btn"
-            >
-              SUBMIT REQUEST
-            </a>
-          </div>
-          <div class="card">
-            <h3>Check internal announcements</h3>
-            <p>Stay updated with the latest internal news and alerts.</p>
-            <a
-              href="{{#if settings.internal_news_category_id}}/hc/{{help_center.locale}}/categories/{{settings.internal_news_category_id}}{{else}}{{page_path 'help_center'}}{{/if}}"
-              class="btn"
-            >
-              SEE ANNOUNCEMENTS
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
+    <article class="accesshub-request-card">
+      <p class="accesshub-request-card__eyebrow">Digify CX tenants</p>
+      <h2>Request tenant access</h2>
+      <p>Tenants and subletters can request network access, building services, or equipment support.</p>
+      <a
+        class="btn btn-outline-primary"
+        href="{{#if settings.tenant_request_form_id}}{{page_path 'new_request' ticket_form_id=settings.tenant_request_form_id}}{{else}}{{page_path 'new_request'}}?ticket_form_id=23590702845724{{/if}}"
+      >
+        Submit tenant request
+      </a>
+    </article>
+  </section>
 
-    <section class="access-hub-hero digify-hero digify-hero--tenant js-tenant-hero is-hidden"{{#if settings.home_hero_image}} style="background-image:url('{{settings.home_hero_image}}');"{{/if}}>
-      <div class="access-hub-hero__overlay"></div>
-      <div class="access-hub-content container">
-        <p class="access-hub-eyebrow">DigifyCX tenant</p>
-        <h1>Welcome back, DigifyCX tenant</h1>
-        <p class="access-hub-subtitle">
-          Access your tenancy resources below.
-        </p>
-        <div class="card-grid">
-          <div class="card">
-            <h3>View tenant policies</h3>
-            <p>Read building, workspace, and conduct policies.</p>
-            <a
-              href="{{#if settings.tenant_policies_category_id}}{{page_path 'category' id=settings.tenant_policies_category_id}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}"
-              class="btn"
-            >
-              VIEW POLICIES
-            </a>
-          </div>
-          <div class="card">
-            <h3>Contact tenant support</h3>
-            <p>Reach the CX Experts team for assistance.</p>
-            <a
-              href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}"
-              class="btn"
-            >
-              CONTACT SUPPORT
-            </a>
-          </div>
-          <div class="card">
-            <h3>Request services</h3>
-            <p>Submit requests for network access, facilities, or maintenance.</p>
-            <a
-              href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_service_form_id}}{{settings.tenant_service_form_id}}{{else}}{{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}{{/if}}"
-              class="btn"
-            >
-              REQUEST SERVICE
-            </a>
-          </div>
-          <div class="card">
-            <h3>Check building updates</h3>
-            <p>See the latest announcements and alerts for tenants.</p>
-            <a
-              href="{{#if settings.tenant_news_category_id}}/hc/{{help_center.locale}}/categories/{{settings.tenant_news_category_id}}{{else}}{{page_path 'help_center'}}{{/if}}"
-              class="btn"
-            >
-              SEE UPDATES
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
+  <section class="accesshub-hero">
+    <div class="accesshub-hero__image-wrapper">
+      <img
+        class="accesshub-hero__image"
+        src="{{asset 'settings/digify-cx-hero.jpg'}}"
+        alt="Digify CX – Digital customer experience"
+      >
+    </div>
 
-    <section class="access-hub-hero digify-hero digify-hero--generic js-generic-hero is-hidden"{{#if settings.home_hero_image}} style="background-image:url('{{settings.home_hero_image}}');"{{/if}}>
-      <div class="access-hub-hero__overlay"></div>
-      <div class="access-hub-content container">
-        <p class="access-hub-eyebrow">DigifyCX access hub</p>
-        <h1>Welcome to DigifyCX Access Hub</h1>
-        <p class="access-hub-subtitle">
-          Use the options below to browse policies or contact support.
-        </p>
-        <div class="card-grid">
-          <div class="card">
-            <h3>Browse policies</h3>
-            <p>Explore our general policies library.</p>
-            <a
-              href="{{#if settings.public_policies_category_id}}{{page_path 'category' id=settings.public_policies_category_id}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}"
-              class="btn"
-            >
-              BROWSE POLICIES
-            </a>
-          </div>
-          <div class="card">
-            <h3>Contact support</h3>
-            <p>Need help? Submit a request to our team.</p>
-            <a
-              href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.generic_form_id}}{{settings.generic_form_id}}{{else}}{{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}{{/if}}"
-              class="btn"
-            >
-              CONTACT SUPPORT
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-  {{/if}}
+    <div class="accesshub-hero__content accesshub-hero__content--anonymous">
+      <h1>One group. One stack. Every CX touch point.</h1>
+      <p>Digify CX brings together Digify BPO, CX Experts, CX Leads and Outbound CX under one customer experience stack.</p>
+      <a href="{{sign_in_url}}" class="btn btn-primary">
+        Sign in to the Help Centre
+      </a>
+    </div>
+
+    <div class="accesshub-hero__content accesshub-hero__content--internal">
+      <h1>Welcome back, DigifyCX team</h1>
+      <p>Access internal policies, HR &amp; IT support, and building updates for Digify CX employees.</p>
+      <a
+        href="{{#if settings.internal_request_form_id}}{{page_path 'new_request' ticket_form_id=settings.internal_request_form_id}}{{else}}{{page_path 'new_request'}}?ticket_form_id=23590656709788{{/if}}"
+        class="btn btn-primary"
+      >
+        Submit HR / IT / Facilities request
+      </a>
+    </div>
+
+    <div class="accesshub-hero__content accesshub-hero__content--tenant">
+      <h1>Welcome back, DigifyCX tenant</h1>
+      <p>View tenant policies, request services, and contact Digify CX support.</p>
+      <a
+        href="{{#if settings.tenant_request_form_id}}{{page_path 'new_request' ticket_form_id=settings.tenant_request_form_id}}{{else}}{{page_path 'new_request'}}?ticket_form_id=23590702845724{{/if}}"
+        class="btn btn-primary"
+      >
+        Request services
+      </a>
+    </div>
+  </section>
+
+  <section class="accesshub-brand-strip">
+    <p class="accesshub-brand-strip__headline">
+      One group. One stack. Every CX touch point.
+    </p>
+    <div class="accesshub-brand-strip__logos">
+      <img src="{{asset 'settings/digify-cx-logo.png'}}" alt="Digify CX">
+      <img src="{{asset 'settings/logo-digify-bpo.png'}}" alt="Digify BPO">
+      <img src="{{asset 'settings/logo-cx-leads.png'}}" alt="CX Leads">
+      <img src="{{asset 'settings/logo-outbound-cx.png'}}" alt="Outbound CX">
+      <img src="{{asset 'settings/logo-cx-experts.png'}}" alt="CX Experts">
+    </div>
+  </section>
+
+  <section class="accesshub-policies">
+    <article class="accesshub-policies__card accesshub-policies__card--shared">
+      <img
+        src="{{asset 'settings/policies_card_background_image.png'}}"
+        alt="Shared building policies"
+        class="accesshub-policies__image"
+      >
+      <h2>Shared building policies</h2>
+      <p>Applies to all Digify CX tenants and staff across the building.</p>
+      <a
+        href="{{#if settings.category_shared_policies_id}}{{page_path 'category' id=settings.category_shared_policies_id}}{{else}}{{page_path 'help_center'}}{{/if}}"
+        class="btn btn-secondary"
+      >
+        View shared policies
+      </a>
+    </article>
+
+    <article class="accesshub-policies__card accesshub-policies__card--internal">
+      <img
+        src="{{asset 'settings/featured_policies_image.png'}}"
+        alt="Internal policies"
+        class="accesshub-policies__image"
+      >
+      <h2>Internal staff policies</h2>
+      <p>Workplace rules, HR policies and internal procedures for Digify CX employees.</p>
+      <a
+        href="{{#if settings.category_internal_policies_id}}{{page_path 'category' id=settings.category_internal_policies_id}}{{else}}{{page_path 'help_center'}}{{/if}}"
+        class="btn btn-secondary"
+      >
+        View internal policies
+      </a>
+    </article>
+
+    <article class="accesshub-policies__card accesshub-policies__card--tenant">
+      <img
+        src="{{asset 'settings/network_card_background_image.png'}}"
+        alt="Tenant policies"
+        class="accesshub-policies__image"
+      >
+      <h2>Tenant policies &amp; SLAs</h2>
+      <p>Guidelines and SLAs for subletters and clients hosted at Digify CX facilities.</p>
+      <a
+        href="{{#if settings.category_tenant_policies_id}}{{page_path 'category' id=settings.category_tenant_policies_id}}{{else}}{{page_path 'help_center'}}{{/if}}"
+        class="btn btn-secondary"
+      >
+        View tenant policies
+      </a>
+    </article>
+  </section>
 </main>

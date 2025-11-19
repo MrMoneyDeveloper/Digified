@@ -2239,3 +2239,280 @@ ol.breadcrumbs li::before {
   margin-bottom: 0.75rem;
 }
 
+/* Digify CX header refresh */
+.digify-header {
+  background: linear-gradient(90deg, #1f1e3a, #1c3e68);
+  color: #ffffff;
+}
+
+.digify-header .brand img {
+  height: 48px;
+  width: auto;
+  display: block;
+}
+
+.topnav {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.topnav a {
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: none;
+  text-transform: uppercase;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+}
+
+.header-auth {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-auth__name {
+  font-weight: 600;
+}
+
+.header-auth__action {
+  border-radius: 999px;
+  padding: 0.45rem 1.4rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.header-auth__action.btn {
+  background: #ffffff;
+  color: #1f1e3a;
+  border: none;
+  box-shadow: 0 10px 25px rgba(13, 23, 55, 0.2);
+}
+
+@media (max-width: 768px) {
+  .header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .topnav {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+}
+
+/* Access hub request strip */
+.accesshub-request-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0 3rem;
+}
+
+.accesshub-request-card {
+  background: #0f223d;
+  color: #ffffff;
+  padding: 1.75rem;
+  border-radius: 1.25rem;
+  box-shadow: 0 25px 45px rgba(5, 9, 24, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.accesshub-request-card__eyebrow {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  color: var(--digify-aqua);
+  margin-bottom: 0.5rem;
+}
+
+.accesshub-request-card h2 {
+  margin: 0 0 0.5rem;
+}
+
+.accesshub-request-card p {
+  margin: 0 0 1rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.accesshub-request-card .btn {
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+/* Hero */
+.accesshub-hero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: center;
+  background: #101431;
+  color: #ffffff;
+  padding: 2.5rem;
+  border-radius: 1.75rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 40px 60px rgba(10, 9, 33, 0.35);
+}
+
+.accesshub-hero__image-wrapper {
+  flex: 1 1 320px;
+}
+
+.accesshub-hero__image {
+  width: 100%;
+  height: auto;
+  border-radius: 1.5rem;
+  display: block;
+}
+
+.accesshub-hero__content {
+  flex: 1 1 320px;
+  display: none;
+}
+
+.accesshub-hero__content h1 {
+  margin-top: 0;
+}
+
+.accesshub-hero__content p {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.accesshub-hero__content .btn {
+  border-radius: 999px;
+  font-weight: 700;
+  margin-top: 1rem;
+}
+
+.accesshub-hero__content--anonymous {
+  display: block;
+}
+
+.hc-unknown-user .accesshub-hero__content--anonymous,
+.hc-internal-user .accesshub-hero__content--internal,
+.hc-tenant-user .accesshub-hero__content--tenant {
+  display: block;
+}
+
+.hc-internal-user .accesshub-hero__content--anonymous,
+.hc-tenant-user .accesshub-hero__content--anonymous {
+  display: none;
+}
+
+/* Brand strip */
+.accesshub-brand-strip {
+  background: #f4f6ff;
+  border-radius: 1.25rem;
+  padding: 1.75rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.accesshub-brand-strip__headline {
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #1f1e3a;
+}
+
+.accesshub-brand-strip__logos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.accesshub-brand-strip__logos img {
+  max-height: 48px;
+  width: auto;
+}
+
+.hc-internal-user .accesshub-brand-strip,
+.hc-tenant-user .accesshub-brand-strip {
+  display: none;
+}
+
+/* Policies cards */
+.accesshub-policies {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+}
+
+.accesshub-policies__card {
+  background: #ffffff;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  box-shadow: 0 20px 40px rgba(16, 22, 43, 0.08);
+  border: 1px solid #e7ebf5;
+}
+
+.accesshub-policies__image {
+  width: 100%;
+  height: auto;
+  border-radius: 1rem;
+  margin-bottom: 1rem;
+}
+
+.accesshub-policies__card h2 {
+  margin-top: 0;
+}
+
+.accesshub-policies__card p {
+  color: #475569;
+}
+
+.accesshub-policies__card .btn {
+  border-radius: 999px;
+  margin-top: 1rem;
+}
+
+.hc-internal-user .accesshub-policies__card--tenant {
+  display: none;
+}
+
+.hc-tenant-user .accesshub-policies__card--internal {
+  display: none;
+}
+
+/* Footer */
+.digifycx-footer {
+  background: #0f172a;
+  color: #ffffff;
+  padding: 3rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 3rem;
+}
+
+.digifycx-footer__image-wrapper {
+  flex: 0 0 320px;
+  max-width: 360px;
+}
+
+.digifycx-footer__image {
+  width: 100%;
+  height: auto;
+  border-radius: 1rem;
+  display: block;
+}
+
+.digifycx-footer__content {
+  max-width: 420px;
+}
+
+.digifycx-footer__title {
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.digifycx-footer__legal {
+  margin: 0.5rem 0 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+

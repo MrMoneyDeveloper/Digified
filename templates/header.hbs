@@ -1,62 +1,33 @@
 <a class="skip-navigation visually-hidden-focusable" tabindex="1" href="#main-content">{{t 'skip_navigation' }}</a>
 
-<header class="digify-header dbpo-header">
-  <div class="container header-inner dbpo-nav">
-    {{!-- Brand / logo --}}
-    <a class="brand-logo dbpo-brand" href="{{help_center.url}}">
-      {{#if settings.logo}}
-        <img class="dbpo-logo" src="{{settings.logo}}" srcset="{{settings.logo}} 1x, {{settings.logo}} 2x" alt="Digify BPO logo" />
-      {{else}}
-        <img class="dbpo-logo" src="{{asset 'settings/Logo.png'}}" srcset="{{asset 'settings/Logo.png'}} 1x, {{asset 'settings/Logo.png'}} 2x" alt="Digify BPO logo" />
-      {{/if}}
-      <span class="brand-text dbpo-brand-text">Digify BPO</span>
+<header class="digify-header">
+  <div class="container header-inner">
+    <a class="brand" href="{{home_url}}">
+      <img src="{{asset 'settings/digify-cx-logo.png'}}" alt="Digify CX">
     </a>
-    <nav class="nav top-nav">
-      <ul class="menu dbpo-menu">
-        <li>{{#link "help_center" class="dbpo-nav-link nav-link"}}Home{{/link}}</li>
-        {{#if signed_in}}
-          <li class="nav-internal">
-            <a class="dbpo-nav-link nav-link" href="{{#if settings.internal_policies_category_id}}{{page_path 'category' id=settings.internal_policies_category_id}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}">
-              Internal Policies
-            </a>
-          </li>
-          <li class="nav-internal">
-            <a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}">
-              IT Support
-            </a>
-          </li>
-          <li class="nav-tenant">
-            <a class="dbpo-nav-link nav-link" href="{{#if settings.tenant_policies_category_id}}{{page_path 'category' id=settings.tenant_policies_category_id}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}">
-              Tenant Policies
-            </a>
-          </li>
-          <li class="nav-tenant">
-            <a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}">
-              Tenant Support
-            </a>
-          </li>
-          <li class="nav-signout">
-            {{#link 'sign_out' class='btn nav-signout-btn'}}Sign out{{/link}}
-          </li>
-        {{else}}
-          <li>
-            <a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_form_id}}{{settings.internal_form_id}}{{else}}23590656709788{{/if}}">
-              Request Internal Access
-            </a>
-          </li>
-          <li>
-            <a class="dbpo-nav-link nav-link" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}">
-              Request Tenant Access
-            </a>
-          </li>
-          <li class="nav-signin">
-            <a class="btn nav-signin-btn" href="/hc/{{help_center.locale}}/signin">
-              Sign in
-            </a>
-          </li>
-        {{/if}}
-      </ul>
+
+    <nav class="topnav">
+      <a href="{{home_url}}">Support &amp; Requests</a>
+      <a
+        href="{{#if settings.category_shared_policies_id}}{{page_path 'category' id=settings.category_shared_policies_id}}{{else}}{{page_path 'help_center'}}{{/if}}"
+      >
+        Policies
+      </a>
+      {{#if help_center.community_enabled}}
+        <a href="/hc/{{help_center.locale}}/community/topics">Community</a>
+      {{/if}}
     </nav>
+
+    <div class="header-auth">
+      {{#if signed_in}}
+        <span class="header-auth__name">{{user_name}}</span>
+        {{#link 'sign_out' class='btn header-auth__action'}}{{t 'sign_out'}}{{/link}}
+      {{else}}
+        <a class="btn header-auth__action" href="/hc/{{help_center.locale}}/signin">
+          {{t 'sign_in'}}
+        </a>
+      {{/if}}
+    </div>
   </div>
 </header>
 

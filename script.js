@@ -1,181 +1,90 @@
 (function () {
   'use strict';
 
-  const segmentDefaults = window.DigifiedSegmentSettings || {};
+  const themeSettings =
+    (window.HelpCenter && window.HelpCenter.themeSettings) || {};
 
   const segmentSettings = {
-    internalOrgId:
-      segmentDefaults.internalOrgId || "{{settings.internal_org_id}}",
-    tenantOrgId:
-      segmentDefaults.tenantOrgId || "{{settings.tenant_org_id}}",
-    internalTag:
-      segmentDefaults.internalTag || "{{settings.internal_tag}}",
-    tenantTag:
-      segmentDefaults.tenantTag || "{{settings.tenant_tag}}",
-    internalFormId:
-      segmentDefaults.internalFormId || "{{settings.internal_form_id}}",
-    tenantFormId:
-      segmentDefaults.tenantFormId || "{{settings.tenant_form_id}}"
+    internalTag: "segment_internal",
+    tenantTag: "segment_tenant",
+    internalOrgId: "23530444315804",
+    tenantOrgId: "23530712292892",
+    internalFormId: themeSettings.internal_form_id || "23590656709788",
+    tenantFormId: themeSettings.tenant_form_id || "23590702845724"
   };
 
-  // Initialize global segment flags so other functions can safely read them.
   window.isInternalUser = false;
   window.isTenantUser = false;
-  window.DigifiedSegments =
-    window.DigifiedSegments || {
-      isInternalUser: false,
-      isTenantUser: false,
-      hasOrg: function () {
-        return false;
-      },
-      userTags: [],
-      userOrganizations: []
-    };
+  window.DigifiedSegments = {
+    isInternalUser: false,
+    isTenantUser: false,
+    userTags: [],
+    orgIds: []
+  };
 
-  const baseHelpCenterUser =
-    (window.HelpCenter && window.HelpCenter.user) || {};
-
-  function applySegment(userTags, userOrganizations) {
-    const hasOrg = (orgId) => {
-      if (!orgId) {
-        return false;
-      }
-      return userOrganizations.some((org) => String(org.id) === String(orgId));
-    };
-
-    const isInternalUser =
-      (segmentSettings.internalTag &&
-        userTags.includes(segmentSettings.internalTag)) ||
-      hasOrg(segmentSettings.internalOrgId);
-    const isTenantUser =
-      (segmentSettings.tenantTag &&
-        userTags.includes(segmentSettings.tenantTag)) ||
-      hasOrg(segmentSettings.tenantOrgId);
-
-    window.isInternalUser = isInternalUser;
-    window.isTenantUser = isTenantUser;
-
-    window.DigifiedSegments = {
-      isInternalUser,
-      isTenantUser,
-      hasOrg,
-      userTags,
-      userOrganizations
-    };
-
-    if (isInternalUser) {
-      console.info("[DigifiedSegments] Internal user detected", {
-        userTags,
-        userOrganizations
-      });
-      document.documentElement.classList.add("hc-internal-user");
-      document.documentElement.classList.remove(
-        "hc-tenant-user",
-        "hc-unknown-user"
-      );
-    } else if (isTenantUser) {
-      console.info("[DigifiedSegments] Tenant user detected", {
-        userTags,
-        userOrganizations
-      });
-      document.documentElement.classList.add("hc-tenant-user");
-      document.documentElement.classList.remove(
-        "hc-internal-user",
-        "hc-unknown-user"
-      );
-    } else {
-      console.warn(
-        "[DigifiedSegments] Unknown user \u2013 no matching tag or org",
-        {
-          userTags,
-          userOrganizations
-        }
-      );
-      document.documentElement.classList.add("hc-unknown-user");
-      document.documentElement.classList.remove(
-        "hc-internal-user",
-        "hc-tenant-user"
-      );
-    }
-
-    // Update signed-in home hero once we know the segment.
-    try {
-      showSegmentHero();
-    } catch (e) {
-      // no-op: hero helper not available yet
-    }
-
-    return true;
-  }
-
-  /**
-   * Determine if the current user is internal or tenant based on tags or organization IDs.
-   * If neither tags nor organizations are available yet, return false so we can retry later.
-   */
   function detectSegment() {
-    const helpCenterUser = window.HelpCenter && window.HelpCenter.user;
-    if (!helpCenterUser || (!helpCenterUser.tags && !helpCenterUser.organizations)) {
-      console.info(
-        "[DigifiedSegments] HelpCenter.user not ready yet",
-        helpCenterUser
-      );
-      return false;
+    const user = (window.HelpCenter && window.HelpCenter.user) || null;
+    const userTags = user && Array.isArray(user.tags) ? user.tags : [];
+    const userOrgs =
+      user && Array.isArray(user.organizations) ? user.organizations : [];
+    const orgIds = userOrgs.map((org) => String(org.id));
+
+    const isInternal =
+      userTags.includes(segmentSettings.internalTag) ||
+      orgIds.includes(segmentSettings.internalOrgId);
+    const isTenant =
+      userTags.includes(segmentSettings.tenantTag) ||
+      orgIds.includes(segmentSettings.tenantOrgId);
+
+    let segmentClass = "hc-unknown-user";
+    if (isInternal && !isTenant) {
+      segmentClass = "hc-internal-user";
+    } else if (isTenant && !isInternal) {
+      segmentClass = "hc-tenant-user";
     }
 
-    const userTags = helpCenterUser.tags || [];
-    const userOrganizations = helpCenterUser.organizations || [];
-
-    return applySegment(userTags, userOrganizations);
+    return {
+      userTags,
+      orgIds,
+      isInternal,
+      isTenant,
+      hasUser: !!user,
+      segmentClass
+    };
   }
 
-  async function fetchCurrentUserAndDetectSegment() {
-    try {
-      const response = await fetch("/api/v2/users/me.json", {
-        credentials: "same-origin"
-      });
-      if (!response.ok) {
-        console.warn(
-          "[DigifiedSegments] /api/v2/users/me.json request failed",
-          response.status
-        );
-        applySegment([], []);
-        return;
-      }
+  function applySegment(result) {
+    document.documentElement.classList.remove(
+      "hc-internal-user",
+      "hc-tenant-user",
+      "hc-unknown-user"
+    );
+    document.documentElement.classList.add(result.segmentClass);
 
-      const data = await response.json();
-      const user = data && data.user ? data.user : {};
-      const userTags = user.tags || [];
-      const orgIds = user.organization_ids || [];
-      const userOrganizations = orgIds.map((id) => ({ id }));
+    window.isInternalUser = result.isInternal;
+    window.isTenantUser = result.isTenant;
+    window.DigifiedSegments = {
+      isInternalUser: result.isInternal,
+      isTenantUser: result.isTenant,
+      userTags: result.userTags,
+      orgIds: result.orgIds
+    };
 
-      applySegment(userTags, userOrganizations);
-    } catch (e) {
-      console.warn("[DigifiedSegments] Fetching /api/v2/users/me.json failed", e);
-      applySegment([], []);
+    console.info("[DigifyCX Access Hub] Segment:", result.segmentClass, {
+      userTags: result.userTags,
+      orgIds: result.orgIds
+    });
+  }
+
+  function initSegments(attempt = 0) {
+    const result = detectSegment();
+    applySegment(result);
+    if (!result.hasUser && attempt < 10) {
+      window.setTimeout(() => initSegments(attempt + 1), 600);
     }
   }
 
-  // Try to detect the segment immediately. If tags/orgs are not ready, retry for a short time.
-  (function () {
-    if (detectSegment()) {
-      return;
-    }
-
-    let attempts = 0;
-    const maxAttempts = 10;
-    const retryInterval = setInterval(() => {
-      attempts += 1;
-      if (detectSegment()) {
-        clearInterval(retryInterval);
-        return;
-      }
-
-      if (attempts >= maxAttempts) {
-        clearInterval(retryInterval);
-        fetchCurrentUserAndDetectSegment();
-      }
-    }, 500);
-  })();
+  initSegments();
 
   // Key map
   const ENTER = 13;
@@ -203,47 +112,10 @@
     }
   };
 
-  function showSegmentHero() {
-    const isSignedIn = !!(window.HelpCenter && window.HelpCenter.user);
-    if (!isSignedIn) {
-      return;
-    }
-
-    const internalHero = document.querySelector(".js-internal-hero");
-    const tenantHero = document.querySelector(".js-tenant-hero");
-    const genericHero = document.querySelector(".js-generic-hero");
-
-    const hideAll = () => {
-      [internalHero, tenantHero, genericHero].forEach((el) => {
-        if (el) {
-          el.classList.add("is-hidden");
-        }
-      });
-    };
-
-    hideAll();
-
-    const isInternalUser = !!window.isInternalUser;
-    const isTenantUser = !!window.isTenantUser;
-
-    if (isInternalUser) {
-      if (internalHero) {
-        internalHero.classList.remove("is-hidden");
-      }
-    } else if (isTenantUser) {
-      if (tenantHero) {
-        tenantHero.classList.remove("is-hidden");
-      }
-    } else if (genericHero) {
-      genericHero.classList.remove("is-hidden");
-    }
-  }
-
   // Navigation
 
   window.addEventListener("DOMContentLoaded", () => {
     hideUnknownNavItems();
-    showSegmentHero();
     const menuButton = document.querySelector(".header .menu-button-mobile");
     const menuList = document.querySelector("#user-nav-mobile");
 
