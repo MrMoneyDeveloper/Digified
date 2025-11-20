@@ -8,11 +8,20 @@
           src="{{asset 'settings/digify-cx-hero.jpg'}}"
           alt="Digify CX hero"
           class="digify-hero__image"
+          data-digify-check="anon-hero"
         >
       </div>
       <div class="digify-hero__overlay"></div>
 
       <div class="digify-hero__content container">
+        <div class="digify-hero__logo-wrap">
+          <img
+            src="{{asset 'settings/digify-cx-logo.png'}}"
+            alt="Digify CX logo"
+            class="digify-hero__logo"
+            data-digify-check="anon-hero-logo"
+          >
+        </div>
         <h1>One Group. One Stack. Every CX Touch Point.</h1>
         <p>
           Digify CX unites Digify BPO, CX Experts, CX Leads and Outbound CX
@@ -28,27 +37,6 @@
           </a>
         </div>
       </div>
-    </section>
-
-    <section class="digify-brands container">
-      <h2 class="digify-brands__title">The Digify CX Group</h2>
-      <ul class="digify-brands__list">
-        <li>
-          <img src="{{asset 'settings/digify-cx-logo.png'}}" alt="Digify CX logo">
-        </li>
-        <li>
-          <img src="{{asset 'settings/logo-digify-bpo.png'}}" alt="Digify BPO logo">
-        </li>
-        <li>
-          <img src="{{asset 'settings/logo-cx-experts.png'}}" alt="CX Experts logo">
-        </li>
-        <li>
-          <img src="{{asset 'settings/logo-cx-leads.png'}}" alt="CX Leads logo">
-        </li>
-        <li>
-          <img src="{{asset 'settings/logo-outbound-cx.png'}}" alt="Outbound CX logo">
-        </li>
-      </ul>
     </section>
 
     <section class="digify-cards container digify-cards--anon">
@@ -72,6 +60,24 @@
         <a href="{{link 'new_request'}}" class="btn btn-secondary">Contact Digify CX</a>
       </article>
     </section>
+
+    <section class="digify-brands container">
+      <h2 class="digify-brands__title">Our CX Group</h2>
+      <ul class="digify-brands__list">
+        <li>
+          <img src="{{asset 'settings/logo-digify-bpo.png'}}" alt="Digify BPO logo" data-digify-check="brand-bpo">
+        </li>
+        <li>
+          <img src="{{asset 'settings/logo-cx-experts.png'}}" alt="CX Experts logo" data-digify-check="brand-experts">
+        </li>
+        <li>
+          <img src="{{asset 'settings/logo-cx-leads.png'}}" alt="CX Leads logo" data-digify-check="brand-leads">
+        </li>
+        <li>
+          <img src="{{asset 'settings/logo-outbound-cx.png'}}" alt="Outbound CX logo" data-digify-check="brand-outbound">
+        </li>
+      </ul>
+    </section>
   </div>
 
   <div class="digify-landing digify-landing--internal">
@@ -81,6 +87,7 @@
           src="{{asset 'settings/digify-cx-hero.jpg'}}"
           alt="Digify CX internal hero"
           class="digify-hero__image"
+          data-digify-check="internal-hero"
         >
       </div>
       <div class="digify-hero__overlay"></div>
@@ -124,6 +131,7 @@
           src="{{asset 'settings/digify-cx-building.jpg'}}"
           alt="Digify CX building"
           class="digify-hero__image"
+          data-digify-check="tenant-hero"
         >
       </div>
       <div class="digify-hero__overlay"></div>
