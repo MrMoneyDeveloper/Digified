@@ -762,64 +762,55 @@
           "identifier": "digify_cx_logo",
           "type": "file",
           "label": "Digify CX logo",
-          "description": "Logo shown in the header, hero, and footer.",
-          "value": "settings/digify-cx-logo.png"
+          "description": "Logo shown in the header, hero, and footer."
         },
         {
           "identifier": "home_hero_image",
           "type": "file",
           "label": "Home hero background",
-          "description": "Large hero image on the landing page.",
-          "value": "settings/home_hero_image.jpg"
+          "description": "Large hero image on the landing page."
         },
         {
           "identifier": "home_logo_digify_bpo",
           "type": "file",
           "label": "Digify BPO logo",
-          "description": "Logo for the Digify BPO brand tile.",
-          "value": "settings/home_logo_digify_bpo.png"
+          "description": "Logo for the Digify BPO brand tile."
         },
         {
           "identifier": "home_logo_cx_leads",
           "type": "file",
           "label": "CX Leads logo",
-          "description": "Logo for the CX Leads brand tile.",
-          "value": "settings/home_logo_cx_leads.png"
+          "description": "Logo for the CX Leads brand tile."
         },
         {
           "identifier": "home_logo_outbound_cx",
           "type": "file",
           "label": "Outbound CX logo",
-          "description": "Logo for the Outbound CX brand tile.",
-          "value": "settings/home_logo_outbound_cx.png"
+          "description": "Logo for the Outbound CX brand tile."
         },
         {
           "identifier": "home_logo_cx_experts",
           "type": "file",
           "label": "CX Experts logo",
-          "description": "Logo for the CX Experts brand tile.",
-          "value": "settings/home_logo_cx_experts.png"
+          "description": "Logo for the CX Experts brand tile."
         },
         {
           "identifier": "footer_building_image",
           "type": "file",
           "label": "Footer building image",
-          "description": "Photo displayed in the footer.",
-          "value": "settings/digify-cx-building.jpg"
+          "description": "Photo displayed in the footer."
         },
         {
           "identifier": "community_hero_image",
           "type": "file",
           "label": "Community hero image",
-          "description": "Background image for community pages.",
-          "value": "settings/digify-cx-hero.jpg"
+          "description": "Background image for community pages."
         },
         {
           "identifier": "community_banner_image",
           "type": "file",
           "label": "Community banner image",
-          "description": "Foreground banner image for community pages.",
-          "value": "settings/digify-cx-logo.png"
+          "description": "Foreground banner image for community pages."
         }
       ]
     },
