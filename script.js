@@ -1018,35 +1018,6 @@
   }
 })();
 (function () {
-  const DIGIFY_IMAGE_MAP = {
-    "header-logo": "{{asset 'settings/digify-cx-logo.png'}}",
-    "hero-logo": "{{asset 'settings/digify-cx-logo.png'}}",
-    "home-hero": "{{asset 'settings/home_hero_image.jpg'}}",
-    "home-brand-bpo": "{{asset 'settings/home_logo_digify_bpo.png'}}",
-    "home-brand-experts": "{{asset 'settings/home_logo_cx_experts.png'}}",
-    "home-brand-leads": "{{asset 'settings/home_logo_cx_leads.png'}}",
-    "home-brand-outbound": "{{asset 'settings/home_logo_outbound_cx.png'}}",
-    "footer-logo": "{{asset 'settings/digify-cx-logo.png'}}",
-    "footer-building": "{{asset 'settings/digify-cx-building.jpg'}}",
-    "community-hero": "{{asset 'settings/digify-cx-hero.jpg'}}",
-    "community-banner": "{{asset 'settings/digify-cx-building.jpg'}}"
-  };
-
-  function hydrateStaticImages() {
-    const imgs = document.querySelectorAll("img[data-digify-check]");
-    imgs.forEach((img) => {
-      const key = img.getAttribute("data-digify-check");
-      const mapped = DIGIFY_IMAGE_MAP[key];
-      if (!mapped) {
-        return;
-      }
-      const currentSrc = img.getAttribute("src");
-      if (!currentSrc || currentSrc === "" || /\/hc\/[^/]+$/.test(currentSrc)) {
-        img.setAttribute("src", mapped);
-      }
-    });
-  }
-
   function logFailure(img, phase) {
     console.warn("[DIGIFY-THEME] Image failed to load", {
       alt: img.alt,
@@ -1063,7 +1034,6 @@
   }
 
   function watchImages() {
-    hydrateStaticImages();
     const imgsToWatch = document.querySelectorAll("img[data-digify-check]");
 
     imgsToWatch.forEach((img) => {
