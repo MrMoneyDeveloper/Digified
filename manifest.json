@@ -365,17 +365,15 @@
         },
         {
           "identifier": "favicon",
-          "type": "image",
+          "type": "file",
           "description": "favicon_description",
-          "label": "favicon_label",
-          "default": "settings/favicon.png"
+          "label": "favicon_label"
         },
         {
           "identifier": "logo",
-          "type": "image",
+          "type": "file",
           "description": "logo_description",
-          "label": "logo_label",
-          "default": "settings/digify-cx-logo.png"
+          "label": "logo_label"
         }
       ]
     },
@@ -762,94 +760,81 @@
       "variables": [
         {
           "identifier": "header_logo_image",
-          "type": "image",
+          "type": "file",
           "label": "Header logo image",
-          "description": "Primary logo displayed in the navigation header.",
-          "default": "settings/digify-cx-logo.png"
+          "description": "Primary logo displayed in the navigation header."
         },
         {
           "identifier": "hero_background_image",
-          "type": "image",
+          "type": "file",
           "label": "Home hero background image",
-          "description": "Background image for the public hero section.",
-          "default": "settings/home_hero_image.jpg"
+          "description": "Background image for the public hero section."
         },
         {
           "identifier": "home_brand_banner_image",
-          "type": "image",
+          "type": "file",
           "label": "Brand banner image",
-          "description": "Optional banner image displayed under the hero.",
-          "default": "settings/digify-cx-hero.jpg"
+          "description": "Optional banner image displayed under the hero."
         },
         {
           "identifier": "home_logo_digify_bpo",
-          "type": "image",
+          "type": "file",
           "label": "Digify BPO home logo",
-          "description": "Logo used for the Digify BPO brand strip.",
-          "default": "settings/home_logo_digify_bpo.png"
+          "description": "Logo used for the Digify BPO brand strip."
         },
         {
           "identifier": "home_logo_cx_leads",
-          "type": "image",
+          "type": "file",
           "label": "CX Leads home logo",
-          "description": "Logo used for the CX Leads brand strip.",
-          "default": "settings/home_logo_cx_leads.png"
+          "description": "Logo used for the CX Leads brand strip."
         },
         {
           "identifier": "home_logo_outbound_cx",
-          "type": "image",
+          "type": "file",
           "label": "Outbound CX home logo",
-          "description": "Logo used for the Outbound CX brand strip.",
-          "default": "settings/home_logo_outbound_cx.png"
+          "description": "Logo used for the Outbound CX brand strip."
         },
         {
           "identifier": "home_logo_cx_experts",
-          "type": "image",
+          "type": "file",
           "label": "CX Experts home logo",
-          "description": "Logo used for the CX Experts brand strip.",
-          "default": "settings/home_logo_cx_experts.png"
+          "description": "Logo used for the CX Experts brand strip."
         },
         {
           "identifier": "brand_logo_digify_bpo",
-          "type": "image",
+          "type": "file",
           "label": "Digify BPO logo",
-          "description": "Standard Digify BPO logo.",
-          "default": "settings/logo-digify-bpo.png"
+          "description": "Standard Digify BPO logo."
         },
         {
           "identifier": "brand_logo_cx_leads",
-          "type": "image",
+          "type": "file",
           "label": "CX Leads logo",
-          "description": "Standard CX Leads logo.",
-          "default": "settings/logo-cx-leads.png"
+          "description": "Standard CX Leads logo."
         },
         {
           "identifier": "brand_logo_outbound_cx",
-          "type": "image",
+          "type": "file",
           "label": "Outbound CX logo",
-          "description": "Standard Outbound CX logo.",
-          "default": "settings/logo-outbound-cx.png"
+          "description": "Standard Outbound CX logo."
         },
         {
           "identifier": "brand_logo_cx_experts",
-          "type": "image",
+          "type": "file",
           "label": "CX Experts logo",
-          "description": "Standard CX Experts logo.",
-          "default": "settings/logo-cx-experts.png"
+          "description": "Standard CX Experts logo."
         },
         {
           "identifier": "footer_building_image",
-          "type": "image",
+          "type": "file",
           "label": "Footer building image",
-          "description": "Image shown next to the footer content.",
-          "default": "settings/footer_building_image.jpg"
+          "description": "Image shown next to the footer content."
         },
         {
           "identifier": "fallback_logo_image",
-          "type": "image",
+          "type": "file",
           "label": "Fallback logo image",
-          "description": "Generic logo used when no other logo is configured.",
-          "default": "settings/logo.png"
+          "description": "Generic logo used when no other logo is configured."
         }
       ]
     },
