@@ -2,7 +2,7 @@
   <section class="digify-hero">
     <div class="digify-hero__background">
       <img
-        src="{{#if settings.hero_background_image}}{{settings.hero_background_image}}{{else}}{{asset 'settings/home_hero_image.jpg'}}{{/if}}"
+        src="{{asset 'settings/home_hero_image.jpg'}}"
         alt="Digify CX hero"
         class="digify-hero__image"
         data-digify-check="home-hero"
@@ -11,12 +11,12 @@
     <div class="digify-hero__overlay"></div>
     <div class="digify-hero__content container">
       <div class="digify-hero__logo-wrap">
-        <img
-          src="{{#if settings.header_logo_image}}{{settings.header_logo_image}}{{else}}{{asset 'settings/digify-cx-logo.png'}}{{/if}}"
-          alt="Digify CX logo"
-          class="digify-hero__logo"
-          data-digify-check="hero-logo"
-        >
+      <img
+        src="{{asset 'settings/digify-cx-logo.png'}}"
+        alt="Digify CX logo"
+        class="digify-hero__logo"
+        data-digify-check="hero-logo"
+      >
       </div>
       <p class="digify-hero__eyebrow">Digify CX Access Hub</p>
       <h1>One Group. One Stack. Every CX Touch Point.</h1>
@@ -45,10 +45,10 @@
       <div class="container">
         <h2 class="digify-brand-strip__title">Our CX Group</h2>
         <div class="digify-brand-strip-logos">
-          <img src="{{#if settings.home_logo_digify_bpo}}{{settings.home_logo_digify_bpo}}{{else}}{{asset 'settings/home_logo_digify_bpo.png'}}{{/if}}" alt="Digify BPO" data-digify-check="home-brand-bpo">
-          <img src="{{#if settings.home_logo_cx_experts}}{{settings.home_logo_cx_experts}}{{else}}{{asset 'settings/home_logo_cx_experts.png'}}{{/if}}" alt="CX Experts" data-digify-check="home-brand-experts">
-          <img src="{{#if settings.home_logo_cx_leads}}{{settings.home_logo_cx_leads}}{{else}}{{asset 'settings/home_logo_cx_leads.png'}}{{/if}}" alt="CX Leads" data-digify-check="home-brand-leads">
-          <img src="{{#if settings.home_logo_outbound_cx}}{{settings.home_logo_outbound_cx}}{{else}}{{asset 'settings/home_logo_outbound_cx.png'}}{{/if}}" alt="Outbound CX" data-digify-check="home-brand-outbound">
+          <img src="{{asset 'settings/home_logo_digify_bpo.png'}}" alt="Digify BPO" data-digify-check="home-brand-bpo">
+          <img src="{{asset 'settings/home_logo_cx_experts.png'}}" alt="CX Experts" data-digify-check="home-brand-experts">
+          <img src="{{asset 'settings/home_logo_cx_leads.png'}}" alt="CX Leads" data-digify-check="home-brand-leads">
+          <img src="{{asset 'settings/home_logo_outbound_cx.png'}}" alt="Outbound CX" data-digify-check="home-brand-outbound">
         </div>
       </div>
     </section>
