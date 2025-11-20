@@ -365,15 +365,17 @@
         },
         {
           "identifier": "favicon",
-          "type": "file",
+          "type": "image",
           "description": "favicon_description",
-          "label": "favicon_label"
+          "label": "favicon_label",
+          "default": "settings/favicon.png"
         },
         {
           "identifier": "logo",
-          "type": "file",
+          "type": "image",
           "description": "logo_description",
-          "label": "logo_label"
+          "label": "logo_label",
+          "default": "settings/digify-cx-logo.png"
         }
       ]
     },
@@ -759,76 +761,95 @@
       "label": "Theme imagery",
       "variables": [
         {
-          "identifier": "home_hero_image",
-          "type": "file",
-          "label": "Home hero image URL",
-          "description": "Hero illustration used on the Access Hub home templates."
+          "identifier": "header_logo_image",
+          "type": "image",
+          "label": "Header logo image",
+          "description": "Primary logo displayed in the navigation header.",
+          "default": "settings/digify-cx-logo.png"
+        },
+        {
+          "identifier": "hero_background_image",
+          "type": "image",
+          "label": "Home hero background image",
+          "description": "Background image for the public hero section.",
+          "default": "settings/home_hero_image.jpg"
         },
         {
           "identifier": "home_brand_banner_image",
-          "type": "file",
-          "label": "Home brand banner image URL",
-          "description": "Wide banner displayed under the Access Hub hero."
+          "type": "image",
+          "label": "Brand banner image",
+          "description": "Optional banner image displayed under the hero.",
+          "default": "settings/digify-cx-hero.jpg"
         },
         {
           "identifier": "home_logo_digify_bpo",
-          "type": "file",
-          "label": "Digify BPO logo URL",
-          "description": "Overrides the Digify BPO logo shown on the home page."
+          "type": "image",
+          "label": "Digify BPO home logo",
+          "description": "Logo used for the Digify BPO brand strip.",
+          "default": "settings/home_logo_digify_bpo.png"
         },
         {
           "identifier": "home_logo_cx_leads",
-          "type": "file",
-          "label": "CX Leads logo URL",
-          "description": "Overrides the CX Leads logo shown on the home page."
+          "type": "image",
+          "label": "CX Leads home logo",
+          "description": "Logo used for the CX Leads brand strip.",
+          "default": "settings/home_logo_cx_leads.png"
         },
         {
           "identifier": "home_logo_outbound_cx",
-          "type": "file",
-          "label": "Outbound CX logo URL",
-          "description": "Overrides the Outbound CX logo shown on the home page."
+          "type": "image",
+          "label": "Outbound CX home logo",
+          "description": "Logo used for the Outbound CX brand strip.",
+          "default": "settings/home_logo_outbound_cx.png"
         },
         {
           "identifier": "home_logo_cx_experts",
-          "type": "file",
-          "label": "CX Experts logo URL",
-          "description": "Overrides the CX Experts logo shown on the home page."
+          "type": "image",
+          "label": "CX Experts home logo",
+          "description": "Logo used for the CX Experts brand strip.",
+          "default": "settings/home_logo_cx_experts.png"
         },
         {
-          "identifier": "home_shared_policies_image",
-          "type": "file",
-          "label": "Shared policies card image URL",
-          "description": "Overrides the first home page policy card image."
+          "identifier": "brand_logo_digify_bpo",
+          "type": "image",
+          "label": "Digify BPO logo",
+          "description": "Standard Digify BPO logo.",
+          "default": "settings/logo-digify-bpo.png"
         },
         {
-          "identifier": "home_internal_policies_image",
-          "type": "file",
-          "label": "Internal policies card image URL",
-          "description": "Overrides the second home page policy card image."
+          "identifier": "brand_logo_cx_leads",
+          "type": "image",
+          "label": "CX Leads logo",
+          "description": "Standard CX Leads logo.",
+          "default": "settings/logo-cx-leads.png"
         },
         {
-          "identifier": "home_tenant_policies_image",
-          "type": "file",
-          "label": "Tenant policies card image URL",
-          "description": "Overrides the third home page policy card image."
+          "identifier": "brand_logo_outbound_cx",
+          "type": "image",
+          "label": "Outbound CX logo",
+          "description": "Standard Outbound CX logo.",
+          "default": "settings/logo-outbound-cx.png"
+        },
+        {
+          "identifier": "brand_logo_cx_experts",
+          "type": "image",
+          "label": "CX Experts logo",
+          "description": "Standard CX Experts logo.",
+          "default": "settings/logo-cx-experts.png"
         },
         {
           "identifier": "footer_building_image",
-          "type": "file",
-          "label": "Footer building image URL",
-          "description": "Optional image shown above the footer copy."
+          "type": "image",
+          "label": "Footer building image",
+          "description": "Image shown next to the footer content.",
+          "default": "settings/footer_building_image.jpg"
         },
         {
-          "identifier": "community_hero_image",
-          "type": "file",
-          "label": "Community hero image URL",
-          "description": "Background image for community landing headers."
-        },
-        {
-          "identifier": "community_banner_image",
-          "type": "file",
-          "label": "Community banner image URL",
-          "description": "Foreground banner image for community headers."
+          "identifier": "fallback_logo_image",
+          "type": "image",
+          "label": "Fallback logo image",
+          "description": "Generic logo used when no other logo is configured.",
+          "default": "settings/logo.png"
         }
       ]
     },

@@ -1,173 +1,126 @@
+{{#*inline "digifyHero"}}
+  <section class="digify-hero">
+    <div class="digify-hero__background">
+      <img
+        src="{{#if settings.hero_background_image}}{{settings.hero_background_image}}{{else}}{{asset 'settings/home_hero_image.jpg'}}{{/if}}"
+        alt="Digify CX hero"
+        class="digify-hero__image"
+        data-digify-check="home-hero"
+      >
+    </div>
+    <div class="digify-hero__overlay"></div>
+    <div class="digify-hero__content container">
+      <div class="digify-hero__logo-wrap">
+        <img
+          src="{{#if settings.header_logo_image}}{{settings.header_logo_image}}{{else}}{{asset 'settings/digify-cx-logo.png'}}{{/if}}"
+          alt="Digify CX logo"
+          class="digify-hero__logo"
+          data-digify-check="hero-logo"
+        >
+      </div>
+      <p class="digify-hero__eyebrow">Digify CX Access Hub</p>
+      <h1>One Group. One Stack. Every CX Touch Point.</h1>
+      <p class="digify-hero__copy">
+        Digify CX unites Digify BPO, CX Leads, CX Experts, and Outbound CX under one customer and tenant experience platform.
+      </p>
+      <p class="digify-hero__copy">
+        Sign in for internal tools or browse public knowledge to get help fast.
+      </p>
+      <div class="digify-hero__cta-row">
+        <a href="/hc/{{help_center.locale}}/signin" class="btn btn-primary">
+          Sign in to access internal tools
+        </a>
+      </div>
+    </div>
+  </section>
+{{/inline}}
+
 <h1 class="visibility-hidden">{{ help_center.name }}</h1>
 
 <main id="main-content">
   <div class="digify-landing digify-landing--anon">
-    <section class="digify-hero digify-hero--anon">
-      <div class="digify-hero__background">
-        <img
-          src="{{asset 'settings/digify-cx-hero.jpg'}}"
-          alt="Digify CX hero"
-          class="digify-hero__image"
-          data-digify-check="anon-hero"
-        >
-      </div>
-      <div class="digify-hero__overlay"></div>
+    {{> digifyHero}}
 
-      <div class="digify-hero__content container">
-        <div class="digify-hero__logo-wrap">
-          <img
-            src="{{asset 'settings/digify-cx-logo.png'}}"
-            alt="Digify CX logo"
-            class="digify-hero__logo"
-            data-digify-check="anon-hero-logo"
-          >
-        </div>
-        <h1>One Group. One Stack. Every CX Touch Point.</h1>
-        <p>
-          Digify CX unites Digify BPO, CX Experts, CX Leads and Outbound CX
-          into a single customer and tenant experience platform.
-        </p>
-
-        <div class="digify-hero__cta-row">
-          <a href="/hc/{{help_center.locale}}/signin" class="btn btn-primary">
-            I’m a Digify CX team member
-          </a>
-          <a href="{{link 'new_request'}}" class="btn btn-secondary">
-            I’m a tenant or partner – contact support
-          </a>
+    <section class="digify-brand-strip">
+      <div class="container">
+        <h2 class="digify-brand-strip__title">Our CX Group</h2>
+        <div class="digify-brand-strip-logos">
+          <img src="{{#if settings.home_logo_digify_bpo}}{{settings.home_logo_digify_bpo}}{{else}}{{asset 'settings/home_logo_digify_bpo.png'}}{{/if}}" alt="Digify BPO" data-digify-check="home-brand-bpo">
+          <img src="{{#if settings.home_logo_cx_experts}}{{settings.home_logo_cx_experts}}{{else}}{{asset 'settings/home_logo_cx_experts.png'}}{{/if}}" alt="CX Experts" data-digify-check="home-brand-experts">
+          <img src="{{#if settings.home_logo_cx_leads}}{{settings.home_logo_cx_leads}}{{else}}{{asset 'settings/home_logo_cx_leads.png'}}{{/if}}" alt="CX Leads" data-digify-check="home-brand-leads">
+          <img src="{{#if settings.home_logo_outbound_cx}}{{settings.home_logo_outbound_cx}}{{else}}{{asset 'settings/home_logo_outbound_cx.png'}}{{/if}}" alt="Outbound CX" data-digify-check="home-brand-outbound">
         </div>
       </div>
     </section>
 
     <section class="digify-cards container digify-cards--anon">
       <article class="digify-card digify-card--primary">
-        <h3>Employee support (HR &amp; IT)</h3>
-        <p>Log in to access internal HR, IT and workplace tools.</p>
+        <h3>Digify CX team members</h3>
+        <p>Need HR, IT, or Facilities support? Sign in to raise a request with internal teams.</p>
         <a href="/hc/{{help_center.locale}}/signin" class="btn btn-primary">Sign in</a>
       </article>
-
       <article class="digify-card">
-        <h3>Tenant &amp; building support</h3>
-        <p>Request maintenance, report issues or ask building-related questions.</p>
-        <a href="{{link 'new_request'}}" class="btn btn-secondary">
-          Submit a tenant request
-        </a>
-      </article>
-
-      <article class="digify-card">
-        <h3>General enquiries</h3>
-        <p>Not sure where to start? Send us a message and we’ll route it for you.</p>
-        <a href="{{link 'new_request'}}" class="btn btn-secondary">Contact Digify CX</a>
+        <h3>Tenants &amp; partners</h3>
+        <p>Request maintenance, report an incident, or ask a building question.</p>
+        <a href="{{link 'new_request'}}" class="btn btn-secondary">Submit a request</a>
       </article>
     </section>
 
-    <section class="digify-brands container">
-      <h2 class="digify-brands__title">Our CX Group</h2>
-      <ul class="digify-brands__list">
-        <li>
-          <img src="{{asset 'settings/logo-digify-bpo.png'}}" alt="Digify BPO logo" data-digify-check="brand-bpo">
-        </li>
-        <li>
-          <img src="{{asset 'settings/logo-cx-experts.png'}}" alt="CX Experts logo" data-digify-check="brand-experts">
-        </li>
-        <li>
-          <img src="{{asset 'settings/logo-cx-leads.png'}}" alt="CX Leads logo" data-digify-check="brand-leads">
-        </li>
-        <li>
-          <img src="{{asset 'settings/logo-outbound-cx.png'}}" alt="Outbound CX logo" data-digify-check="brand-outbound">
-        </li>
-      </ul>
+    <section class="digify-search container">
+      {{search submit=false class='search search-full'}}
     </section>
+
+    {{#if categories}}
+      <section class="digify-category-section container">
+        <div class="digify-category-grid">
+          {{#each categories}}
+            <article class="digify-category-card">
+              <h3><a href="{{url}}">{{name}}</a></h3>
+              {{#if description}}
+                <p>{{description}}</p>
+              {{/if}}
+            </article>
+          {{/each}}
+        </div>
+      </section>
+    {{/if}}
   </div>
 
   <div class="digify-landing digify-landing--internal">
-    <section class="digify-hero digify-hero--internal">
-      <div class="digify-hero__background">
-        <img
-          src="{{asset 'settings/digify-cx-hero.jpg'}}"
-          alt="Digify CX internal hero"
-          class="digify-hero__image"
-          data-digify-check="internal-hero"
-        >
-      </div>
-      <div class="digify-hero__overlay"></div>
-
-      <div class="digify-hero__content container">
-        <h1>Welcome, Digify CX team</h1>
-        <p>Access internal policies, HR services and IT/network support from one hub.</p>
-      </div>
-    </section>
+    {{> digifyHero}}
 
     <section class="digify-cards container digify-cards--internal">
       <article class="digify-card digify-card--primary">
-        <h2>Workplace policies</h2>
-        <p>View your workplace policies, conduct rules and compliance documents.</p>
+        <h2>Internal support &amp; requests</h2>
+        <p>Log HR, IT, and Facilities tickets so the right team can help fast.</p>
+        <a href="{{link 'new_request'}}" class="btn btn-primary">Open an internal request</a>
+      </article>
+      <article class="digify-card">
+        <h2>Work tools</h2>
+        <p>Get to Zendesk, Dialer, reporting, and policy hubs from one place.</p>
         <a
-          href="{{#if settings.category_internal_policies_id}}{{link 'category' id=settings.category_internal_policies_id}}{{else}}{{link 'help_center'}}{{/if}}"
-          class="btn btn-primary"
+          href="{{#if settings.category_internal_policies_id}}{{link 'category' id=settings.category_internal_policies_id}}{{else}}{{page_path 'help_center'}}{{/if}}"
+          class="btn btn-secondary"
         >
-          View policies
+          View internal resources
         </a>
-      </article>
-
-      <article class="digify-card">
-        <h2>HR requests</h2>
-        <p>Submit HR queries, leave requests, payroll questions and more.</p>
-        <a href="{{link 'new_request'}}" class="btn btn-secondary">Open HR request</a>
-      </article>
-
-      <article class="digify-card">
-        <h2>IT &amp; network support</h2>
-        <p>Log tickets for access, hardware or network issues.</p>
-        <a href="{{link 'new_request'}}" class="btn btn-secondary">Get IT help</a>
       </article>
     </section>
   </div>
 
   <div class="digify-landing digify-landing--tenant">
-    <section class="digify-hero digify-hero--tenant">
-      <div class="digify-hero__background">
-        <img
-          src="{{asset 'settings/digify-cx-building.jpg'}}"
-          alt="Digify CX building"
-          class="digify-hero__image"
-          data-digify-check="tenant-hero"
-        >
-      </div>
-      <div class="digify-hero__overlay"></div>
-
-      <div class="digify-hero__content container">
-        <h1>Welcome, DigifyCX tenant</h1>
-        <p>Access building policies, house rules and facilities services.</p>
-      </div>
-    </section>
+    {{> digifyHero}}
 
     <section class="digify-cards container digify-cards--tenant">
       <article class="digify-card digify-card--primary">
-        <h2>Tenant policies &amp; building rules</h2>
-        <p>Understand your responsibilities and shared space guidelines.</p>
-        <a
-          href="{{#if settings.category_tenant_policies_id}}{{link 'category' id=settings.category_tenant_policies_id}}{{else}}{{link 'help_center'}}{{/if}}"
-          class="btn btn-primary"
-        >
-          View tenant policies
-        </a>
+        <h2>Tenant IT &amp; network support</h2>
+        <p>Report Wi-Fi, badge, or access control issues to the Digify CX support desk.</p>
+        <a href="{{link 'new_request'}}" class="btn btn-primary">Report a network issue</a>
       </article>
-
       <article class="digify-card">
-        <h2>Maintenance &amp; services</h2>
-        <p>Log cleaning, repairs or facilities requests directly with our team.</p>
-        <a href="{{link 'new_request'}}" class="btn btn-secondary">
-          Submit a maintenance request
-        </a>
-      </article>
-
-      <article class="digify-card">
-        <h2>Network &amp; access issues</h2>
-        <p>Report Wi-Fi, access control or security pass issues.</p>
-        <a href="{{link 'new_request'}}" class="btn btn-secondary">
-          Report an issue
-        </a>
+        <h2>Building &amp; facilities requests</h2>
+        <p>Request cleaning, maintenance, deliveries, or security support.</p>
+        <a href="{{link 'new_request'}}" class="btn btn-secondary">Submit a facilities request</a>
       </article>
     </section>
   </div>
