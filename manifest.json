@@ -801,15 +801,15 @@
           "description": "Photo displayed in the footer."
         },
         {
-          "identifier": "community_hero_image",
+          "identifier": "home_hero_image",
           "type": "file",
-          "label": "Community hero image",
+          "label": "Home hero image",
           "description": "Background image for community pages."
         },
         {
-          "identifier": "community_banner_image",
+          "identifier": "home_hero_image",
           "type": "file",
-          "label": "Community banner image",
+          "label": "Home hero image",
           "description": "Foreground banner image for community pages."
         }
       ]
