@@ -1,6 +1,6 @@
 <header
   class="section hero community-hero cxi-community-hero"
-  style="background-image: url('{{#if settings.community_hero_image}}{{settings.community_hero_image}}{{else}}{{asset 'settings/digify-cx-hero.jpg'}}{{/if}}');"
+  style="background-image: url('{{asset 'settings/digify-cx-hero.jpg'}}');"
   data-digify-check="community-hero">
   <div class="cxi-community-hero-overlay"></div>
   <div class="container cxi-community-hero-body">
@@ -12,11 +12,7 @@
       </svg>
       {{search scoped=settings.scoped_community_search submit=false class='search search-full'}}
     </div>
-    {{#if settings.community_banner_image}}
-      <img class="cxi-community-banner" src="{{settings.community_banner_image}}" alt="Community banner" data-digify-check="community-banner">
-    {{else}}
-      <img class="cxi-community-banner" src="{{asset 'settings/digify-cx-logo.png'}}" alt="Community banner" data-digify-check="community-banner">
-    {{/if}}
+    <img class="cxi-community-banner" src="{{asset 'settings/digify-cx-logo.png'}}" alt="Community banner" data-digify-check="community-banner">
   </div>
 </header>
 
