@@ -1018,14 +1018,14 @@
   }
 })();
 (function () {
-  function logFailure(img, phase) {
-    console.warn("[DIGIFY-THEME] Image failed to load", {
-      alt: img.alt,
-      src: img.src,
-      check: img.getAttribute("data-digify-check"),
-      phase,
-    });
-  }
+function logFailure(img, phase) {
+  console.warn("[DIGIFY-THEME] Image failed to load", {
+    alt: img.alt,
+    src: img.src,
+    check: img.getAttribute("data-digify-check"),
+    phase,
+  });
+}
 
   function handleFailure(img, phase) {
     logFailure(img, phase);

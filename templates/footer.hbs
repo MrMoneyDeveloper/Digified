@@ -2,7 +2,7 @@
   <div class="digify-footer__inner container">
     <div class="digify-footer__brand">
       <img
-        src="{{asset 'settings/digify-cx-logo.png'}}"
+        src="{{#if settings.digify_cx_logo}}{{settings.digify_cx_logo}}{{else}}{{asset 'settings/digify-cx-logo.png'}}{{/if}}"
         alt="Digify CX"
         class="digify-footer__logo"
         data-digify-check="footer-logo"
@@ -12,7 +12,7 @@
 
     <div class="digify-footer__building">
       <img
-        src="{{asset 'settings/footer_building_image.jpg'}}"
+        src="{{#if settings.footer_building_image}}{{settings.footer_building_image}}{{else}}{{asset 'settings/digify-cx-building.jpg'}}{{/if}}"
         alt="Digify CX building"
         class="digify-footer__building-img"
         data-digify-check="footer-building"

@@ -2,7 +2,7 @@
   <div class="digify-header__inner container">
     <a class="digify-header__brand" href="{{page_path 'help_center'}}">
       <img
-        src="{{asset 'settings/digify-cx-logo.png'}}"
+        src="{{#if settings.digify_cx_logo}}{{settings.digify_cx_logo}}{{else}}{{asset 'settings/digify-cx-logo.png'}}{{/if}}"
         alt="Digify CX"
         class="digify-header__logo"
         data-digify-check="header-logo"
