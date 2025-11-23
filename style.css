@@ -2062,23 +2062,20 @@ a[href*="/hc/"][href*="activities"],
   color: rgba(17, 32, 68, 0.85);
 }
 
-/* Only hide the form TYPE selector, not the entire form */
-body.ticket-form-locked [data-test-id="ticket-field-ticket_form_id"],
-body.ticket-form-locked div[role="combobox"]:has(label:contains("Please choose")),
-body.ticket-form-locked label:contains("Please choose your issue below") {
+/* ONLY hide the "Please choose your issue below" section */
+[data-test-id="ticket-field-ticket_form_id"] {
   display: none !important;
-  visibility: hidden !important;
-  height: 0 !important;
-  overflow: hidden !important;
 }
 
-/* Don't hide the actual form fields */
-body.ticket-form-locked input:not([id*="ticket_form"]),
+/* Don't hide anything else */
+body.ticket-form-locked input,
 body.ticket-form-locked textarea,
-body.ticket-form-locked select:not([id*="issue_type"]),
-body.ticket-form-locked button[type="submit"] {
+body.ticket-form-locked select,
+body.ticket-form-locked button,
+body.ticket-form-locked label {
   display: block !important;
   visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .dbpo-request {
@@ -2552,6 +2549,7 @@ ol.breadcrumbs li::before {
 }
 
 .digify-header .dropdown-menu {
+  display: none;
   position: absolute;
   margin-top: 0.5rem;
   right: 0;
@@ -2562,6 +2560,11 @@ ol.breadcrumbs li::before {
   padding: 0.35rem 0;
   list-style: none;
   z-index: 20;
+}
+
+.digify-header .dropdown:hover .dropdown-menu,
+.digify-header .dropdown-toggle[aria-expanded="true"] + .dropdown-menu {
+  display: block !important;
 }
 
 .digify-header .dropdown-menu li a {
