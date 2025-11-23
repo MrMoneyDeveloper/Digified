@@ -20,23 +20,23 @@
             </button>
             <ul class="dropdown-menu" role="menu">
               <li class="nav-internal" role="menuitem">
-                <a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_request_form_id}}{{settings.internal_request_form_id}}{{else}}54818657692444{{/if}}">Request Support</a>
+                <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=54818657692444">Request Support</a>
               </li>
               <li class="nav-internal" role="menuitem">
-                <a href="{{#if settings.category_shared_policies_id}}{{link 'category' id=settings.category_shared_policies_id}}{{else}}/hc/{{help_center.locale}}/categories/23700129077660{{/if}}">Shared Policies</a>
+                <a href="/hc/{{help_center.locale}}/categories/23700129077660">Shared Policies</a>
               </li>
               <li class="nav-internal" role="menuitem">
-                <a href="{{#if settings.category_internal_policies_id}}{{link 'category' id=settings.category_internal_policies_id}}{{else}}/hc/{{help_center.locale}}/categories/23700078037148{{/if}}">Internal Policies</a>
+                <a href="/hc/{{help_center.locale}}/categories/23700078037148">Internal Policies</a>
               </li>
 
               <li class="nav-tenant" role="menuitem">
-                <a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_request_form_id}}{{settings.tenant_request_form_id}}{{else}}54818268462356{{/if}}">Request Support</a>
+                <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=54818268462356">Request Support</a>
               </li>
               <li class="nav-tenant" role="menuitem">
-                <a href="{{#if settings.category_shared_policies_id}}{{link 'category' id=settings.category_shared_policies_id}}{{else}}/hc/{{help_center.locale}}/categories/23700129077660{{/if}}">Shared Policies</a>
+                <a href="/hc/{{help_center.locale}}/categories/23700129077660">Shared Policies</a>
               </li>
               <li class="nav-tenant" role="menuitem">
-                <a href="{{#if settings.category_tenant_policies_id}}{{link 'category' id=settings.category_tenant_policies_id}}{{else}}/hc/{{help_center.locale}}/categories/23700120243740{{/if}}">Tenant Policies</a>
+                <a href="/hc/{{help_center.locale}}/categories/23700120243740">Tenant Policies</a>
               </li>
             </ul>
           </div>

@@ -2062,39 +2062,23 @@ a[href*="/hc/"][href*="activities"],
   color: rgba(17, 32, 68, 0.85);
 }
 
-/* Hide ticket form selector - Zendesk modern structure */
+/* Only hide the form TYPE selector, not the entire form */
 body.ticket-form-locked [data-test-id="ticket-field-ticket_form_id"],
-body.ticket-form-locked [data-garden-id="dropdowns.combobox"],
-body.ticket-form-locked div[role="combobox"]:has(label:not([for])),
-body.ticket-form-locked .request_ticket_form_id,
-body.ticket-form-locked #request_issue_type_select,
-body.ticket-form-locked #request_issue_type_row,
-body.ticket-form-locked .form-field.request_ticket_form_id {
+body.ticket-form-locked div[role="combobox"]:has(label:contains("Please choose")),
+body.ticket-form-locked label:contains("Please choose your issue below") {
   display: none !important;
   visibility: hidden !important;
-  opacity: 0 !important;
   height: 0 !important;
-  max-height: 0 !important;
   overflow: hidden !important;
-  position: absolute !important;
-  left: -99999px !important;
-  pointer-events: none !important;
 }
 
-/* Target the specific field by label text - nuclear option */
-body.ticket-form-locked label:has-text("Please choose your issue below") {
-  display: none !important;
-}
-
-body.ticket-form-locked label:has-text("Please choose your issue below") ~ * {
-  display: none !important;
-}
-
-body.ticket-form-locked label,
-body.ticket-form-locked [for="request_issue_type_select"],
-body.ticket-form-locked [data-test-id="ticket-field-ticket_form_id"] > *:not(input):not([type="email"]) {
-  display: none !important;
-  visibility: hidden !important;
+/* Don't hide the actual form fields */
+body.ticket-form-locked input:not([id*="ticket_form"]),
+body.ticket-form-locked textarea,
+body.ticket-form-locked select:not([id*="issue_type"]),
+body.ticket-form-locked button[type="submit"] {
+  display: block !important;
+  visibility: visible !important;
 }
 
 .dbpo-request {
@@ -2514,6 +2498,34 @@ ol.breadcrumbs li::before {
 .dropdown-toggle,
 .dropdown-menu a {
   color: #ffffff !important;
+}
+
+/* Make all header/nav text white, including brand */
+.digify-header,
+.digify-header *,
+.digify-header__brand,
+.digify-header__brand-text,
+.digify-header__nav,
+.digify-header__nav *,
+.digify-header__user,
+.user-nav,
+.user-nav a,
+.dropdown-toggle,
+.dropdown-menu a {
+  color: #ffffff !important;
+}
+
+.digify-header a,
+.digify-header__brand,
+.digify-header__brand-text {
+  color: #ffffff !important;
+  text-decoration: none;
+}
+
+.digify-header a:hover,
+.user-nav a:hover,
+.dropdown-menu a:hover {
+  color: rgba(255, 255, 255, 0.8) !important;
 }
 
 .digify-header__user {
