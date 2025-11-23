@@ -221,27 +221,44 @@
       document.body.classList.add("ticket-form-locked", "form-locked");
 
       const selectors = [
+        '[data-test-id="ticket-field-ticket_form_id"]',
+        '[data-garden-id="dropdowns.combobox"]',
+        'div[role="combobox"]',
         "#request_issue_type_select",
-        "select[name='request[issue_type_select]']",
         ".request_ticket_form_id",
         "#request_issue_type_row",
         ".form-field.request_ticket_form_id",
-        "label[for='request_issue_type_select']",
       ];
 
       let hiddenCount = 0;
       selectors.forEach((selector) => {
         const elements = document.querySelectorAll(selector);
         elements.forEach((el) => {
-          el.style.display = "none";
-          el.style.visibility = "hidden";
-          el.style.opacity = "0";
-          el.setAttribute("hidden", "true");
-          hiddenCount++;
+          const label = el.querySelector && el.querySelector("label");
+          const isFormSelector =
+            !label ||
+            (label.textContent || "").includes("Please choose your issue") ||
+            (label.textContent || "").includes("issue below") ||
+            !!el.closest?.('[data-test-id="ticket-field-ticket_form_id"]');
+
+          if (
+            isFormSelector ||
+            selector.includes("ticket_form_id") ||
+            selector.includes("issue_type")
+          ) {
+            el.style.setProperty("display", "none", "important");
+            el.style.setProperty("visibility", "hidden", "important");
+            el.style.setProperty("opacity", "0", "important");
+            el.style.setProperty("height", "0", "important");
+            el.style.setProperty("overflow", "hidden", "important");
+            el.setAttribute("hidden", "true");
+            hiddenCount++;
+          }
         });
       });
 
       console.info("[Digified] Hidden " + hiddenCount + " elements");
+      return hiddenCount;
     }
 
     function processForm() {
@@ -252,9 +269,26 @@
 
       if (urlFormId) {
         console.info("[Digified] Form ID present, hiding selector");
-        setTimeout(hideFormSelector, 500);
-        setTimeout(hideFormSelector, 1000);
-        setTimeout(hideFormSelector, 2000);
+        const immediateCount = hideFormSelector();
+
+        if (immediateCount === 0) {
+          console.info("[Digified] No elements found, will retry...");
+          setTimeout(() => {
+            const count = hideFormSelector();
+            console.info("[Digified] Retry 1 - Hidden:", count);
+          }, 500);
+
+          setTimeout(() => {
+            const count = hideFormSelector();
+            console.info("[Digified] Retry 2 - Hidden:", count);
+          }, 1500);
+
+          setTimeout(() => {
+            const count = hideFormSelector();
+            console.info("[Digified] Retry 3 - Hidden:", count);
+          }, 3000);
+        }
+
         return;
       }
 
@@ -279,7 +313,39 @@
       }
     }
 
-    setTimeout(processForm, 1000);
+    setTimeout(processForm, 800);
+  })();
+
+  // TEMPORARY DEBUG CODE - remove after identifying exact selector
+  (function () {
+    setTimeout(() => {
+      console.log("=== DEBUGGING FORM SELECTOR ===");
+
+      const allElements = document.querySelectorAll("*");
+      allElements.forEach((el) => {
+        const text = el.textContent || "";
+        if (text.includes("Please choose your issue")) {
+          console.log("Found element with 'Please choose':");
+          console.log("- Tag:", el.tagName);
+          console.log("- Classes:", el.className);
+          console.log("- ID:", el.id);
+          console.log(
+            "- Data attrs:",
+            Array.from(el.attributes)
+              .filter((a) => a.name.startsWith("data-"))
+              .map((a) => `${a.name}=${a.value}`)
+          );
+          console.log("- Element:", el);
+          console.log("- Parent:", el.parentElement);
+        }
+      });
+
+      const comboboxes = document.querySelectorAll('[role="combobox"]');
+      console.log("Found comboboxes:", comboboxes.length);
+      comboboxes.forEach((cb, i) => {
+        console.log("Combobox " + i + ":", cb);
+      });
+    }, 2000);
   })();
 
 

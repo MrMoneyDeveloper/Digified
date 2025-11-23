@@ -2062,26 +2062,31 @@ a[href*="/hc/"][href*="activities"],
   color: rgba(17, 32, 68, 0.85);
 }
 
-/* Hide form selector when ticket_form_id is in URL */
+/* Hide ticket form selector - Zendesk modern structure */
+body.ticket-form-locked [data-test-id="ticket-field-ticket_form_id"],
+body.ticket-form-locked [data-garden-id="dropdowns.combobox"],
+body.ticket-form-locked div[role="combobox"]:has(label:not([for])),
 body.ticket-form-locked .request_ticket_form_id,
 body.ticket-form-locked #request_issue_type_select,
 body.ticket-form-locked #request_issue_type_row,
-body.ticket-form-locked .form-field.request_ticket_form_id,
-body.ticket-form-locked label[for='request_issue_type_select'],
-body.ticket-form-locked select[name='request[issue_type_select]'] {
+body.ticket-form-locked .form-field.request_ticket_form_id {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
   height: 0 !important;
+  max-height: 0 !important;
   overflow: hidden !important;
   position: absolute !important;
-  left: -9999px !important;
+  left: -99999px !important;
+  pointer-events: none !important;
 }
 
-/* Also hide via URL parameter - works immediately */
-body:has([action*="ticket_form_id"]) .request_ticket_form_id,
-body:has([action*="ticket_form_id"]) #request_issue_type_select,
-body:has([action*="ticket_form_id"]) #request_issue_type_row {
+/* Target the specific field by label text - nuclear option */
+body.ticket-form-locked label:has-text("Please choose your issue below") {
+  display: none !important;
+}
+
+body.ticket-form-locked label:has-text("Please choose your issue below") ~ * {
   display: none !important;
 }
 
