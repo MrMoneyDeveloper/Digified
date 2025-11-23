@@ -374,6 +374,36 @@
           "type": "file",
           "description": "logo_description",
           "label": "logo_label"
+        },
+        {
+          "identifier": "digify_cx_logo",
+          "type": "file",
+          "label": "Digify CX logo",
+          "description": "Main Digify CX logo"
+        },
+        {
+          "identifier": "home_logo_digify_bpo",
+          "type": "file",
+          "label": "Digify BPO logo",
+          "description": "Digify BPO brand logo"
+        },
+        {
+          "identifier": "home_logo_cx_leads",
+          "type": "file",
+          "label": "CX Leads logo",
+          "description": "CX Leads brand logo"
+        },
+        {
+          "identifier": "home_logo_outbound_cx",
+          "type": "file",
+          "label": "Outbound CX logo",
+          "description": "Outbound CX brand logo"
+        },
+        {
+          "identifier": "home_logo_cx_experts",
+          "type": "file",
+          "label": "CX Experts logo",
+          "description": "CX Experts brand logo"
         }
       ]
     },
@@ -412,6 +442,24 @@
           "description": "recent_activity_description",
           "label": "recent_activity_label",
           "value": false
+        },
+        {
+          "identifier": "home_hero_image",
+          "type": "file",
+          "label": "Home hero image",
+          "description": "Hero background image for homepage"
+        },
+        {
+          "identifier": "digify_cx_hero_image",
+          "type": "file",
+          "label": "Digify CX hero image",
+          "description": "Hero background image for Digify CX internal, tenant, and community pages"
+        },
+        {
+          "identifier": "digify_cx_building_image",
+          "type": "file",
+          "label": "Digify CX building image",
+          "description": "Building image used on tenant hero and footer"
         }
       ]
     },
@@ -752,6 +800,12 @@
           "label": "Harassment policy icon URL",
           "description": "Icon for the Sexual Harassment policy card.",
           "value": ""
+        },
+        {
+          "identifier": "icon_placeholder",
+          "type": "file",
+          "label": "Default icon placeholder",
+          "description": "Fallback icon shown when no specific card icon is configured."
         }
       ]
     },
