@@ -45,9 +45,9 @@
 
       <nav class="user-nav">
         {{#if signed_in}}
-          <a href="/access/logout?return_to=/hc/{{help_center.locale}}" class="nav-link">Sign out</a>
+          <a href="https://cxe-internal.zendesk.com/access/logout?return_to=https://cxe-internal.zendesk.com/hc/{{help_center.locale}}" class="nav-link">Sign out</a>
         {{else}}
-          <a href="/access/login?return_to=/hc/{{help_center.locale}}" class="nav-link">Sign in</a>
+          <a href="https://cxe-internal.zendesk.com/hc/{{help_center.locale}}/signin?return_to=https://cxe-internal.zendesk.com/hc/{{help_center.locale}}" class="nav-link">Sign in</a>
         {{/if}}
       </nav>
     </div>
