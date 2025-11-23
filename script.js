@@ -205,273 +205,19 @@
       }
     });
 
-    (function () {
-      // Legacy form-locking logic disabled in favour of Digified continuous hiding locker.
-      return;
-
-      // Only run on new request page
-      if (!/\/requests\/new/.test(window.location.pathname)) {
-        return;
-      }
-
-      const STAFF_SIGNUP_FORM = "23590656709788";
-      const TENANT_SIGNUP_FORM = "23590702845724";
-      const STAFF_SUPPORT_FORM = "54818657692444";
-      const TENANT_SUPPORT_FORM = "54818268462356";
-
-      function hideFormSelector() {
-        document.body.classList.add("ticket-form-locked", "form-locked");
-
-        const selectorsToHide = [
-          ".request_ticket_form_id",
-          "#request_issue_type_select",
-          "#request_issue_type_row",
-          "label[for='request_issue_type_select']",
-          ".form-field.request_ticket_form_id",
-        ];
-
-        selectorsToHide.forEach((selector) => {
-          const elements = document.querySelectorAll(selector);
-          elements.forEach((el) => {
-            el.style.setProperty("display", "none", "important");
-            el.style.setProperty("visibility", "hidden", "important");
-            el.style.setProperty("opacity", "0", "important");
-            el.style.setProperty("height", "0", "important");
-            el.style.setProperty("position", "absolute", "important");
-            el.style.setProperty("left", "-9999px", "important");
-            el.setAttribute("aria-hidden", "true");
-            el.setAttribute("disabled", "disabled");
-          });
-        });
-
-        const formSelect = document.getElementById("request_issue_type_select");
-        if (formSelect) {
-          formSelect.disabled = true;
-          formSelect.style.pointerEvents = "none";
-
-          formSelect.addEventListener(
-            "change",
-            function (e) {
-              e.preventDefault();
-              e.stopImmediatePropagation();
-              return false;
-            },
-            true
-          );
-        }
-
-        console.info("[Digified] Form selector hidden");
-      }
-
-      function removeIneligibleOptions(formSelect, allowedFormIds) {
-        Array.from(formSelect.options).forEach((option) => {
-          if (!allowedFormIds.includes(option.value) && option.value !== "") {
-            option.remove();
-          }
-        });
-      }
-
-      function setAndLockForm(formId, attempt = 0) {
-        if (attempt > 50) {
-          console.warn("[Digified] Form select not found");
-          hideFormSelector();
-          return;
-        }
-
-        const formSelect = document.getElementById("request_issue_type_select");
-        if (!formSelect || formSelect.options.length === 0) {
-          setTimeout(() => setAndLockForm(formId, attempt + 1), 100);
-          return;
-        }
-
-        // Set the form value
-        if (formSelect.value !== formId) {
-          formSelect.value = formId;
-          formSelect.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-
-        // Hide the selector
-        hideFormSelector();
-
-        // Monitor for any attempts to unhide
-        const observer = new MutationObserver(() => {
-          if (document.body.classList.contains("ticket-form-locked")) {
-            hideFormSelector();
-          }
-        });
-
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true,
-          attributes: true,
-          attributeFilter: ["style", "class"],
-        });
-
-        console.info("[Digified] Form locked to:", formId);
-      }
-
-      function processFormLocking() {
-        const params = new URLSearchParams(window.location.search);
-        const urlFormId = params.get("ticket_form_id");
-        const user = (window.HelpCenter && window.HelpCenter.user) || null;
-        const isSignedIn = !!user;
-        const segments = window.DigifiedSegments || {};
-
-        console.info(
-          "[Digified] Processing form lock - Signed in:",
-          isSignedIn,
-          "Segment:",
-          segments.isInternalUser
-            ? "internal"
-            : segments.isTenantUser
-            ? "tenant"
-            : "none"
-        );
-
-        // CASE 1: Not signed in → Only allow sign-up forms
-        if (!isSignedIn) {
-          console.info(
-            "[Digified] User not signed in - allowing sign-up forms only"
-          );
-
-          if (
-            urlFormId === STAFF_SIGNUP_FORM ||
-            urlFormId === TENANT_SIGNUP_FORM
-          ) {
-            setAndLockForm(urlFormId);
-          } else {
-            // If they somehow got to a different form, keep only signup forms available
-            const formSelect =
-              document.getElementById("request_issue_type_select");
-            if (formSelect) {
-              removeIneligibleOptions(formSelect, [
-                STAFF_SIGNUP_FORM,
-                TENANT_SIGNUP_FORM,
-              ]);
-            }
-          }
-          return;
-        }
-
-        // CASE 2: Signed in but no segment → Only allow sign-up forms
-        if (!segments.isInternalUser && !segments.isTenantUser) {
-          console.info(
-            "[Digified] User signed in but no segment - allowing sign-up forms only"
-          );
-
-          if (
-            urlFormId === STAFF_SIGNUP_FORM ||
-            urlFormId === TENANT_SIGNUP_FORM
-          ) {
-            setAndLockForm(urlFormId);
-          } else {
-            const formSelect =
-              document.getElementById("request_issue_type_select");
-            if (formSelect) {
-              removeIneligibleOptions(formSelect, [
-                STAFF_SIGNUP_FORM,
-                TENANT_SIGNUP_FORM,
-              ]);
-            }
-          }
-          return;
-        }
-
-        // CASE 3: Signed in with segment → Only show their support form
-        let allowedFormId = null;
-
-        if (segments.isInternalUser) {
-          allowedFormId = STAFF_SUPPORT_FORM;
-          console.info(
-            "[Digified] Internal user - locking to staff support form"
-          );
-        } else if (segments.isTenantUser) {
-          allowedFormId = TENANT_SUPPORT_FORM;
-          console.info(
-            "[Digified] Tenant user - locking to tenant support form"
-          );
-        }
-
-        if (allowedFormId) {
-          // If URL has wrong form, redirect
-          if (urlFormId && urlFormId !== allowedFormId) {
-            const isSignupAttempt =
-              urlFormId === STAFF_SIGNUP_FORM ||
-              urlFormId === TENANT_SIGNUP_FORM;
-            if (isSignupAttempt) {
-              console.info(
-                "[Digified] User already has segment, redirecting to support form"
-              );
-            } else {
-              console.warn(
-                "[Digified] User accessing wrong form, redirecting"
-              );
-            }
-            window.location.replace(
-              window.location.pathname + "?ticket_form_id=" + allowedFormId
-            );
-            return;
-          }
-
-          // Remove all other options and lock to their form
-          const formSelect =
-            document.getElementById("request_issue_type_select");
-          if (formSelect) {
-            removeIneligibleOptions(formSelect, [allowedFormId]);
-          }
-          setAndLockForm(allowedFormId);
-        }
-      }
-
-      // Wait for segment detection to stabilize
-      function waitAndProcess(attempts = 0) {
-        if (attempts > 30) {
-          console.info("[Digified] Processing without segment");
-          processFormLocking();
-          return;
-        }
-
-        // Check if we have user info
-        const user = (window.HelpCenter && window.HelpCenter.user) || null;
-
-        // If not signed in, process immediately
-        if (!user) {
-          console.info("[Digified] No user detected, processing immediately");
-          processFormLocking();
-          return;
-        }
-
-        // If signed in, wait for segment detection
-        const segments = window.DigifiedSegments || {};
-        if (segments.isInternalUser || segments.isTenantUser) {
-          console.info("[Digified] Segment detected, processing");
-          processFormLocking();
-          return;
-        }
-
-        // Keep waiting
-        setTimeout(() => waitAndProcess(attempts + 1), 150);
-      }
-
-      // Start the process
-      waitAndProcess();
-    })();
   });
 
   (function () {
+    "use strict";
+
     // Only run on new request page
     if (!/\/requests\/new/.test(window.location.pathname)) {
       return;
     }
 
-    const STAFF_SIGNUP_FORM = "23590656709788";
-    const TENANT_SIGNUP_FORM = "23590702845724";
-    const STAFF_SUPPORT_FORM = "54818657692444";
-    const TENANT_SUPPORT_FORM = "54818268462356";
+    console.info("[Digified] Form locking started");
 
-    console.info("[Digified] Form locking initialized");
-
-    function hideFormSelectorCompletely() {
+    function hideFormSelector() {
       document.body.classList.add("ticket-form-locked", "form-locked");
 
       const selectors = [
@@ -481,130 +227,59 @@
         "#request_issue_type_row",
         ".form-field.request_ticket_form_id",
         "label[for='request_issue_type_select']",
-        "[data-garden-id='forms.select']",
-        "div[role='combobox']",
-        ".nesty-input",
       ];
 
       let hiddenCount = 0;
-
       selectors.forEach((selector) => {
         const elements = document.querySelectorAll(selector);
         elements.forEach((el) => {
-          el.style.setProperty("display", "none", "important");
-          el.style.setProperty("visibility", "hidden", "important");
-          el.style.setProperty("opacity", "0", "important");
-          el.style.setProperty("height", "0", "important");
-          el.style.setProperty("max-height", "0", "important");
-          el.style.setProperty("overflow", "hidden", "important");
-          el.style.setProperty("position", "absolute", "important");
-          el.style.setProperty("left", "-99999px", "important");
-          el.style.setProperty("pointer-events", "none", "important");
-          el.setAttribute("aria-hidden", "true");
-          el.setAttribute("disabled", "true");
+          el.style.display = "none";
+          el.style.visibility = "hidden";
+          el.style.opacity = "0";
           el.setAttribute("hidden", "true");
-
-          if (el.parentElement) {
-            el.parentElement.style.setProperty(
-              "display",
-              "none",
-              "important"
-            );
-          }
-
           hiddenCount++;
         });
       });
 
-      console.info(
-        "[Digified] Hidden " + hiddenCount + " form selector elements"
-      );
-      return hiddenCount > 0;
+      console.info("[Digified] Hidden " + hiddenCount + " elements");
     }
 
-    function startContinuousHiding() {
-      hideFormSelectorCompletely();
-
-      let hideCount = 0;
-      const interval = setInterval(() => {
-        hideFormSelectorCompletely();
-        hideCount++;
-        if (hideCount > 50) {
-          clearInterval(interval);
-          console.info(
-            "[Digified] Stopped continuous hiding after 5 seconds"
-          );
-        }
-      }, 100);
-
-      const observer = new MutationObserver(() => {
-        hideFormSelectorCompletely();
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ["style", "class", "hidden"],
-      });
-
-      console.info("[Digified] Continuous hiding active");
-    }
-
-    function processFormLocking() {
+    function processForm() {
       const params = new URLSearchParams(window.location.search);
       const urlFormId = params.get("ticket_form_id");
-      const user = (window.HelpCenter && window.HelpCenter.user) || null;
-      const isSignedIn = !!user;
-      const segments = window.DigifiedSegments || {};
 
-      console.info(
-        "[Digified] Processing - Signed in:",
-        isSignedIn,
-        "Form ID:",
-        urlFormId
-      );
-
-      startContinuousHiding();
+      console.info("[Digified] Form ID from URL:", urlFormId);
 
       if (urlFormId) {
-        console.info("[Digified] Form ID in URL, hiding selector");
+        console.info("[Digified] Form ID present, hiding selector");
+        setTimeout(hideFormSelector, 500);
+        setTimeout(hideFormSelector, 1000);
+        setTimeout(hideFormSelector, 2000);
         return;
       }
 
-      let targetFormId = null;
+      const segments = window.DigifiedSegments || {};
+      const user = (window.HelpCenter && window.HelpCenter.user) || null;
 
-      if (!isSignedIn || (!segments.isInternalUser && !segments.isTenantUser)) {
-        console.warn(
-          "[Digified] No form ID and no segment - user needs to select from landing page"
-        );
+      if (!user) {
+        console.info("[Digified] Not signed in - no redirect needed");
         return;
       }
 
       if (segments.isInternalUser) {
-        targetFormId = STAFF_SUPPORT_FORM;
-      } else if (segments.isTenantUser) {
-        targetFormId = TENANT_SUPPORT_FORM;
-      }
-
-      if (targetFormId) {
-        console.info(
-          "[Digified] Redirecting to correct form:",
-          targetFormId
-        );
+        console.info("[Digified] Redirecting internal user to staff form");
         window.location.replace(
-          window.location.pathname + "?ticket_form_id=" + targetFormId
+          "/hc/en-us/requests/new?ticket_form_id=54818657692444"
+        );
+      } else if (segments.isTenantUser) {
+        console.info("[Digified] Redirecting tenant user to tenant form");
+        window.location.replace(
+          "/hc/en-us/requests/new?ticket_form_id=54818268462356"
         );
       }
     }
 
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", processFormLocking);
-    } else {
-      processFormLocking();
-    }
-
-    startContinuousHiding();
+    setTimeout(processForm, 1000);
   })();
 
 

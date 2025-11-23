@@ -2062,30 +2062,26 @@ a[href*="/hc/"][href*="activities"],
   color: rgba(17, 32, 68, 0.85);
 }
 
-/* Hide ticket form selector - multiple fallbacks */
-body.ticket-form-locked #request_issue_type_select,
-body.ticket-form-locked select[name='request[issue_type_select]'],
+/* Hide form selector when ticket_form_id is in URL */
 body.ticket-form-locked .request_ticket_form_id,
+body.ticket-form-locked #request_issue_type_select,
 body.ticket-form-locked #request_issue_type_row,
 body.ticket-form-locked .form-field.request_ticket_form_id,
 body.ticket-form-locked label[for='request_issue_type_select'],
-body.ticket-form-locked [data-garden-id='forms.select'],
-body.ticket-form-locked div[role='combobox'],
-body.ticket-form-locked .nesty-input {
+body.ticket-form-locked select[name='request[issue_type_select]'] {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
   height: 0 !important;
-  max-height: 0 !important;
   overflow: hidden !important;
   position: absolute !important;
-  left: -99999px !important;
-  pointer-events: none !important;
+  left: -9999px !important;
 }
 
-/* Hide parent containers */
-body.ticket-form-locked .request_ticket_form_id,
-body.form-locked .form-field.request_ticket_form_id {
+/* Also hide via URL parameter - works immediately */
+body:has([action*="ticket_form_id"]) .request_ticket_form_id,
+body:has([action*="ticket_form_id"]) #request_issue_type_select,
+body:has([action*="ticket_form_id"]) #request_issue_type_row {
   display: none !important;
 }
 
