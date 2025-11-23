@@ -259,14 +259,14 @@
           "identifier": "internal_request_form_id",
           "type": "text",
           "label": "Internal request form ID",
-          "description": "Ticket form ID used for internal Support & Requests hero CTA.",
+          "description": "Ticket form ID used for internal Support & Requests.",
           "value": "54818657692444"
         },
         {
           "identifier": "tenant_request_form_id",
           "type": "text",
           "label": "Tenant request form ID",
-          "description": "Ticket form ID used for tenant Support & Requests hero CTA.",
+          "description": "Ticket form ID used for tenant Support & Requests.",
           "value": "54818268462356"
         }
       ]

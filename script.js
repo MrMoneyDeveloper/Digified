@@ -206,190 +206,110 @@
     });
 
     (function () {
+      // Only run on new request page
       if (!/\/requests\/new/.test(window.location.pathname)) {
         return;
       }
 
-      const removeIneligibleForms = () => {
-        if (!segmentSettings.internalFormId && !segmentSettings.tenantFormId) {
-          return true;
-        }
+      const STAFF_SIGNUP_FORM = "23590656709788";
+      const TENANT_SIGNUP_FORM = "23590702845724";
+      const STAFF_SUPPORT_FORM = "54818657692444";
+      const TENANT_SUPPORT_FORM = "54818268462356";
 
-        const select = document.getElementById("request_issue_type_select");
-        if (!select) {
-          return false;
-        }
-
-        const isInternalUser = !!window.isInternalUser;
-        const isTenantUser = !!window.isTenantUser;
-
-        if (isInternalUser && segmentSettings.tenantFormId) {
-          const tenantOption = select.querySelector(
-            `option[value="${segmentSettings.tenantFormId}"]`
-          );
-          if (tenantOption) {
-            tenantOption.remove();
-          }
-        } else if (isTenantUser && segmentSettings.internalFormId) {
-          const internalOption = select.querySelector(
-            `option[value="${segmentSettings.internalFormId}"]`
-          );
-          if (internalOption) {
-            internalOption.remove();
-          }
-        }
-
-        const selected = select.value;
-        if (
-          (isInternalUser && selected === segmentSettings.tenantFormId) ||
-          (isTenantUser && selected === segmentSettings.internalFormId)
-        ) {
-          const nextId = isInternalUser
-            ? segmentSettings.internalFormId
-            : segmentSettings.tenantFormId;
-          if (nextId) {
-            select.value = nextId;
-            const changeEvent = document.createEvent("HTMLEvents");
-            changeEvent.initEvent("change", true, false);
-            select.dispatchEvent(changeEvent);
-          }
-        }
-
-        return true;
-      };
-
-      const ensureFormPruning = () => {
-        if (removeIneligibleForms()) {
+      // Wait for segment detection to complete
+      function waitForSegment(callback, attempts = 0) {
+        if (attempts > 20) {
+          console.warn("[Digified] Segment detection timeout");
           return;
         }
-        let attempts = 0;
-        const interval = window.setInterval(() => {
-          attempts += 1;
-          if (removeIneligibleForms() || attempts > 20) {
-            window.clearInterval(interval);
+
+        const segments = window.DigifiedSegments;
+        if (segments && (segments.isInternalUser || segments.isTenantUser)) {
+          callback();
+        } else {
+          setTimeout(() => waitForSegment(callback, attempts + 1), 200);
+        }
+      }
+
+      function lockFormToSegment() {
+        const segments = window.DigifiedSegments;
+        const params = new URLSearchParams(window.location.search);
+        const urlFormId = params.get("ticket_form_id");
+        
+        // Determine which form the user should access
+        let allowedFormId = null;
+        
+        if (segments.isInternalUser) {
+          allowedFormId = STAFF_SUPPORT_FORM;
+        } else if (segments.isTenantUser) {
+          allowedFormId = TENANT_SUPPORT_FORM;
+        }
+
+        // If URL has a form ID, validate it's allowed
+        if (urlFormId) {
+          const isSignupForm = urlFormId === STAFF_SIGNUP_FORM || urlFormId === TENANT_SIGNUP_FORM;
+          const isAllowedForm = urlFormId === allowedFormId;
+          
+          // If it's a signup form or their allowed form, use it
+          if (isSignupForm || isAllowedForm) {
+            allowedFormId = urlFormId;
           }
-        }, 150);
-      };
-
-      const params = new URLSearchParams(window.location.search);
-      let lockedId = params.get("ticket_form_id");
-      const hasLockedParam =
-        lockedId && /^\d+$/.test(lockedId);
-
-      // If no explicit ticket_form_id is provided, lock to the
-      // appropriate form based on the detected segment.
-      if (!hasLockedParam) {
-        const segments = window.DigifiedSegments || {};
-        if (segments.isInternalUser && segmentSettings.internalFormId) {
-          lockedId = segmentSettings.internalFormId;
-        } else if (segments.isTenantUser && segmentSettings.tenantFormId) {
-          lockedId = segmentSettings.tenantFormId;
-        }
-      }
-
-      if (!lockedId || !/^\d+$/.test(lockedId)) {
-        ensureFormPruning();
-        return;
-      }
-
-      const hideChooser = () => {
-        document.body.classList.add("ticket-form-locked", "form-locked");
-
-        const wrap = document.querySelector(".request_ticket_form_id");
-        if (wrap) {
-          wrap.style.setProperty("display", "none", "important");
-          wrap.classList.add("ticket-form-selector-hidden");
         }
 
-        const formSelect = document.getElementById("request_issue_type_select");
-        if (formSelect) {
+        if (!allowedFormId) {
+          console.warn("[Digified] No allowed form determined");
+          return;
+        }
+
+        // Wait for form select to be available
+        function setAndLockForm(attempt = 0) {
+          if (attempt > 30) {
+            console.warn("[Digified] Form select not found");
+            return;
+          }
+
+          const formSelect = document.getElementById("request_issue_type_select");
+          if (!formSelect || formSelect.options.length === 0) {
+            setTimeout(() => setAndLockForm(attempt + 1), 100);
+            return;
+          }
+
+          // Remove all options except the allowed one
+          Array.from(formSelect.options).forEach(option => {
+            if (option.value !== allowedFormId && option.value !== "") {
+              option.remove();
+            }
+          });
+
+          // Set the form value
+          formSelect.value = allowedFormId;
+          formSelect.dispatchEvent(new Event("change", { bubbles: true }));
+
+          // Hide the form selector completely
+          document.body.classList.add("ticket-form-locked");
+          
+          const formWrapper = document.querySelector(".request_ticket_form_id");
+          if (formWrapper) {
+            formWrapper.style.setProperty("display", "none", "important");
+          }
+
           formSelect.style.setProperty("display", "none", "important");
           formSelect.setAttribute("aria-hidden", "true");
-          formSelect.setAttribute("tabindex", "-1");
-        }
+          formSelect.setAttribute("disabled", "disabled");
 
-        const formRow = document.getElementById("request_issue_type_row");
-        if (formRow) {
-          formRow.style.setProperty("display", "none", "important");
-        }
-
-        const formLabel = document.querySelector(
-          "label[for='request_issue_type_select']"
-        );
-        if (formLabel) {
-          formLabel.style.setProperty("display", "none", "important");
-        }
-      };
-
-      const showChooser = () => {
-        document.body.classList.remove("ticket-form-locked", "form-locked");
-
-        const wrap = document.querySelector(".request_ticket_form_id");
-        if (wrap) {
-          wrap.style.removeProperty("display");
-          wrap.classList.remove("ticket-form-selector-hidden");
-        }
-
-        const formSelect = document.getElementById("request_issue_type_select");
-        if (formSelect) {
-          formSelect.style.removeProperty("display");
-          formSelect.removeAttribute("aria-hidden");
-          formSelect.removeAttribute("tabindex");
-        }
-
-        const formRow = document.getElementById("request_issue_type_row");
-        if (formRow) {
-          formRow.style.removeProperty("display");
-        }
-
-        const formLabel = document.querySelector(
-          "label[for='request_issue_type_select']"
-        );
-        if (formLabel) {
-          formLabel.style.removeProperty("display");
-        }
-      };
-
-      const setForm = () => {
-        const formSelect = document.getElementById("request_issue_type_select");
-        if (!formSelect || !formSelect.options.length) {
-          return "pending";
-        }
-
-        const optionExists = Array.from(formSelect.options).some(
-          (option) => option.value === lockedId
-        );
-
-        if (!optionExists) {
-          showChooser();
-          return "invalid";
-        }
-
-        if (formSelect.value !== lockedId) {
-          formSelect.value = lockedId;
-          formSelect.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-
-        hideChooser();
-        return "locked";
-      };
-
-      const initialStatus = setForm();
-
-      if (initialStatus === "pending") {
-        const observer = new MutationObserver(() => {
-          const status = setForm();
-          if (status !== "pending") {
-            observer.disconnect();
+          const formRow = document.getElementById("request_issue_type_row");
+          if (formRow) {
+            formRow.style.setProperty("display", "none", "important");
           }
-        });
 
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true,
-        });
+          console.info("[Digified] Form locked to:", allowedFormId);
+        }
+
+        setAndLockForm();
       }
-      ensureFormPruning();
+
+      // Start the process
+      waitForSegment(lockFormToSegment);
     })();
   });
 

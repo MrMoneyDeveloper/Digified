@@ -30,15 +30,18 @@
     </section>
 
     <section class="digify-cards container digify-cards--anon">
-      <article class="digify-card digify-card--tenant">
-        <h3>Tenants</h3>
-        <p>Request maintenance, report an incident, or review building policies.</p>
-        <a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_request_form_id}}{{settings.tenant_request_form_id}}{{else}}54818268462356{{/if}}" class="btn btn-secondary">Submit a request</a>
+      <!-- Card 1: Staff Sign Up -->
+      <article class="digify-card digify-card--primary">
+        <h3>Digify CX team members</h3>
+        <p>Join our internal team. Sign up to access HR, IT, and Facilities support.</p>
+        <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=23590656709788" class="btn btn-primary">Sign up as staff</a>
       </article>
-      <article class="digify-card digify-card--partner">
-        <h3>Partners</h3>
-        <p>Ask questions, propose a partnership, or contact the Digify CX team.</p>
-        <a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.partner_request_form_id}}{{settings.partner_request_form_id}}{{else}}{{#if settings.generic_form_id}}{{settings.generic_form_id}}{{else}}54818679114588{{/if}}{{/if}}" class="btn btn-secondary">Submit request</a>
+      
+      <!-- Card 2: Tenant Sign Up -->
+      <article class="digify-card">
+        <h3>Tenants &amp; partners</h3>
+        <p>Request maintenance, report an incident, or review building policies.</p>
+        <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=23590702845724" class="btn btn-secondary">Sign up as tenant</a>
       </article>
     </section>
 
