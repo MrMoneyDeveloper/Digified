@@ -206,6 +206,9 @@
     });
 
     (function () {
+      // Legacy form-locking logic disabled in favour of Digified continuous hiding locker.
+      return;
+
       // Only run on new request page
       if (!/\/requests\/new/.test(window.location.pathname)) {
         return;
@@ -454,6 +457,155 @@
       waitAndProcess();
     })();
   });
+
+  (function () {
+    // Only run on new request page
+    if (!/\/requests\/new/.test(window.location.pathname)) {
+      return;
+    }
+
+    const STAFF_SIGNUP_FORM = "23590656709788";
+    const TENANT_SIGNUP_FORM = "23590702845724";
+    const STAFF_SUPPORT_FORM = "54818657692444";
+    const TENANT_SUPPORT_FORM = "54818268462356";
+
+    console.info("[Digified] Form locking initialized");
+
+    function hideFormSelectorCompletely() {
+      document.body.classList.add("ticket-form-locked", "form-locked");
+
+      const selectors = [
+        "#request_issue_type_select",
+        "select[name='request[issue_type_select]']",
+        ".request_ticket_form_id",
+        "#request_issue_type_row",
+        ".form-field.request_ticket_form_id",
+        "label[for='request_issue_type_select']",
+        "[data-garden-id='forms.select']",
+        "div[role='combobox']",
+        ".nesty-input",
+      ];
+
+      let hiddenCount = 0;
+
+      selectors.forEach((selector) => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach((el) => {
+          el.style.setProperty("display", "none", "important");
+          el.style.setProperty("visibility", "hidden", "important");
+          el.style.setProperty("opacity", "0", "important");
+          el.style.setProperty("height", "0", "important");
+          el.style.setProperty("max-height", "0", "important");
+          el.style.setProperty("overflow", "hidden", "important");
+          el.style.setProperty("position", "absolute", "important");
+          el.style.setProperty("left", "-99999px", "important");
+          el.style.setProperty("pointer-events", "none", "important");
+          el.setAttribute("aria-hidden", "true");
+          el.setAttribute("disabled", "true");
+          el.setAttribute("hidden", "true");
+
+          if (el.parentElement) {
+            el.parentElement.style.setProperty(
+              "display",
+              "none",
+              "important"
+            );
+          }
+
+          hiddenCount++;
+        });
+      });
+
+      console.info(
+        "[Digified] Hidden " + hiddenCount + " form selector elements"
+      );
+      return hiddenCount > 0;
+    }
+
+    function startContinuousHiding() {
+      hideFormSelectorCompletely();
+
+      let hideCount = 0;
+      const interval = setInterval(() => {
+        hideFormSelectorCompletely();
+        hideCount++;
+        if (hideCount > 50) {
+          clearInterval(interval);
+          console.info(
+            "[Digified] Stopped continuous hiding after 5 seconds"
+          );
+        }
+      }, 100);
+
+      const observer = new MutationObserver(() => {
+        hideFormSelectorCompletely();
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["style", "class", "hidden"],
+      });
+
+      console.info("[Digified] Continuous hiding active");
+    }
+
+    function processFormLocking() {
+      const params = new URLSearchParams(window.location.search);
+      const urlFormId = params.get("ticket_form_id");
+      const user = (window.HelpCenter && window.HelpCenter.user) || null;
+      const isSignedIn = !!user;
+      const segments = window.DigifiedSegments || {};
+
+      console.info(
+        "[Digified] Processing - Signed in:",
+        isSignedIn,
+        "Form ID:",
+        urlFormId
+      );
+
+      startContinuousHiding();
+
+      if (urlFormId) {
+        console.info("[Digified] Form ID in URL, hiding selector");
+        return;
+      }
+
+      let targetFormId = null;
+
+      if (!isSignedIn || (!segments.isInternalUser && !segments.isTenantUser)) {
+        console.warn(
+          "[Digified] No form ID and no segment - user needs to select from landing page"
+        );
+        return;
+      }
+
+      if (segments.isInternalUser) {
+        targetFormId = STAFF_SUPPORT_FORM;
+      } else if (segments.isTenantUser) {
+        targetFormId = TENANT_SUPPORT_FORM;
+      }
+
+      if (targetFormId) {
+        console.info(
+          "[Digified] Redirecting to correct form:",
+          targetFormId
+        );
+        window.location.replace(
+          window.location.pathname + "?ticket_form_id=" + targetFormId
+        );
+      }
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", processFormLocking);
+    } else {
+      processFormLocking();
+    }
+
+    startContinuousHiding();
+  })();
 
 
   const isPrintableChar = (str) => {

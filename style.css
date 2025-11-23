@@ -2062,19 +2062,31 @@ a[href*="/hc/"][href*="activities"],
   color: rgba(17, 32, 68, 0.85);
 }
 
-/* Force hide ticket form selector when locked */
-body.ticket-form-locked .request_ticket_form_id,
+/* Hide ticket form selector - multiple fallbacks */
 body.ticket-form-locked #request_issue_type_select,
+body.ticket-form-locked select[name='request[issue_type_select]'],
+body.ticket-form-locked .request_ticket_form_id,
 body.ticket-form-locked #request_issue_type_row,
-body.ticket-form-locked label[for="request_issue_type_select"],
-body.ticket-form-locked .form-field.request_ticket_form_id {
+body.ticket-form-locked .form-field.request_ticket_form_id,
+body.ticket-form-locked label[for='request_issue_type_select'],
+body.ticket-form-locked [data-garden-id='forms.select'],
+body.ticket-form-locked div[role='combobox'],
+body.ticket-form-locked .nesty-input {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
   height: 0 !important;
+  max-height: 0 !important;
   overflow: hidden !important;
   position: absolute !important;
-  left: -9999px !important;
+  left: -99999px !important;
+  pointer-events: none !important;
+}
+
+/* Hide parent containers */
+body.ticket-form-locked .request_ticket_form_id,
+body.form-locked .form-field.request_ticket_form_id {
+  display: none !important;
 }
 
 .dbpo-request {
