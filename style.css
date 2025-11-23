@@ -2090,6 +2090,13 @@ body.ticket-form-locked label:has-text("Please choose your issue below") ~ * {
   display: none !important;
 }
 
+body.ticket-form-locked label,
+body.ticket-form-locked [for="request_issue_type_select"],
+body.ticket-form-locked [data-test-id="ticket-field-ticket_form_id"] > *:not(input):not([type="email"]) {
+  display: none !important;
+  visibility: hidden !important;
+}
+
 .dbpo-request {
   padding: 2.5rem 0 4rem;
 }
@@ -2498,6 +2505,15 @@ ol.breadcrumbs li::before {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.digify-header__nav,
+.digify-header__nav a,
+.user-nav a,
+.digify-header__user,
+.dropdown-toggle,
+.dropdown-menu a {
+  color: #ffffff !important;
 }
 
 .digify-header__user {
