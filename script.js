@@ -216,29 +216,72 @@
       const STAFF_SUPPORT_FORM = "54818657692444";
       const TENANT_SUPPORT_FORM = "54818268462356";
 
-      // Wait for segment detection to complete
-      function waitForSegment(callback, attempts = 0) {
-        if (attempts > 20) {
-          console.warn("[Digified] Segment detection timeout");
-          return;
+      function hideFormSelector() {
+        // Apply body class for CSS rules
+        document.body.classList.add("ticket-form-locked", "form-locked");
+
+        // Hide all possible form selector elements
+        const selectorsToHide = [
+          ".request_ticket_form_id",
+          "#request_issue_type_select",
+          "#request_issue_type_row",
+          "label[for='request_issue_type_select']",
+          ".form-field.request_ticket_form_id"
+        ];
+
+        selectorsToHide.forEach((selector) => {
+          const elements = document.querySelectorAll(selector);
+          elements.forEach((el) => {
+            el.style.setProperty("display", "none", "important");
+            el.style.setProperty("visibility", "hidden", "important");
+            el.style.setProperty("opacity", "0", "important");
+            el.style.setProperty("height", "0", "important");
+            el.style.setProperty("position", "absolute", "important");
+            el.style.setProperty("left", "-9999px", "important");
+            el.setAttribute("aria-hidden", "true");
+            el.setAttribute("disabled", "disabled");
+          });
+        });
+
+        // Disable the select specifically to prevent changes
+        const formSelect = document.getElementById("request_issue_type_select");
+        if (formSelect) {
+          formSelect.disabled = true;
+          formSelect.style.pointerEvents = "none";
+
+          // Prevent any change events
+          formSelect.addEventListener(
+            "change",
+            function (e) {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              return false;
+            },
+            true
+          );
+
+          formSelect.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              return false;
+            },
+            true
+          );
         }
 
-        const segments = window.DigifiedSegments;
-        if (segments && (segments.isInternalUser || segments.isTenantUser)) {
-          callback();
-        } else {
-          setTimeout(() => waitForSegment(callback, attempts + 1), 200);
-        }
+        console.info("[Digified] Form selector hidden and disabled");
       }
 
       function lockFormToSegment() {
         const segments = window.DigifiedSegments;
         const params = new URLSearchParams(window.location.search);
         const urlFormId = params.get("ticket_form_id");
-        
+
         // Determine which form the user should access
         let allowedFormId = null;
-        
+
         if (segments.isInternalUser) {
           allowedFormId = STAFF_SUPPORT_FORM;
         } else if (segments.isTenantUser) {
@@ -247,9 +290,11 @@
 
         // If URL has a form ID, validate it's allowed
         if (urlFormId) {
-          const isSignupForm = urlFormId === STAFF_SIGNUP_FORM || urlFormId === TENANT_SIGNUP_FORM;
+          const isSignupForm =
+            urlFormId === STAFF_SIGNUP_FORM ||
+            urlFormId === TENANT_SIGNUP_FORM;
           const isAllowedForm = urlFormId === allowedFormId;
-          
+
           // If it's a signup form or their allowed form, use it
           if (isSignupForm || isAllowedForm) {
             allowedFormId = urlFormId;
@@ -263,44 +308,58 @@
 
         // Wait for form select to be available
         function setAndLockForm(attempt = 0) {
-          if (attempt > 30) {
-            console.warn("[Digified] Form select not found");
+          if (attempt > 50) {
+            console.warn(
+              "[Digified] Form select not found after 50 attempts"
+            );
+            // Still hide it even if we can't find it
+            hideFormSelector();
             return;
           }
 
-          const formSelect = document.getElementById("request_issue_type_select");
-          if (!formSelect || formSelect.options.length === 0) {
+          const formSelect = document.getElementById(
+            "request_issue_type_select"
+          );
+          if (!formSelect) {
+            setTimeout(() => setAndLockForm(attempt + 1), 100);
+            return;
+          }
+
+          // Wait for options to load
+          if (formSelect.options.length === 0) {
             setTimeout(() => setAndLockForm(attempt + 1), 100);
             return;
           }
 
           // Remove all options except the allowed one
-          Array.from(formSelect.options).forEach(option => {
+          Array.from(formSelect.options).forEach((option) => {
             if (option.value !== allowedFormId && option.value !== "") {
               option.remove();
             }
           });
 
           // Set the form value
-          formSelect.value = allowedFormId;
-          formSelect.dispatchEvent(new Event("change", { bubbles: true }));
-
-          // Hide the form selector completely
-          document.body.classList.add("ticket-form-locked");
-          
-          const formWrapper = document.querySelector(".request_ticket_form_id");
-          if (formWrapper) {
-            formWrapper.style.setProperty("display", "none", "important");
+          if (formSelect.value !== allowedFormId) {
+            formSelect.value = allowedFormId;
+            formSelect.dispatchEvent(new Event("change", { bubbles: true }));
           }
 
-          formSelect.style.setProperty("display", "none", "important");
-          formSelect.setAttribute("aria-hidden", "true");
-          formSelect.setAttribute("disabled", "disabled");
+          // Hide everything immediately
+          hideFormSelector();
 
-          const formRow = document.getElementById("request_issue_type_row");
-          if (formRow) {
-            formRow.style.setProperty("display", "none", "important");
-          }
+          // Keep monitoring and re-hiding (in case Zendesk JS unhides it)
+          const observer = new MutationObserver(() => {
+            if (document.body.classList.contains("ticket-form-locked")) {
+              hideFormSelector();
+            }
+          });
+
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["style", "class"],
+          });
 
           console.info("[Digified] Form locked to:", allowedFormId);
         }
@@ -308,8 +367,33 @@
         setAndLockForm();
       }
 
+      // Wait for segment detection to complete
+      function waitForSegment(callback, attempts = 0) {
+        if (attempts > 20) {
+          console.warn(
+            "[Digified] Segment detection timeout - hiding form anyway"
+          );
+          hideFormSelector();
+          return;
+        }
+
+        const segments = window.DigifiedSegments;
+        if (segments && (segments.isInternalUser || segments.isTenantUser)) {
+          callback();
+        } else {
+          setTimeout(() => waitForSegment(callback, attempts + 1), 200);
+        }
+      }
+
       // Start the process
       waitForSegment(lockFormToSegment);
+
+      // Also hide immediately on page load as a fallback
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", hideFormSelector);
+      } else {
+        hideFormSelector();
+      }
     })();
   });
 
