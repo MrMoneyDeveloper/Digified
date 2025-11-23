@@ -20,11 +20,17 @@
     <section class="digify-brand-strip">
       <div class="container">
         <h2 class="digify-brand-strip__title">Our CX Group</h2>
-        <div class="digify-brand-strip-logos digify-brand-strip-logos--carousel">
-          <img src="{{settings.home_logo_digify_bpo}}" alt="Digify BPO" data-digify-check="home-brand-digify-bpo">
-          <img src="{{settings.home_logo_cx_leads}}" alt="CX Leads" data-digify-check="home-brand-leads">
-          <img src="{{settings.home_logo_outbound_cx}}" alt="Outbound CX" data-digify-check="home-brand-outbound">
-          <img src="{{settings.home_logo_cx_experts}}" alt="CX Experts" data-digify-check="home-brand-experts">
+        <div class="digify-brand-carousel">
+          <div class="digify-brand-carousel__track">
+            <img src="{{settings.home_logo_digify_bpo}}" alt="Digify BPO" class="digify-brand-carousel__logo" data-digify-check="home-brand-digify-bpo">
+            <img src="{{settings.home_logo_cx_leads}}" alt="CX Leads" class="digify-brand-carousel__logo" data-digify-check="home-brand-leads">
+            <img src="{{settings.home_logo_outbound_cx}}" alt="Outbound CX" class="digify-brand-carousel__logo" data-digify-check="home-brand-outbound">
+            <img src="{{settings.home_logo_cx_experts}}" alt="CX Experts" class="digify-brand-carousel__logo" data-digify-check="home-brand-experts">
+            <img src="{{settings.home_logo_digify_bpo}}" alt="Digify BPO" class="digify-brand-carousel__logo">
+            <img src="{{settings.home_logo_cx_leads}}" alt="CX Leads" class="digify-brand-carousel__logo">
+            <img src="{{settings.home_logo_outbound_cx}}" alt="Outbound CX" class="digify-brand-carousel__logo">
+            <img src="{{settings.home_logo_cx_experts}}" alt="CX Experts" class="digify-brand-carousel__logo">
+          </div>
         </div>
       </div>
     </section>
@@ -78,7 +84,7 @@
       <article class="digify-card digify-card--primary">
         <h3>Request internal support</h3>
         <p>Log HR, IT, and Facilities tickets with internal teams.</p>
-        <a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_request_form_id}}{{settings.internal_request_form_id}}{{else}}54818657692444{{/if}}" class="btn btn-primary">Open a request</a>
+        <a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_request_form_id}}{{settings.internal_request_form_id}}{{else}}22989127409436{{/if}}" class="btn btn-primary">Open a request</a>
       </article>
       <article class="digify-card">
         <h3>Shared building policies</h3>
@@ -109,7 +115,7 @@
       <article class="digify-card digify-card--primary">
         <h3>Request tenant support</h3>
         <p>Report network issues, request maintenance, or contact facilities.</p>
-        <a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_request_form_id}}{{settings.tenant_request_form_id}}{{else}}54818268462356{{/if}}" class="btn btn-primary">Submit a request</a>
+        <a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_request_form_id}}{{settings.tenant_request_form_id}}{{else}}23381214703004{{/if}}" class="btn btn-primary">Submit a request</a>
       </article>
       <article class="digify-card">
         <h3>Shared building policies</h3>

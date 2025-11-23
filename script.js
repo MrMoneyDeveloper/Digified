@@ -9,12 +9,12 @@
     tenantTag: themeSettings.tenant_tag || "segment_tenant",
     internalOrgId: themeSettings.internal_org_id || "23530444315804",
     tenantOrgId: themeSettings.tenant_org_id || "23530712292892",
-    // Request form routing
-    internalFormId:
-      themeSettings.internal_request_form_id || "54818657692444",
-    tenantFormId:
-      themeSettings.tenant_request_form_id || "54818268462356"
-  };
+      // Request form routing
+      internalFormId:
+      themeSettings.internal_request_form_id || "22989127409436",
+      tenantFormId:
+        themeSettings.tenant_request_form_id || "23381214703004"
+    };
 
   window.isInternalUser = false;
   window.isTenantUser = false;
@@ -300,17 +300,17 @@
         return;
       }
 
-      if (segments.isInternalUser) {
-        console.info("[Digified] Redirecting internal user to staff form");
+        if (segments.isInternalUser) {
+          console.info("[Digified] Redirecting internal user to staff form");
         window.location.replace(
-          "/hc/en-us/requests/new?ticket_form_id=54818657692444"
-        );
-      } else if (segments.isTenantUser) {
-        console.info("[Digified] Redirecting tenant user to tenant form");
+            "/hc/en-us/requests/new?ticket_form_id=22989127409436"
+          );
+        } else if (segments.isTenantUser) {
+          console.info("[Digified] Redirecting tenant user to tenant form");
         window.location.replace(
-          "/hc/en-us/requests/new?ticket_form_id=54818268462356"
-        );
-      }
+            "/hc/en-us/requests/new?ticket_form_id=23381214703004"
+          );
+        }
     }
 
     setTimeout(processForm, 800);
