@@ -5,12 +5,15 @@
     (window.HelpCenter && window.HelpCenter.themeSettings) || {};
 
   const segmentSettings = {
-    internalTag: "segment_internal",
-    tenantTag: "segment_tenant",
-    internalOrgId: "23530444315804",
-    tenantOrgId: "23530712292892",
-    internalFormId: themeSettings.internal_form_id || "23590656709788",
-    tenantFormId: themeSettings.tenant_form_id || "23590702845724"
+    internalTag: themeSettings.internal_tag || "segment_internal",
+    tenantTag: themeSettings.tenant_tag || "segment_tenant",
+    internalOrgId: themeSettings.internal_org_id || "23530444315804",
+    tenantOrgId: themeSettings.tenant_org_id || "23530712292892",
+    // Request form routing
+    internalFormId:
+      themeSettings.internal_request_form_id || "54818657692444",
+    tenantFormId:
+      themeSettings.tenant_request_form_id || "54818268462356"
   };
 
   window.isInternalUser = false;
@@ -74,6 +77,8 @@
       userTags: result.userTags,
       orgIds: result.orgIds
     });
+
+    hideUnknownNavItems();
   }
 
   function initSegments(attempt = 0) {
@@ -102,15 +107,36 @@
     toggle.focus();
   }
 
-  const hideUnknownNavItems = () => {
+  function hideUnknownNavItems() {
     const segments = window.DigifiedSegments || {};
+    const allNavItems = document.querySelectorAll(".nav-internal, .nav-tenant");
+
+    if (!allNavItems.length) {
+      return;
+    }
+
     if (!segments.isInternalUser && !segments.isTenantUser) {
-      const navItems = document.querySelectorAll(".nav-internal, .nav-tenant");
-      navItems.forEach((item) => {
+      allNavItems.forEach((item) => {
+        item.style.display = "none";
+      });
+      return;
+    }
+
+    // Reset visibility before applying segment-specific rules
+    allNavItems.forEach((item) => {
+      item.style.display = "";
+    });
+
+    if (segments.isInternalUser) {
+      document.querySelectorAll(".nav-tenant").forEach((item) => {
+        item.style.display = "none";
+      });
+    } else if (segments.isTenantUser) {
+      document.querySelectorAll(".nav-internal").forEach((item) => {
         item.style.display = "none";
       });
     }
-  };
+  }
 
   // Navigation
 
@@ -246,7 +272,21 @@
       };
 
       const params = new URLSearchParams(window.location.search);
-      const lockedId = params.get("ticket_form_id");
+      let lockedId = params.get("ticket_form_id");
+      const hasLockedParam =
+        lockedId && /^\d+$/.test(lockedId);
+
+      // If no explicit ticket_form_id is provided, lock to the
+      // appropriate form based on the detected segment.
+      if (!hasLockedParam) {
+        const segments = window.DigifiedSegments || {};
+        if (segments.isInternalUser && segmentSettings.internalFormId) {
+          lockedId = segmentSettings.internalFormId;
+        } else if (segments.isTenantUser && segmentSettings.tenantFormId) {
+          lockedId = segmentSettings.tenantFormId;
+        }
+      }
+
       if (!lockedId || !/^\d+$/.test(lockedId)) {
         ensureFormPruning();
         return;

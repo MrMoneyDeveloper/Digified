@@ -8,9 +8,6 @@
       </div>
       <div class="digify-hero__overlay"></div>
       <div class="digify-hero__content container">
-        <div class="digify-hero__logo-wrap">
-          <img src="{{settings.digify_cx_logo}}" alt="Digify CX logo" class="digify-hero__logo" data-digify-check="hero-logo">
-        </div>
         <p class="digify-hero__eyebrow">Digify CX Access Hub</p>
         <h1>One Group. One Stack. Every CX Touch Point.</h1>
         <p class="digify-hero__copy">
@@ -26,7 +23,7 @@
     <section class="digify-brand-strip">
       <div class="container">
         <h2 class="digify-brand-strip__title">Our CX Group</h2>
-        <div class="digify-brand-strip-logos">
+        <div class="digify-brand-strip-logos digify-brand-strip-logos--carousel">
           <img src="{{settings.home_logo_digify_bpo}}" alt="Digify BPO" data-digify-check="home-brand-digify-bpo">
           <img src="{{settings.home_logo_cx_leads}}" alt="CX Leads" data-digify-check="home-brand-leads">
           <img src="{{settings.home_logo_outbound_cx}}" alt="Outbound CX" data-digify-check="home-brand-outbound">
@@ -43,13 +40,9 @@
       </article>
       <article class="digify-card">
         <h3>Tenants &amp; partners</h3>
-        <p>Request maintenance, report an incident, or ask a building question.</p>
-        <a href="/hc/{{help_center.locale}}/requests/new" class="btn btn-secondary">Submit a request</a>
+        <p>Request maintenance, report an incident, or review building policies.</p>
+        <a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_request_form_id}}{{settings.tenant_request_form_id}}{{else}}54818268462356{{/if}}" class="btn btn-secondary">Submit a request</a>
       </article>
-    </section>
-
-    <section class="digify-search container">
-      {{search submit=false class='search search-full'}}
     </section>
 
     {{#if categories}}
@@ -75,27 +68,27 @@
       </div>
       <div class="digify-hero__overlay"></div>
       <div class="digify-hero__content container">
-        <div class="digify-hero__logo-wrap">
-          <img src="{{settings.digify_cx_logo}}" alt="Digify CX logo" class="digify-hero__logo">
-        </div>
         <p class="digify-hero__eyebrow">Digify CX Access Hub</p>
         <h1>Welcome back, Digify CX team</h1>
-        <p class="digify-hero__copy">Access internal policies, HR services, and IT/network support from one hub.</p>
+        <p class="digify-hero__copy">Access internal support, policies, and shared resources.</p>
       </div>
     </section>
 
     <section class="digify-cards container digify-cards--internal">
       <article class="digify-card digify-card--primary">
-        <h2>Internal support &amp; requests</h2>
-        <p>Log HR, IT, and Facilities tickets so the right team can help fast.</p>
-        <a href="/hc/{{help_center.locale}}/requests/new" class="btn btn-primary">Open an internal request</a>
+        <h3>Request internal support</h3>
+        <p>Log HR, IT, and Facilities tickets with internal teams.</p>
+        <a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_request_form_id}}{{settings.internal_request_form_id}}{{else}}54818657692444{{/if}}" class="btn btn-primary">Open a request</a>
       </article>
       <article class="digify-card">
-        <h2>Work tools</h2>
-        <p>Get to Zendesk, Dialer, reporting, and policy hubs from one place.</p>
-        <a href="{{#if settings.category_internal_policies_id}}{{link 'category' id=settings.category_internal_policies_id}}{{else}}{{page_path 'help_center'}}{{/if}}" class="btn btn-secondary">
-          View internal resources
-        </a>
+        <h3>Shared building policies</h3>
+        <p>Review policies that apply to everyone in the building.</p>
+        <a href="{{#if settings.category_shared_policies_id}}{{link 'category' id=settings.category_shared_policies_id}}{{else}}/hc/{{help_center.locale}}/categories/23700129077660{{/if}}" class="btn btn-secondary">View shared policies</a>
+      </article>
+      <article class="digify-card">
+        <h3>Internal staff policies</h3>
+        <p>Access HR, compliance, and operational policies for staff.</p>
+        <a href="{{#if settings.category_internal_policies_id}}{{link 'category' id=settings.category_internal_policies_id}}{{else}}/hc/{{help_center.locale}}/categories/23700078037148{{/if}}" class="btn btn-secondary">View internal policies</a>
       </article>
     </section>
   </div>
@@ -107,25 +100,26 @@
       </div>
       <div class="digify-hero__overlay"></div>
       <div class="digify-hero__content container">
-        <div class="digify-hero__logo-wrap">
-          <img src="{{settings.digify_cx_logo}}" alt="Digify CX logo" class="digify-hero__logo">
-        </div>
-        <p class="digify-hero__eyebrow">Digify CX Access Hub</p>
         <h1>Welcome, DigifyCX tenant</h1>
-        <p class="digify-hero__copy">Access building policies, house rules, and facilities services.</p>
+        <p class="digify-hero__copy">Access tenant support, policies, and building resources.</p>
       </div>
     </section>
 
     <section class="digify-cards container digify-cards--tenant">
       <article class="digify-card digify-card--primary">
-        <h2>Tenant IT &amp; network support</h2>
-        <p>Report Wi-Fi, badge, or access control issues to the Digify CX support desk.</p>
-        <a href="/hc/{{help_center.locale}}/requests/new" class="btn btn-primary">Report a network issue</a>
+        <h3>Request tenant support</h3>
+        <p>Report network issues, request maintenance, or contact facilities.</p>
+        <a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_request_form_id}}{{settings.tenant_request_form_id}}{{else}}54818268462356{{/if}}" class="btn btn-primary">Submit a request</a>
       </article>
       <article class="digify-card">
-        <h2>Building &amp; facilities requests</h2>
-        <p>Request cleaning, maintenance, deliveries, or security support.</p>
-        <a href="/hc/{{help_center.locale}}/requests/new" class="btn btn-secondary">Submit a facilities request</a>
+        <h3>Shared building policies</h3>
+        <p>Review general building policies and guidelines.</p>
+        <a href="{{#if settings.category_shared_policies_id}}{{link 'category' id=settings.category_shared_policies_id}}{{else}}/hc/{{help_center.locale}}/categories/23700129077660{{/if}}" class="btn btn-secondary">View shared policies</a>
+      </article>
+      <article class="digify-card">
+        <h3>Tenant-specific policies</h3>
+        <p>Access tenant SLAs, building rules, and facilities information.</p>
+        <a href="{{#if settings.category_tenant_policies_id}}{{link 'category' id=settings.category_tenant_policies_id}}{{else}}/hc/{{help_center.locale}}/categories/23700120243740{{/if}}" class="btn btn-secondary">View tenant policies</a>
       </article>
     </section>
   </div>

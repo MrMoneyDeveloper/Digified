@@ -260,14 +260,14 @@
           "type": "text",
           "label": "Internal request form ID",
           "description": "Ticket form ID used for internal Support & Requests hero CTA.",
-          "value": ""
+          "value": "54818657692444"
         },
         {
           "identifier": "tenant_request_form_id",
           "type": "text",
           "label": "Tenant request form ID",
           "description": "Ticket form ID used for tenant Support & Requests hero CTA.",
-          "value": ""
+          "value": "54818268462356"
         }
       ]
     },
@@ -279,14 +279,14 @@
           "type": "text",
           "label": "Internal policies category ID",
           "description": "Category ID that hosts internal-only policies.",
-          "value": ""
+          "value": "23700078037148"
         },
         {
           "identifier": "tenant_policies_category_id",
           "type": "text",
           "label": "Tenant policies category ID",
           "description": "Category ID that hosts tenant/external policies.",
-          "value": ""
+          "value": "23700120243740"
         },
         {
           "identifier": "hr_resources_section_id",
@@ -321,7 +321,7 @@
           "type": "text",
           "label": "Public policies category ID",
           "description": "Category ID for public or generic policies.",
-          "value": ""
+          "value": "23700129077660"
         },
         {
           "identifier": "generic_form_id",
@@ -335,21 +335,21 @@
           "type": "text",
           "label": "Category ID – Shared Building Policies",
           "description": "Category ID for shared building policies.",
-          "value": ""
+          "value": "23700129077660"
         },
         {
           "identifier": "category_internal_policies_id",
           "type": "text",
           "label": "Category ID – Internal Policies",
           "description": "Category ID for internal staff policies.",
-          "value": ""
+          "value": "23700078037148"
         },
         {
           "identifier": "category_tenant_policies_id",
           "type": "text",
           "label": "Category ID – Tenant Policies",
           "description": "Category ID for tenant policies and SLAs.",
-          "value": ""
+          "value": "23700120243740"
         }
       ]
     },

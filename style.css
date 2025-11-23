@@ -2495,6 +2495,51 @@ ol.breadcrumbs li::before {
   font-weight: 500;
 }
 
+.digify-header .user-nav {
+  display: flex;
+  align-items: center;
+}
+
+.digify-header .dropdown {
+  position: relative;
+}
+
+.digify-header .dropdown-toggle {
+  background-color: transparent;
+  border: 1px solid var(--digify-turquoise);
+  border-radius: 999px;
+  color: var(--digify-white);
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.digify-header .dropdown-menu {
+  position: absolute;
+  margin-top: 0.5rem;
+  right: 0;
+  background-color: rgba(15, 31, 61, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.5rem;
+  min-width: 14rem;
+  padding: 0.35rem 0;
+  list-style: none;
+  z-index: 20;
+}
+
+.digify-header .dropdown-menu li a {
+  display: block;
+  padding: 0.4rem 0.9rem;
+  color: var(--digify-white);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.digify-header .dropdown-menu li a:hover,
+.digify-header .dropdown-menu li a:focus-visible {
+  background-color: rgba(74, 239, 240, 0.08);
+}
+
 .btn.btn-primary {
   background-color: var(--digify-turquoise);
   color: var(--digify-space-cadet);
@@ -2631,6 +2676,21 @@ ol.breadcrumbs li::before {
 .digify-brands__list img {
   max-height: 40px;
   object-fit: contain;
+}
+
+.digify-brand-strip-logos--carousel {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.digify-brand-strip-logos--carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.digify-brand-strip-logos--carousel img {
+  flex: 0 0 auto;
 }
 
 .digify-cards {
