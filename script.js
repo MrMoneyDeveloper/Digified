@@ -179,24 +179,6 @@
       });
     }
 
-    // Filter Quick Links based on segment
-    const quickLinkSegments = window.DigifiedSegments || {};
-    if (quickLinkSegments.isInternalUser) {
-      document.querySelectorAll(".nav-tenant").forEach((el) => {
-        el.style.display = "none";
-      });
-      document.querySelectorAll(".nav-internal").forEach((el) => {
-        el.style.display = "block";
-      });
-    } else if (quickLinkSegments.isTenantUser) {
-      document.querySelectorAll(".nav-internal").forEach((el) => {
-        el.style.display = "none";
-      });
-      document.querySelectorAll(".nav-tenant").forEach((el) => {
-        el.style.display = "block";
-      });
-    }
-
     hideUnknownNavItems();
     const menuButton = document.querySelector(".header .menu-button-mobile");
     const menuList = document.querySelector("#user-nav-mobile");
@@ -262,6 +244,42 @@
     });
 
   });
+
+  // Filter Quick Links based on user segment
+  (function () {
+    "use strict";
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const segments = window.DigifiedSegments || {};
+
+      setTimeout(function () {
+        console.log("[QuickLinks] Segment detection:", segments);
+
+        if (segments.isInternalUser) {
+          document.querySelectorAll(".nav-tenant").forEach((el) => {
+            el.style.display = "none";
+          });
+          document.querySelectorAll(".nav-internal").forEach((el) => {
+            el.style.display = "block";
+          });
+          console.log("[QuickLinks] Showing internal links");
+        } else if (segments.isTenantUser) {
+          document.querySelectorAll(".nav-internal").forEach((el) => {
+            el.style.display = "none";
+          });
+          document.querySelectorAll(".nav-tenant").forEach((el) => {
+            el.style.display = "block";
+          });
+          console.log("[QuickLinks] Showing tenant links");
+        } else {
+          document.querySelectorAll(".nav-link-item").forEach((el) => {
+            el.style.display = "block";
+          });
+          console.log("[QuickLinks] Showing all links (no segment detected)");
+        }
+      }, 500);
+    });
+  })();
 
   (function () {
     "use strict";

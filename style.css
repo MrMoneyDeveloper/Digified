@@ -3104,43 +3104,49 @@ ol.breadcrumbs li::before {
   display: none;
 }
 
-/* Hide "Please choose your issue below" text */
-body.ticket-form-locked label[for="request_issue_type_select"],
-.form-field label:contains("Please choose your issue below"),
-.request-page h2:contains("Please choose your issue below") {
+/* ==================== FORM DROPDOWN FIX ==================== */
+
+/* ONLY hide the form TYPE selector (first combobox with id:0) */
+body.ticket-form-locked #id\:0--trigger,
+body.ticket-form-locked div[aria-labelledby="id:0--label"],
+body.ticket-form-locked label[id="id:0--label"],
+body.ticket-form-locked .StyledField-sc-k7y10k-0:has(label[id="id:0--label"]) {
   display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  left: -99999px !important;
+  pointer-events: none !important;
 }
 
-/* CRITICAL: Only hide the form TYPE selector, nothing else */
-body.ticket-form-locked [data-test-id="ticket-field-ticket_form_id"],
-body.ticket-form-locked .form-field:has([data-test-id="ticket-field-ticket_form_id"]) {
-  display: none !important;
-}
-
-/* Force ALL other select elements to be visible */
-select,
-.nesty-input,
-.form-field select,
-[role="combobox"],
-[data-garden-id="forms.select"] {
-  display: block !important;
+/* Force IT request dropdown (id:1) to be visible */
+body.ticket-form-locked #id\:1--trigger,
+body.ticket-form-locked div[aria-labelledby="id:1--label"] {
+  display: flex !important;
   visibility: visible !important;
   opacity: 1 !important;
   height: auto !important;
-  max-height: 500px !important;
+  max-height: none !important;
   overflow: visible !important;
   position: relative !important;
   left: auto !important;
+  pointer-events: auto !important;
 }
 
-/* Specific override for IT request type dropdown */
-select[name*="request_type"],
-select[name*="it_request"],
-#request_custom_fields_360057453533,
-.request-page select:not([id*="issue_type"]):not([id*="ticket_form"]) {
-  display: block !important;
+/* Generic: show all other comboboxes except id:0 */
+div[role="combobox"]:not(#id\:0--trigger) {
+  display: flex !important;
   visibility: visible !important;
-  height: auto !important;
+  opacity: 1 !important;
+}
+
+/* ==================== DUPLICATE TEXT FIX ==================== */
+
+/* Hide duplicate "Fields marked with asterisk" */
+.form-header p:nth-of-type(2) {
+  display: none !important;
 }
 
 /* Footer */

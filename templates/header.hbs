@@ -15,36 +15,36 @@
         <span class="digify-header__user">{{user_name}}</span>
       {{/if}}
       <div class="digify-header__quick-links">
-        <div class="dropdown">
-          <button class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">
-            Quick Links
-          </button>
-          <ul class="dropdown-menu" role="menu">
-            {{#if signed_in}}
-              <!-- Internal Users Links -->
-              <li class="nav-internal" role="menuitem">
+        {{#if signed_in}}
+          <div class="dropdown">
+            <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+              Quick Links
+            </button>
+            <ul class="dropdown-menu" role="menu">
+              <!-- Show these for internal users -->
+              <li class="nav-link-item nav-internal" role="menuitem" style="display: block;">
                 <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436">Request Support</a>
               </li>
-              <li class="nav-internal" role="menuitem">
-                <a href="/hc/{{help_center.locale}}/sections/23700658599580-Policies">Shared Policies</a>
+              <li class="nav-link-item nav-internal" role="menuitem" style="display: block;">
+                <a href="/hc/{{help_center.locale}}/sections/23700658599580">Shared Policies</a>
               </li>
-              <li class="nav-internal" role="menuitem">
+              <li class="nav-link-item nav-internal" role="menuitem" style="display: block;">
                 <a href="/hc/{{help_center.locale}}/categories/23700078037148">Internal Policies</a>
               </li>
 
-              <!-- Tenant Users Links -->
-              <li class="nav-tenant" role="menuitem">
+              <!-- Show these for tenant users -->
+              <li class="nav-link-item nav-tenant" role="menuitem" style="display: block;">
                 <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=23381214703004">Request Support</a>
               </li>
-              <li class="nav-tenant" role="menuitem">
-                <a href="/hc/{{help_center.locale}}/sections/23700658599580-Policies">Shared Policies</a>
+              <li class="nav-link-item nav-tenant" role="menuitem" style="display: block;">
+                <a href="/hc/{{help_center.locale}}/sections/23700658599580">Shared Policies</a>
               </li>
-              <li class="nav-tenant" role="menuitem">
+              <li class="nav-link-item nav-tenant" role="menuitem" style="display: block;">
                 <a href="/hc/{{help_center.locale}}/categories/23700120243740">Tenant Policies</a>
               </li>
-            {{/if}}
-          </ul>
-        </div>
+            </ul>
+          </div>
+        {{/if}}
       </div>
 
       <nav class="user-nav">
