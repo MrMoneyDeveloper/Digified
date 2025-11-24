@@ -146,39 +146,6 @@
   // Navigation
 
   window.addEventListener("DOMContentLoaded", () => {
-    // Quick Links dropdown toggle (header)
-    const dropdownToggle = document.querySelector(
-      ".digify-header .dropdown-toggle"
-    );
-    const dropdownMenu = document.querySelector(".digify-header .dropdown-menu");
-
-    if (dropdownToggle && dropdownMenu) {
-      dropdownToggle.addEventListener("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const isExpanded = dropdownToggle.getAttribute("aria-expanded") === "true";
-        dropdownToggle.setAttribute("aria-expanded", !isExpanded);
-        dropdownMenu.classList.toggle("show");
-      });
-
-      // Keep dropdown open when hovering over it
-      dropdownMenu.addEventListener("mouseenter", function () {
-        dropdownMenu.classList.add("show");
-      });
-
-      // Close when clicking outside
-      document.addEventListener("click", function (e) {
-        if (
-          !dropdownToggle.contains(e.target) &&
-          !dropdownMenu.contains(e.target)
-        ) {
-          dropdownMenu.classList.remove("show");
-          dropdownToggle.setAttribute("aria-expanded", "false");
-        }
-      });
-    }
-
     hideUnknownNavItems();
     const menuButton = document.querySelector(".header .menu-button-mobile");
     const menuList = document.querySelector("#user-nav-mobile");
@@ -245,6 +212,58 @@
 
   });
 
+  // Navigation dropdown toggle - stays open
+  (function () {
+    "use strict";
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const dropdownToggle = document.querySelector(".dropdown-toggle");
+      const dropdownMenu = document.querySelector(".dropdown-menu");
+      const dropdown = document.querySelector(".dropdown");
+
+      if (!dropdownToggle || !dropdownMenu) {
+        console.warn("[Dropdown] Elements not found");
+        return;
+      }
+
+      dropdownToggle.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const isOpen = dropdownMenu.classList.contains("show");
+        dropdownMenu.classList.toggle("show");
+        dropdownToggle.setAttribute("aria-expanded", !isOpen);
+
+        console.log("[Dropdown] Toggled:", !isOpen);
+      });
+
+      dropdown.addEventListener("mouseenter", function () {
+        dropdownMenu.classList.add("show");
+        dropdownToggle.setAttribute("aria-expanded", "true");
+      });
+
+      dropdown.addEventListener("mouseleave", function () {
+        setTimeout(function () {
+          dropdownMenu.classList.remove("show");
+          dropdownToggle.setAttribute("aria-expanded", "false");
+        }, 200);
+      });
+
+      dropdownMenu.addEventListener("click", function (e) {
+        if (e.target.tagName === "A") {
+          dropdownMenu.classList.remove("show");
+        }
+      });
+
+      document.addEventListener("click", function (e) {
+        if (!dropdown.contains(e.target)) {
+          dropdownMenu.classList.remove("show");
+          dropdownToggle.setAttribute("aria-expanded", "false");
+        }
+      });
+    });
+  })();
+
   // Filter Quick Links based on user segment
   (function () {
     "use strict";
@@ -278,6 +297,29 @@
           console.log("[QuickLinks] Showing all links (no segment detected)");
         }
       }, 500);
+    });
+  })();
+
+  // Remove duplicate "Fields marked with an asterisk" text
+  (function () {
+    "use strict";
+
+    document.addEventListener("DOMContentLoaded", function () {
+      setTimeout(function () {
+        const allParagraphs = document.querySelectorAll("p");
+        let foundFirst = false;
+
+        allParagraphs.forEach(function (p) {
+          if ((p.textContent || "").includes("Fields marked with an asterisk")) {
+            if (foundFirst) {
+              p.style.display = "none";
+              console.log("[Form] Removed duplicate asterisk text");
+            } else {
+              foundFirst = true;
+            }
+          }
+        });
+      }, 1000);
     });
   })();
 

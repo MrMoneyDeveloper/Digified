@@ -2516,16 +2516,17 @@ ol.breadcrumbs li::before {
 }
 
 /* Dropdown menu */
+/* Quick Links Dropdown - Dark text on white background */
 .dropdown-menu {
   display: none;
   position: absolute;
   top: 100%;
   right: 0;
-  background: #ffffff;
+  background: #ffffff !important;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  min-width: 200px;
+  min-width: 220px;
   padding: 8px 0;
   z-index: 1000;
   margin-top: 8px;
@@ -2544,14 +2545,15 @@ ol.breadcrumbs li::before {
 .dropdown-menu a {
   display: block;
   padding: 12px 20px;
-  color: #1f2937;
+  color: #1f2937 !important;
   text-decoration: none;
   transition: background 0.2s ease;
+  font-weight: 500;
 }
 
 .dropdown-menu a:hover {
   background: #f3f4f6;
-  color: #25666b;
+  color: #25666b !important;
 }
 
 .digify-header .dropdown {
@@ -3104,48 +3106,38 @@ ol.breadcrumbs li::before {
   display: none;
 }
 
-/* ==================== FORM DROPDOWN FIX ==================== */
+/* ==================== COMPLETE FORM & DROPDOWN FIX ==================== */
 
-/* ONLY hide the form TYPE selector (first combobox with id:0) */
+/* 1. ONLY hide Combobox 0 (form type selector) */
 body.ticket-form-locked #id\:0--trigger,
-body.ticket-form-locked div[aria-labelledby="id:0--label"],
 body.ticket-form-locked label[id="id:0--label"],
-body.ticket-form-locked .StyledField-sc-k7y10k-0:has(label[id="id:0--label"]) {
+body.ticket-form-locked div[data-garden-id="dropdowns.combobox.field"]:has(label[id="id:0--label"]) {
   display: none !important;
   visibility: hidden !important;
   height: 0 !important;
-  max-height: 0 !important;
   overflow: hidden !important;
-  position: absolute !important;
-  left: -99999px !important;
-  pointer-events: none !important;
 }
 
-/* Force IT request dropdown (id:1) to be visible */
-body.ticket-form-locked #id\:1--trigger,
-body.ticket-form-locked div[aria-labelledby="id:1--label"] {
+/* 2. FORCE Combobox 1 (IT request dropdown) to show */
+#id\:1--trigger,
+label[id="id:1--label"],
+div[aria-labelledby="id:1--label"] {
   display: flex !important;
   visibility: visible !important;
   opacity: 1 !important;
   height: auto !important;
-  max-height: none !important;
-  overflow: visible !important;
-  position: relative !important;
-  left: auto !important;
   pointer-events: auto !important;
 }
 
-/* Generic: show all other comboboxes except id:0 */
-div[role="combobox"]:not(#id\:0--trigger) {
+/* 3. Override any inline styles on Combobox 1 */
+#id\:1--trigger[style*="display: none"],
+#id\:1--trigger[style*="visibility: hidden"] {
   display: flex !important;
   visibility: visible !important;
-  opacity: 1 !important;
 }
 
-/* ==================== DUPLICATE TEXT FIX ==================== */
-
-/* Hide duplicate "Fields marked with asterisk" */
-.form-header p:nth-of-type(2) {
+/* 5. Hide duplicate asterisk text */
+.form-header p:nth-of-type(2):contains("Fields marked") {
   display: none !important;
 }
 
