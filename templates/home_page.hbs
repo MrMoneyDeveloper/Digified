@@ -97,7 +97,7 @@
             <article class="digify-card digify-card--policies">
               <h3>Shared building policies</h3>
               <p>Review general building policies and guidelines.</p>
-              <a href="/hc/{{help_center.locale}}/categories/23700129077660" class="btn btn-secondary">View shared policies</a>
+              <a href="/hc/{{help_center.locale}}/sections/23700658599580-Policies" class="btn btn-secondary">View shared policies</a>
             </article>
 
             <!-- Card 3: Internal Staff Policies -->
@@ -125,31 +125,35 @@
       </div>
     </section>
 
-    <!-- Signed-In Tenant Cards -->
+    <!-- Signed-In Tenant Section -->
     {{#if signed_in}}
-      <section class="hc-tenant-user tenant-cards-section">
+      <section class="hc-tenant-user tenant-landing-section">
         <div class="container">
-          <div class="digify-cards-grid">
+          <h2 class="landing-section-title">Welcome back</h2>
+          <div class="landing-cards-grid">
             
-            <!-- Card 1: Request Tenant Support -->
-            <article class="digify-card digify-card--tenant">
-              <h3>Request tenant support</h3>
-              <p>Report network issues, request maintenance, or contact facilities.</p>
-              <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=23381214703004" class="btn btn-primary">Submit a request</a>
+            <article class="landing-card landing-card--primary">
+              <div class="landing-card__content">
+                <h3>Request tenant support</h3>
+                <p>Report network issues, request maintenance, or contact facilities.</p>
+                <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=23381214703004" class="btn btn-primary">Submit a request</a>
+              </div>
             </article>
 
-            <!-- Card 2: Shared Building Policies -->
-            <article class="digify-card digify-card--policies">
-              <h3>Shared building policies</h3>
-              <p>Review general building policies and guidelines.</p>
-              <a href="/hc/{{help_center.locale}}/categories/23700129077660" class="btn btn-secondary">View shared policies</a>
+            <article class="landing-card landing-card--secondary">
+              <div class="landing-card__content">
+                <h3>Shared building policies</h3>
+                <p>Review general building policies and guidelines.</p>
+                <a href="/hc/{{help_center.locale}}/sections/23700658599580-Policies" class="btn btn-secondary">View shared policies</a>
+              </div>
             </article>
 
-            <!-- Card 3: Tenant-Specific Policies -->
-            <article class="digify-card digify-card--policies">
-              <h3>Tenant-specific policies</h3>
-              <p>Access tenant SLAs, building rules, and facilities information.</p>
-              <a href="/hc/{{help_center.locale}}/categories/23700120243740" class="btn btn-secondary">View tenant policies</a>
+            <article class="landing-card landing-card--accent">
+              <div class="landing-card__content">
+                <h3>Tenant-specific policies</h3>
+                <p>Access tenant SLAs, building rules, and facilities information.</p>
+                <a href="/hc/{{help_center.locale}}/categories/23700120243740" class="btn btn-accent">View tenant policies</a>
+              </div>
             </article>
 
           </div>

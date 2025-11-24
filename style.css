@@ -2786,61 +2786,86 @@ ol.breadcrumbs li::before {
   }
 }
 
-/* Policy Cards Grid */
+/* Policy Cards Grid - Auto-fit based on number of cards */
 .policy-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 24px;
-  margin-top: 32px;
+  margin-top: 40px;
   padding: 20px 0;
 }
 
+/* Base Policy Card */
 .policy-cards-grid .policy-card {
   background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 32px 24px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid;
 }
 
+/* Color Variations (cycles through 6 colors) */
+.policy-cards-grid .policy-card--color-0,
+.policy-cards-grid .policy-card--color-6 {
+  border-left-color: #10b981;
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+}
+
+.policy-cards-grid .policy-card--color-1,
+.policy-cards-grid .policy-card--color-7 {
+  border-left-color: #3b82f6;
+  background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+}
+
+.policy-cards-grid .policy-card--color-2,
+.policy-cards-grid .policy-card--color-8 {
+  border-left-color: #f59e0b;
+  background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+}
+
+.policy-cards-grid .policy-card--color-3,
+.policy-cards-grid .policy-card--color-9 {
+  border-left-color: #8b5cf6;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+}
+
+.policy-cards-grid .policy-card--color-4,
+.policy-cards-grid .policy-card--color-10 {
+  border-left-color: #ef4444;
+  background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+}
+
+.policy-cards-grid .policy-card--color-5,
+.policy-cards-grid .policy-card--color-11 {
+  border-left-color: #06b6d4;
+  background: linear-gradient(135deg, #ffffff 0%, #ecfeff 100%);
+}
+
+/* Hover Animation */
 .policy-cards-grid .policy-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  border-color: rgba(37, 102, 107, 0.5);
-}
-
-.policy-cards-grid .policy-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(37, 102, 107, 0.05), transparent);
-  transition: left 0.5s ease;
-}
-
-.policy-cards-grid .policy-card:hover::before {
-  left: 100%;
-}
-
-.policy-cards-grid .policy-card__icon {
-  width: 48px;
-  height: 48px;
-  margin-bottom: 16px;
-  color: #6b7280;
-  transition: all 0.3s ease;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
 }
 
 .policy-cards-grid .policy-card:hover .policy-card__icon {
-  transform: scale(1.1) rotate(5deg);
-  color: rgba(37, 102, 107, 1);
+  transform: scale(1.15) rotate(5deg);
 }
 
-.policy-cards-grid .policy-card__title {
+/* Card Icon */
+.policy-card__icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+  color: inherit;
+  transition: all 0.3s ease;
+}
+
+/* Card Title */
+.policy-card__title {
   font-size: 20px;
   font-weight: 600;
   color: #1f2937;
@@ -2848,27 +2873,109 @@ ol.breadcrumbs li::before {
   line-height: 1.3;
 }
 
-.policy-cards-grid .policy-card__description {
+/* Card Excerpt */
+.policy-card__excerpt,
+.policy-card__description {
   font-size: 14px;
   color: #6b7280;
   line-height: 1.6;
   margin-bottom: 20px;
-  min-height: 60px;
 }
 
-.policy-cards-grid .policy-card__link {
+/* Card Link */
+.policy-card__link {
   display: inline-flex;
   align-items: center;
   font-size: 14px;
-  font-weight: 500;
-  color: rgba(37, 102, 107, 1);
+  font-weight: 600;
+  color: currentColor;
   text-decoration: none;
   transition: all 0.2s ease;
 }
 
-.policy-cards-grid .policy-card__link:hover {
-  color: rgba(31, 82, 87, 1);
+.policy-card__link:hover {
   gap: 8px;
+}
+
+/* Landing Cards Grid - 3 columns side by side */
+.landing-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 40px;
+}
+
+/* Base Landing Card */
+.landing-card {
+  border-radius: 16px;
+  padding: 40px 32px;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.landing-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Card Color Variations */
+.landing-card--primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.landing-card--secondary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.landing-card--accent {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+}
+
+/* Card Content */
+.landing-card__content h3 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: inherit;
+}
+
+.landing-card__content p {
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  opacity: 0.95;
+}
+
+/* Buttons in Cards */
+.landing-card .btn {
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.landing-card .btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .landing-cards-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .digify-cards {
@@ -2982,6 +3089,24 @@ ol.breadcrumbs li::before {
 
 .hc-tenant-user .accesshub-policies__card--internal {
   display: none;
+}
+
+/* Make sure form field dropdowns ARE visible */
+select:not([id*="issue_type"]):not([id*="ticket_form"]),
+.form-field select,
+.nesty-input select,
+[data-garden-id="forms.select"]:not([aria-label*="issue"]) {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* Only hide the FORM SELECTOR dropdown */
+[data-test-id="ticket-field-ticket_form_id"],
+body.ticket-form-locked [aria-label*="Please choose your issue"] {
+  display: none !important;
 }
 
 /* Footer */

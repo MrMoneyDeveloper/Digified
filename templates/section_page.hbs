@@ -1,184 +1,24 @@
-<div class="container-divider"></div>
 <div class="container">
-  {{#is section.id 23441547733404}}
-    <section id="main-content" class="policies-landing">
-      <h1>Workplace Policies</h1>
-      <p>All workplace policies for Digify BPO.</p>
-      <div class="cxi-policy-card-grid">
-        <article class="cxi-policy-card">
-          <div class="cxi-policy-icon-wrap">
-            <img
-              class="cxi-policy-icon-img"
-              src="{{#if settings.drug_policy_icon_url}}{{settings.drug_policy_icon_url}}{{else}}{{settings.icon_placeholder}}{{/if}}"
-              alt=""
-              role="presentation"
-              data-digify-check="policy-drug-icon"
-              data-digify-fallback="{{settings.icon_placeholder}}"
-            >
-          </div>
-          <h3>Drug and Alcohol Policy</h3>
-          <p>Arrive fit for duty and remain substance-free for every shift, including breaks and on-call windows.</p>
-          <a class="cxi-policy-link" href="{{settings.drug_policy_url}}">
-            Read more
-            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-          </a>
-        </article>
-        <article class="cxi-policy-card">
-          <div class="cxi-policy-icon-wrap">
-            <img
-              class="cxi-policy-icon-img"
-              src="{{#if settings.clean_desk_policy_icon_url}}{{settings.clean_desk_policy_icon_url}}{{else}}{{settings.icon_placeholder}}{{/if}}"
-              alt=""
-              role="presentation"
-              data-digify-check="policy-clean-desk-icon"
-              data-digify-fallback="{{settings.icon_placeholder}}"
-            >
-          </div>
-          <h3>Clean Desk Policy</h3>
-          <p>Keep devices, credentials, and paperwork secure whenever you step away or end a shift.</p>
-          <a class="cxi-policy-link" href="{{settings.clean_desk_policy_url}}">
-            Read more
-            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-          </a>
-        </article>
-        <article class="cxi-policy-card">
-          <div class="cxi-policy-icon-wrap">
-            <img
-              class="cxi-policy-icon-img"
-              src="{{#if settings.locker_policy_icon_url}}{{settings.locker_policy_icon_url}}{{else}}{{settings.icon_placeholder}}{{/if}}"
-              alt=""
-              role="presentation"
-              data-digify-check="policy-locker-icon"
-              data-digify-fallback="{{settings.icon_placeholder}}"
-            >
-          </div>
-          <h3>Locker Policy</h3>
-          <p>Store belongings and sensitive media in assigned lockers with approved locks only.</p>
-          <a class="cxi-policy-link" href="{{settings.locker_policy_url}}">
-            Read more
-            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-          </a>
-        </article>
-        <article class="cxi-policy-card">
-          <div class="cxi-policy-icon-wrap">
-            <img
-              class="cxi-policy-icon-img"
-              src="{{#if settings.pci_policy_icon_url}}{{settings.pci_policy_icon_url}}{{else}}{{settings.icon_placeholder}}{{/if}}"
-              alt=""
-              role="presentation"
-              data-digify-check="policy-pci-icon"
-              data-digify-fallback="{{settings.icon_placeholder}}"
-            >
-          </div>
-          <h3>PCI Compliance Policy</h3>
-          <p>Protect cardholder data with segmented tools, approved devices, and rapid incident escalation.</p>
-          <a class="cxi-policy-link" href="{{settings.pci_policy_url}}">
-            Read more
-            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-          </a>
-        </article>
-        <article class="cxi-policy-card">
-          <div class="cxi-policy-icon-wrap">
-            <img
-              class="cxi-policy-icon-img"
-              src="{{#if settings.smoking_policy_icon_url}}{{settings.smoking_policy_icon_url}}{{else}}{{settings.icon_placeholder}}{{/if}}"
-              alt=""
-              role="presentation"
-              data-digify-check="policy-smoking-icon"
-              data-digify-fallback="{{settings.icon_placeholder}}"
-            >
-          </div>
-          <h3>Smoking Policy</h3>
-          <p>Limit smoking and vaping to designated areas and dispose of waste responsibly.</p>
-          <a class="cxi-policy-link" href="{{settings.smoking_policy_url}}">
-            Read more
-            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-          </a>
-        </article>
-        <article class="cxi-policy-card">
-          <div class="cxi-policy-icon-wrap">
-            <img
-              class="cxi-policy-icon-img"
-              src="{{#if settings.harassment_policy_icon_url}}{{settings.harassment_policy_icon_url}}{{else}}{{settings.icon_placeholder}}{{/if}}"
-              alt=""
-              role="presentation"
-              data-digify-check="policy-harassment-icon"
-              data-digify-fallback="{{settings.icon_placeholder}}"
-            >
-          </div>
-          <h3>Sexual Harassment Policy</h3>
-          <p>Report concerns immediately through HR, leadership, or the hotline&mdash;retaliation is prohibited.</p>
-          <a class="cxi-policy-link" href="{{settings.harassment_policy_url}}">
-            Read more
-            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-          </a>
-        </article>
-      </div>
-    </section>
-  {{else}}
-    <div class="section-container">
-      <section id="main-content" class="section-content">
-        <header class="page-header">
-          <h1>{{section.name}}</h1>
-          {{#if settings.show_follow_section}}
-            {{#unless (is section.id 23441547733404)}}
-              <div class="section-subscribe">{{subscribe}}</div>
-            {{/unless}}
-          {{/if}}
-          {{#if section.description}}
-            <p class="page-header-description">{{section.description}}</p>
-          {{/if}}
-        </header>
-
-        {{#if section.sections}}
-          <ul class="section-list">
-            {{#each section.sections}}
-            <li class="section-list-item">
-                <a href="{{url}}">
-                  <span>{{name}}</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" focusable="false" viewBox="0 0 16 16" aria-hidden="true">
-                    <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M5 14.5l6.1-6.1c.2-.2.2-.5 0-.7L5 1.5"/>
-                  </svg>
-                </a>
-              </li>
-            {{/each}}
-          </ul>
+  <h1 class="section-title">{{section.name}}</h1>
+  {{#if section.description}}
+    <p class="section-description">{{section.description}}</p>
+  {{/if}}
+  
+  <div class="policy-cards-grid">
+    {{#each articles}}
+      <article class="policy-card policy-card--color-{{@index}}">
+        <div class="policy-card__icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+        </div>
+        <h2 class="policy-card__title">{{title}}</h2>
+        {{#if body}}
+          <p class="policy-card__excerpt">{{truncate body 120}}</p>
         {{/if}}
-
-        {{pagination "section.sections"}}
-
-        {{#if section.articles}}
-          <ul class="article-list">
-            {{#each section.articles}}
-              <li class="article-list-item {{#if promoted}} article-promoted{{/if}}">
-                {{#if promoted}}
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" focusable="false" viewBox="0 0 12 12" class="icon-star" title="{{t 'promoted'}}">
-                    <path fill="currentColor" d="M2.88 11.73c-.19 0-.39-.06-.55-.18a.938.938 0 01-.37-1.01l.8-3L.35 5.57a.938.938 0 01-.3-1.03c.12-.37.45-.63.85-.65L4 3.73 5.12.83c.14-.37.49-.61.88-.61s.74.24.88.6L8 3.73l3.11.17a.946.946 0 01.55 1.68L9.24 7.53l.8 3a.95.95 0 01-1.43 1.04L6 9.88l-2.61 1.69c-.16.1-.34.16-.51.16z"/>
-                  </svg>
-                {{/if}}
-                <a href="{{url}}" class="article-list-link">{{title}}</a>
-                {{#if internal}}
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" focusable="false" viewBox="0 0 16 16" class="icon-lock" title="{{t 'internal'}}">
-                    <rect width="12" height="9" x="2" y="7" fill="currentColor" rx="1" ry="1"/>
-                    <path fill="none" stroke="currentColor" d="M4.5 7.5V4a3.5 3.5 0 017 0v3.5"/>
-                  </svg>
-                {{/if}}
-              </li>
-            {{/each}}
-          </ul>
-        {{else}}
-          <i class="section-empty">
-            <a href="{{section.url}}">{{t 'empty'}}</a>
-          </i>
-        {{/if}}
-
-        {{pagination "section.articles"}}
-
-      </section>
-    </div>
-  {{/is}}
+        <a href="{{url}}" class="policy-card__link">Read policy →</a>
+      </article>
+    {{/each}}
+  </div>
 </div>
-
-
-
-
