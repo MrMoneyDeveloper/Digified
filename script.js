@@ -146,6 +146,39 @@
   // Navigation
 
   window.addEventListener("DOMContentLoaded", () => {
+    // Quick Links dropdown toggle (header)
+    const dropdownToggle = document.querySelector(
+      ".digify-header .dropdown-toggle"
+    );
+    const dropdownMenu = document.querySelector(".digify-header .dropdown-menu");
+
+    if (dropdownToggle && dropdownMenu) {
+      dropdownToggle.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const isExpanded = dropdownToggle.getAttribute("aria-expanded") === "true";
+        dropdownToggle.setAttribute("aria-expanded", !isExpanded);
+        dropdownMenu.classList.toggle("show");
+      });
+
+      // Keep dropdown open when hovering over it
+      dropdownMenu.addEventListener("mouseenter", function () {
+        dropdownMenu.classList.add("show");
+      });
+
+      // Close when clicking outside
+      document.addEventListener("click", function (e) {
+        if (
+          !dropdownToggle.contains(e.target) &&
+          !dropdownMenu.contains(e.target)
+        ) {
+          dropdownMenu.classList.remove("show");
+          dropdownToggle.setAttribute("aria-expanded", "false");
+        }
+      });
+    }
+
     hideUnknownNavItems();
     const menuButton = document.querySelector(".header .menu-button-mobile");
     const menuList = document.querySelector("#user-nav-mobile");
@@ -637,6 +670,10 @@
     const dropdownToggles = document.querySelectorAll(".dropdown-toggle");
 
     dropdownToggles.forEach((toggle) => {
+      if (toggle.closest(".digify-header")) {
+        return;
+      }
+
       const menu = toggle.nextElementSibling;
       if (menu && menu.classList.contains("dropdown-menu")) {
         dropdowns.push(new Dropdown(toggle, menu));
