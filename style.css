@@ -3104,24 +3104,43 @@ ol.breadcrumbs li::before {
   display: none;
 }
 
-/* ONLY hide the form TYPE selector */
+/* Hide "Please choose your issue below" text */
+body.ticket-form-locked label[for="request_issue_type_select"],
+.form-field label:contains("Please choose your issue below"),
+.request-page h2:contains("Please choose your issue below") {
+  display: none !important;
+}
+
+/* CRITICAL: Only hide the form TYPE selector, nothing else */
 body.ticket-form-locked [data-test-id="ticket-field-ticket_form_id"],
-body.ticket-form-locked label:has(+ [data-test-id="ticket-field-ticket_form_id"]),
 body.ticket-form-locked .form-field:has([data-test-id="ticket-field-ticket_form_id"]) {
   display: none !important;
 }
 
-/* Make sure ALL other dropdowns are visible */
+/* Force ALL other select elements to be visible */
 select,
+.nesty-input,
+.form-field select,
 [role="combobox"],
-.nesty-input select,
 [data-garden-id="forms.select"] {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
   height: auto !important;
-  max-height: none !important;
+  max-height: 500px !important;
   overflow: visible !important;
+  position: relative !important;
+  left: auto !important;
+}
+
+/* Specific override for IT request type dropdown */
+select[name*="request_type"],
+select[name*="it_request"],
+#request_custom_fields_360057453533,
+.request-page select:not([id*="issue_type"]):not([id*="ticket_form"]) {
+  display: block !important;
+  visibility: visible !important;
+  height: auto !important;
 }
 
 /* Footer */

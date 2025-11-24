@@ -179,6 +179,24 @@
       });
     }
 
+    // Filter Quick Links based on segment
+    const quickLinkSegments = window.DigifiedSegments || {};
+    if (quickLinkSegments.isInternalUser) {
+      document.querySelectorAll(".nav-tenant").forEach((el) => {
+        el.style.display = "none";
+      });
+      document.querySelectorAll(".nav-internal").forEach((el) => {
+        el.style.display = "block";
+      });
+    } else if (quickLinkSegments.isTenantUser) {
+      document.querySelectorAll(".nav-internal").forEach((el) => {
+        el.style.display = "none";
+      });
+      document.querySelectorAll(".nav-tenant").forEach((el) => {
+        el.style.display = "block";
+      });
+    }
+
     hideUnknownNavItems();
     const menuButton = document.querySelector(".header .menu-button-mobile");
     const menuList = document.querySelector("#user-nav-mobile");
