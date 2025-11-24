@@ -83,83 +83,6 @@
       }
     });
 
-    (function () {
-      if (!/\/requests\/new/.test(window.location.pathname)) {
-        return;
-      }
-
-      const params = new URLSearchParams(window.location.search);
-      const lockedId = params.get("ticket_form_id");
-      if (!lockedId) {
-        return;
-      }
-
-      const hideChooser = () => {
-        document.body.classList.add("ticket-form-locked", "form-locked");
-
-        const wrap = document.querySelector(".request_ticket_form_id");
-        if (wrap) {
-          wrap.style.setProperty("display", "none", "important");
-          wrap.classList.add("ticket-form-selector-hidden");
-        }
-
-        const formSelect = document.getElementById("request_issue_type_select");
-        if (formSelect) {
-          formSelect.style.setProperty("display", "none", "important");
-          formSelect.setAttribute("aria-hidden", "true");
-          formSelect.setAttribute("tabindex", "-1");
-        }
-
-        const formRow = document.getElementById("request_issue_type_row");
-        if (formRow) {
-          formRow.style.setProperty("display", "none", "important");
-        }
-
-        const formLabel = document.querySelector(
-          "label[for='request_issue_type_select']"
-        );
-        if (formLabel) {
-          formLabel.style.setProperty("display", "none", "important");
-        }
-      };
-
-      const setForm = () => {
-        const formSelect = document.getElementById("request_issue_type_select");
-        if (!formSelect || !formSelect.options.length) {
-          return false;
-        }
-
-        const optionExists = Array.from(formSelect.options).some(
-          (option) => option.value === lockedId
-        );
-
-        if (!optionExists) {
-          return false;
-        }
-
-        if (formSelect.value !== lockedId) {
-          formSelect.value = lockedId;
-          formSelect.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-
-        hideChooser();
-        return true;
-      };
-
-      if (!setForm()) {
-        hideChooser();
-        const observer = new MutationObserver(() => {
-          if (setForm()) {
-            observer.disconnect();
-          }
-        });
-
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true,
-        });
-      }
-    })();
   });
 
   const isPrintableChar = (str) => {
@@ -764,6 +687,95 @@
   }
   });
 
+})();
+
+(function () {
+  "use strict";
+
+  if (!/\/hc\/.+\/requests\/new/.test(window.location.pathname)) {
+    return;
+  }
+
+  function fixGardenDropdowns() {
+    const fields = document.querySelectorAll(
+      '[data-garden-id="dropdowns.combobox.field"]'
+    );
+
+    if (!fields.length) {
+      return;
+    }
+
+    console.log("[DropdownFix] Checking combobox fields:", fields.length);
+
+    fields.forEach((field) => {
+      const label = field.querySelector(
+        '[data-garden-id="dropdowns.combobox.label"]'
+      );
+      const trigger = field.querySelector(
+        '[data-garden-id="dropdowns.combobox.trigger"]'
+      );
+
+      if (!label || !trigger) {
+        return;
+      }
+
+      const text = (label.textContent || "").trim();
+
+      if (text.includes("Please choose your issue")) {
+        field.style.display = "none";
+        console.log("[DropdownFix] Hiding form selector field");
+        return;
+      }
+
+      trigger.hidden = false;
+      trigger.style.display = "";
+      trigger.style.visibility = "";
+      trigger.style.opacity = "";
+      trigger.style.height = "";
+      trigger.style.maxHeight = "";
+      trigger.style.overflow = "";
+
+      console.log("[DropdownFix] Unhid field dropdown with label:", text);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(fixGardenDropdowns, 800);
+
+    const observer = new MutationObserver(fixGardenDropdowns);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  });
+})();
+
+(function () {
+  "use strict";
+
+  if (!/\/hc\/.+\/requests\/new/.test(window.location.pathname)) {
+    return;
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(function () {
+      const matches = Array.from(document.querySelectorAll("p")).filter(
+        (p) =>
+          p.textContent.trim() ===
+          "Fields marked with an asterisk (*) are required."
+      );
+
+      if (matches.length > 1) {
+        matches.slice(1).forEach((p) => {
+          p.remove();
+        });
+        console.log(
+          "[FormTextFix] Removed duplicate asterisk notes:",
+          matches.length - 1
+        );
+      }
+    }, 500);
+  });
 })();
 
 (function () {

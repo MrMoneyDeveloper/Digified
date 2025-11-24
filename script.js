@@ -304,87 +304,6 @@
     });
   })();
 
-  // Remove duplicate "Fields marked with an asterisk" text
-  (function () {
-    "use strict";
-
-    // Fix Zendesk Garden comboboxes so field dropdowns are visible
-    if (!/\/hc\/.+\/requests\/new/.test(window.location.pathname)) {
-      return;
-    }
-
-    function unhideFieldDropdowns() {
-      const triggers = document.querySelectorAll(
-        '[data-garden-id="dropdowns.combobox.trigger"]'
-      );
-
-      console.log("[DropdownFix] Found combobox triggers:", triggers.length);
-
-      triggers.forEach(function (trigger, index) {
-        // Combobox 0 is the form selector ("Please choose your issue below")
-        if (index === 0) {
-          console.log("[DropdownFix] Leaving form selector (index 0) hidden");
-          return;
-        }
-
-        console.log("[DropdownFix] Unhiding field combobox index:", index, trigger);
-
-        trigger.removeAttribute("hidden");
-        trigger.style.removeProperty("display");
-        trigger.style.removeProperty("visibility");
-        trigger.style.removeProperty("opacity");
-        trigger.style.removeProperty("height");
-        trigger.style.removeProperty("max-height");
-        trigger.style.removeProperty("overflow");
-      });
-    }
-
-    function waitForComboboxes(attempts) {
-      attempts = attempts || 0;
-      const triggers = document.querySelectorAll(
-        '[data-garden-id="dropdowns.combobox.trigger"]'
-      );
-
-      if (triggers.length >= 2 || attempts > 30) {
-        unhideFieldDropdowns();
-        return;
-      }
-
-      setTimeout(function () {
-        waitForComboboxes(attempts + 1);
-      }, 200);
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-      waitForComboboxes(0);
-    });
-  })();
-
-  (function () {
-    "use strict";
-
-    // TEMP: disable custom form locking & dropdown hiding
-    return;
-
-    document.addEventListener("DOMContentLoaded", function () {
-      setTimeout(function () {
-        const allParagraphs = document.querySelectorAll("p");
-        let foundFirst = false;
-
-        allParagraphs.forEach(function (p) {
-          if ((p.textContent || "").includes("Fields marked with an asterisk")) {
-            if (foundFirst) {
-              p.style.display = "none";
-              console.log("[Form] Removed duplicate asterisk text");
-            } else {
-              foundFirst = true;
-            }
-          }
-        });
-      }, 1000);
-    });
-  })();
-
   (function () {
     "use strict";
 
@@ -393,80 +312,11 @@
       return;
     }
 
-    console.info("[Digified] Form locking started");
-
-    function hideFormSelector() {
-      document.body.classList.add("ticket-form-locked", "form-locked");
-
-      const selectors = [
-        '[data-test-id="ticket-field-ticket_form_id"]',
-        '[data-garden-id="dropdowns.combobox"]',
-        'div[role="combobox"]',
-        "#request_issue_type_select",
-        ".request_ticket_form_id",
-        "#request_issue_type_row",
-        ".form-field.request_ticket_form_id",
-      ];
-
-      let hiddenCount = 0;
-      selectors.forEach((selector) => {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach((el) => {
-          const label = el.querySelector && el.querySelector("label");
-          const isFormSelector =
-            !label ||
-            (label.textContent || "").includes("Please choose your issue") ||
-            (label.textContent || "").includes("issue below") ||
-            !!el.closest?.('[data-test-id="ticket-field-ticket_form_id"]');
-
-          if (
-            isFormSelector ||
-            selector.includes("ticket_form_id") ||
-            selector.includes("issue_type")
-          ) {
-            el.style.setProperty("display", "none", "important");
-            el.style.setProperty("visibility", "hidden", "important");
-            el.style.setProperty("opacity", "0", "important");
-            el.style.setProperty("height", "0", "important");
-            el.style.setProperty("overflow", "hidden", "important");
-            el.setAttribute("hidden", "true");
-            hiddenCount++;
-          }
-        });
-      });
-
-      console.info("[Digified] Hidden " + hiddenCount + " elements");
-      return hiddenCount;
-    }
-
     function processForm() {
       const params = new URLSearchParams(window.location.search);
       const urlFormId = params.get("ticket_form_id");
 
-      console.info("[Digified] Form ID from URL:", urlFormId);
-
       if (urlFormId) {
-        console.info("[Digified] Form ID present, hiding selector");
-        const immediateCount = hideFormSelector();
-
-        if (immediateCount === 0) {
-          console.info("[Digified] No elements found, will retry...");
-          setTimeout(() => {
-            const count = hideFormSelector();
-            console.info("[Digified] Retry 1 - Hidden:", count);
-          }, 500);
-
-          setTimeout(() => {
-            const count = hideFormSelector();
-            console.info("[Digified] Retry 2 - Hidden:", count);
-          }, 1500);
-
-          setTimeout(() => {
-            const count = hideFormSelector();
-            console.info("[Digified] Retry 3 - Hidden:", count);
-          }, 3000);
-        }
-
         return;
       }
 
@@ -478,54 +328,21 @@
         return;
       }
 
-        if (segments.isInternalUser) {
-          console.info("[Digified] Redirecting internal user to staff form");
+      if (segments.isInternalUser) {
+        console.info("[Digified] Redirecting internal user to staff form");
         window.location.replace(
-            `/hc/en-us/requests/new?ticket_form_id=${STAFF_SUPPORT_FORM}`
-          );
-        } else if (segments.isTenantUser) {
-          console.info("[Digified] Redirecting tenant user to tenant form");
+          `/hc/en-us/requests/new?ticket_form_id=${STAFF_SUPPORT_FORM}`
+        );
+      } else if (segments.isTenantUser) {
+        console.info("[Digified] Redirecting tenant user to tenant form");
         window.location.replace(
-            `/hc/en-us/requests/new?ticket_form_id=${TENANT_SUPPORT_FORM}`
-          );
-        }
+          `/hc/en-us/requests/new?ticket_form_id=${TENANT_SUPPORT_FORM}`
+        );
+      }
     }
 
     setTimeout(processForm, 800);
   })();
-
-  // TEMPORARY DEBUG CODE - remove after identifying exact selector
-  (function () {
-    setTimeout(() => {
-      console.log("=== DEBUGGING FORM SELECTOR ===");
-
-      const allElements = document.querySelectorAll("*");
-      allElements.forEach((el) => {
-        const text = el.textContent || "";
-        if (text.includes("Please choose your issue")) {
-          console.log("Found element with 'Please choose':");
-          console.log("- Tag:", el.tagName);
-          console.log("- Classes:", el.className);
-          console.log("- ID:", el.id);
-          console.log(
-            "- Data attrs:",
-            Array.from(el.attributes)
-              .filter((a) => a.name.startsWith("data-"))
-              .map((a) => `${a.name}=${a.value}`)
-          );
-          console.log("- Element:", el);
-          console.log("- Parent:", el.parentElement);
-        }
-      });
-
-      const comboboxes = document.querySelectorAll('[role="combobox"]');
-      console.log("Found comboboxes:", comboboxes.length);
-      comboboxes.forEach((cb, i) => {
-        console.log("Combobox " + i + ":", cb);
-      });
-    }, 2000);
-  })();
-
 
   const isPrintableChar = (str) => {
     return str.length === 1 && str.match(/^\S$/);
@@ -1153,6 +970,98 @@
     }
   });
 
+})();
+
+(function () {
+  "use strict";
+
+  // Only run on request pages
+  if (!/\/hc\/.+\/requests\/new/.test(window.location.pathname)) {
+    return;
+  }
+
+  function fixGardenDropdowns() {
+    const fields = document.querySelectorAll(
+      '[data-garden-id="dropdowns.combobox.field"]'
+    );
+
+    if (!fields.length) {
+      return;
+    }
+
+    console.log("[DropdownFix] Checking combobox fields:", fields.length);
+
+    fields.forEach((field) => {
+      const label = field.querySelector(
+        '[data-garden-id="dropdowns.combobox.label"]'
+      );
+      const trigger = field.querySelector(
+        '[data-garden-id="dropdowns.combobox.trigger"]'
+      );
+
+      if (!label || !trigger) {
+        return;
+      }
+
+      const text = (label.textContent || "").trim();
+
+      // 1) Hide the form selector ("Please choose your issue below")
+      if (text.includes("Please choose your issue")) {
+        field.style.display = "none";
+        console.log("[DropdownFix] Hiding form selector field");
+        return;
+      }
+
+      // 2) Make all other dropdown triggers visible
+      trigger.hidden = false;
+      trigger.style.display = "";
+      trigger.style.visibility = "";
+      trigger.style.opacity = "";
+      trigger.style.height = "";
+      trigger.style.maxHeight = "";
+      trigger.style.overflow = "";
+
+      console.log("[DropdownFix] Unhid field dropdown with label:", text);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(fixGardenDropdowns, 800);
+
+    const observer = new MutationObserver(fixGardenDropdowns);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  });
+})();
+
+(function () {
+  "use strict";
+
+  if (!/\/hc\/.+\/requests\/new/.test(window.location.pathname)) {
+    return;
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(function () {
+      const matches = Array.from(document.querySelectorAll("p")).filter(
+        (p) =>
+          p.textContent.trim() ===
+          "Fields marked with an asterisk (*) are required."
+      );
+
+      if (matches.length > 1) {
+        matches.slice(1).forEach((p) => {
+          p.remove();
+        });
+        console.log(
+          "[FormTextFix] Removed duplicate asterisk notes:",
+          matches.length - 1
+        );
+      }
+    }, 500);
+  });
 })();
 
 (function () {

@@ -2007,17 +2007,6 @@ a[href*="/hc/"][href*="activities"],
   color: rgba(17, 32, 68, 0.85);
 }
 
-body.ticket-form-locked #request_issue_type_row,
-body.ticket-form-locked #request_issue_type_select,
-body.ticket-form-locked label[for="request_issue_type_select"],
-body.ticket-form-locked .ticket-form-selector-hidden {
-  display: none !important;
-}
-
-body.form-locked .request_ticket_form_id {
-  display: none !important;
-}
-
 /* Always hide ticket form selector on new request pages */
 body.new-request #request_issue_type_row,
 body.new-request #request_issue_type_select,
