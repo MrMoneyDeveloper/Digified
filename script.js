@@ -304,6 +304,61 @@
   (function () {
     "use strict";
 
+    // Fix Zendesk Garden comboboxes so field dropdowns are visible
+    if (!/\/hc\/.+\/requests\/new/.test(window.location.pathname)) {
+      return;
+    }
+
+    function unhideFieldDropdowns() {
+      const triggers = document.querySelectorAll(
+        '[data-garden-id="dropdowns.combobox.trigger"]'
+      );
+
+      console.log("[DropdownFix] Found combobox triggers:", triggers.length);
+
+      triggers.forEach(function (trigger, index) {
+        // Combobox 0 is the form selector ("Please choose your issue below")
+        if (index === 0) {
+          console.log("[DropdownFix] Leaving form selector (index 0) hidden");
+          return;
+        }
+
+        console.log("[DropdownFix] Unhiding field combobox index:", index, trigger);
+
+        trigger.removeAttribute("hidden");
+        trigger.style.removeProperty("display");
+        trigger.style.removeProperty("visibility");
+        trigger.style.removeProperty("opacity");
+        trigger.style.removeProperty("height");
+        trigger.style.removeProperty("max-height");
+        trigger.style.removeProperty("overflow");
+      });
+    }
+
+    function waitForComboboxes(attempts) {
+      attempts = attempts || 0;
+      const triggers = document.querySelectorAll(
+        '[data-garden-id="dropdowns.combobox.trigger"]'
+      );
+
+      if (triggers.length >= 2 || attempts > 30) {
+        unhideFieldDropdowns();
+        return;
+      }
+
+      setTimeout(function () {
+        waitForComboboxes(attempts + 1);
+      }, 200);
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      waitForComboboxes(0);
+    });
+  })();
+
+  (function () {
+    "use strict";
+
     document.addEventListener("DOMContentLoaded", function () {
       setTimeout(function () {
         const allParagraphs = document.querySelectorAll("p");

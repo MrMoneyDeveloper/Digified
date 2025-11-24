@@ -3106,41 +3106,6 @@ ol.breadcrumbs li::before {
   display: none;
 }
 
-/* ==================== COMPLETE FORM & DROPDOWN FIX ==================== */
-
-/* 1. ONLY hide Combobox 0 (form type selector) */
-body.ticket-form-locked #id\:0--trigger,
-body.ticket-form-locked label[id="id:0--label"],
-body.ticket-form-locked div[data-garden-id="dropdowns.combobox.field"]:has(label[id="id:0--label"]) {
-  display: none !important;
-  visibility: hidden !important;
-  height: 0 !important;
-  overflow: hidden !important;
-}
-
-/* 2. FORCE Combobox 1 (IT request dropdown) to show */
-#id\:1--trigger,
-label[id="id:1--label"],
-div[aria-labelledby="id:1--label"] {
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  height: auto !important;
-  pointer-events: auto !important;
-}
-
-/* 3. Override any inline styles on Combobox 1 */
-#id\:1--trigger[style*="display: none"],
-#id\:1--trigger[style*="visibility: hidden"] {
-  display: flex !important;
-  visibility: visible !important;
-}
-
-/* 5. Hide duplicate asterisk text */
-.form-header p:nth-of-type(2):contains("Fields marked") {
-  display: none !important;
-}
-
 /* Footer */
 .digifycx-footer {
   background: #0f172a;
