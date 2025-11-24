@@ -4,6 +4,11 @@
   const themeSettings =
     (window.HelpCenter && window.HelpCenter.themeSettings) || {};
 
+  const STAFF_SIGNUP_FORM = "23590656709788";
+  const TENANT_SIGNUP_FORM = "23590702845724";
+  const STAFF_SUPPORT_FORM = "22989127409436";
+  const TENANT_SUPPORT_FORM = "23381214703004";
+
   const segmentSettings = {
     internalTag: themeSettings.internal_tag || "segment_internal",
     tenantTag: themeSettings.tenant_tag || "segment_tenant",
@@ -11,9 +16,9 @@
     tenantOrgId: themeSettings.tenant_org_id || "23530712292892",
       // Request form routing
       internalFormId:
-      themeSettings.internal_request_form_id || "22989127409436",
+      themeSettings.internal_request_form_id || STAFF_SUPPORT_FORM,
       tenantFormId:
-        themeSettings.tenant_request_form_id || "23381214703004"
+        themeSettings.tenant_request_form_id || TENANT_SUPPORT_FORM
     };
 
   window.isInternalUser = false;
@@ -303,12 +308,12 @@
         if (segments.isInternalUser) {
           console.info("[Digified] Redirecting internal user to staff form");
         window.location.replace(
-            "/hc/en-us/requests/new?ticket_form_id=22989127409436"
+            `/hc/en-us/requests/new?ticket_form_id=${STAFF_SUPPORT_FORM}`
           );
         } else if (segments.isTenantUser) {
           console.info("[Digified] Redirecting tenant user to tenant form");
         window.location.replace(
-            "/hc/en-us/requests/new?ticket_form_id=23381214703004"
+            `/hc/en-us/requests/new?ticket_form_id=${TENANT_SUPPORT_FORM}`
           );
         }
     }

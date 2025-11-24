@@ -80,23 +80,37 @@
       </div>
     </section>
 
-    <section class="digify-cards container digify-cards--internal">
-      <article class="digify-card digify-card--primary">
-        <h3>Request internal support</h3>
-        <p>Log HR, IT, and Facilities tickets with internal teams.</p>
-        <a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.internal_request_form_id}}{{settings.internal_request_form_id}}{{else}}22989127409436{{/if}}" class="btn btn-primary">Open a request</a>
-      </article>
-      <article class="digify-card">
-        <h3>Shared building policies</h3>
-        <p>Review policies that apply to everyone in the building.</p>
-        <a href="{{#if settings.category_shared_policies_id}}{{link 'category' id=settings.category_shared_policies_id}}{{else}}/hc/{{help_center.locale}}/categories/23700129077660{{/if}}" class="btn btn-secondary">View shared policies</a>
-      </article>
-      <article class="digify-card">
-        <h3>Internal staff policies</h3>
-        <p>Access HR, compliance, and operational policies for staff.</p>
-        <a href="{{#if settings.category_internal_policies_id}}{{link 'category' id=settings.category_internal_policies_id}}{{else}}/hc/{{help_center.locale}}/categories/23700078037148{{/if}}" class="btn btn-secondary">View internal policies</a>
-      </article>
-    </section>
+    <!-- Signed-In Staff Cards -->
+    {{#if signed_in}}
+      <section class="hc-internal-user staff-cards-section">
+        <div class="container">
+          <div class="digify-cards-grid">
+            
+            <!-- Card 1: Request Staff Support -->
+            <article class="digify-card digify-card--staff">
+              <h3>Request internal support</h3>
+              <p>Contact HR, IT, or Facilities for internal staff matters.</p>
+              <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436" class="btn btn-primary">Submit a request</a>
+            </article>
+
+            <!-- Card 2: Shared Building Policies -->
+            <article class="digify-card digify-card--policies">
+              <h3>Shared building policies</h3>
+              <p>Review general building policies and guidelines.</p>
+              <a href="/hc/{{help_center.locale}}/categories/23700129077660" class="btn btn-secondary">View shared policies</a>
+            </article>
+
+            <!-- Card 3: Internal Staff Policies -->
+            <article class="digify-card digify-card--policies">
+              <h3>Internal staff policies</h3>
+              <p>Access HR policies, IT guidelines, and staff resources.</p>
+              <a href="/hc/{{help_center.locale}}/categories/23700078037148" class="btn btn-secondary">View internal policies</a>
+            </article>
+
+          </div>
+        </div>
+      </section>
+    {{/if}}
   </div>
 
   <div class="digify-landing digify-landing--tenant">
@@ -111,22 +125,36 @@
       </div>
     </section>
 
-    <section class="digify-cards container digify-cards--tenant">
-      <article class="digify-card digify-card--primary">
-        <h3>Request tenant support</h3>
-        <p>Report network issues, request maintenance, or contact facilities.</p>
-        <a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_request_form_id}}{{settings.tenant_request_form_id}}{{else}}23381214703004{{/if}}" class="btn btn-primary">Submit a request</a>
-      </article>
-      <article class="digify-card">
-        <h3>Shared building policies</h3>
-        <p>Review general building policies and guidelines.</p>
-        <a href="{{#if settings.category_shared_policies_id}}{{link 'category' id=settings.category_shared_policies_id}}{{else}}/hc/{{help_center.locale}}/categories/23700129077660{{/if}}" class="btn btn-secondary">View shared policies</a>
-      </article>
-      <article class="digify-card">
-        <h3>Tenant-specific policies</h3>
-        <p>Access tenant SLAs, building rules, and facilities information.</p>
-        <a href="{{#if settings.category_tenant_policies_id}}{{link 'category' id=settings.category_tenant_policies_id}}{{else}}/hc/{{help_center.locale}}/categories/23700120243740{{/if}}" class="btn btn-secondary">View tenant policies</a>
-      </article>
-    </section>
+    <!-- Signed-In Tenant Cards -->
+    {{#if signed_in}}
+      <section class="hc-tenant-user tenant-cards-section">
+        <div class="container">
+          <div class="digify-cards-grid">
+            
+            <!-- Card 1: Request Tenant Support -->
+            <article class="digify-card digify-card--tenant">
+              <h3>Request tenant support</h3>
+              <p>Report network issues, request maintenance, or contact facilities.</p>
+              <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=23381214703004" class="btn btn-primary">Submit a request</a>
+            </article>
+
+            <!-- Card 2: Shared Building Policies -->
+            <article class="digify-card digify-card--policies">
+              <h3>Shared building policies</h3>
+              <p>Review general building policies and guidelines.</p>
+              <a href="/hc/{{help_center.locale}}/categories/23700129077660" class="btn btn-secondary">View shared policies</a>
+            </article>
+
+            <!-- Card 3: Tenant-Specific Policies -->
+            <article class="digify-card digify-card--policies">
+              <h3>Tenant-specific policies</h3>
+              <p>Access tenant SLAs, building rules, and facilities information.</p>
+              <a href="/hc/{{help_center.locale}}/categories/23700120243740" class="btn btn-secondary">View tenant policies</a>
+            </article>
+
+          </div>
+        </div>
+      </section>
+    {{/if}}
   </div>
 </main>
