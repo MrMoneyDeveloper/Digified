@@ -217,6 +217,10 @@
     "use strict";
 
     document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll(".dropdown-menu li").forEach((li) => {
+        li.style.display = "block";
+      });
+
       const dropdownToggle = document.querySelector(".dropdown-toggle");
       const dropdownMenu = document.querySelector(".dropdown-menu");
       const dropdown = document.querySelector(".dropdown");
@@ -358,6 +362,9 @@
 
   (function () {
     "use strict";
+
+    // TEMP: disable custom form locking & dropdown hiding
+    return;
 
     document.addEventListener("DOMContentLoaded", function () {
       setTimeout(function () {
