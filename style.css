@@ -2901,7 +2901,7 @@ ol.breadcrumbs li::before {
   gap: 8px;
 }
 
-/* Signed-In Landing Section */
+/* Shared for internal + tenant landing cards */
 .tenant-landing-section,
 .staff-landing-section {
   padding: 60px 0;
@@ -2911,85 +2911,78 @@ ol.breadcrumbs li::before {
   font-size: 32px;
   font-weight: 700;
   margin-bottom: 16px;
-  color: white;
+  color: #ffffff;
 }
 
-/* Force 3-column grid for cards */
 .landing-cards-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr) !important;
-  gap: 24px !important;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
   margin-top: 40px;
 }
 
-/* Individual Landing Card */
+/* Base card */
 .landing-card {
-  background: white;
   border-radius: 16px;
   padding: 40px 32px;
-  min-height: 300px;
+  min-height: 260px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  background: #ffffff;
 }
 
-.landing-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+/* Colour variants to match tenant cards */
+.landing-card--primary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
 }
 
-/* Card Content */
-.landing-card h3 {
-  font-size: 24px;
+.landing-card--secondary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+}
+
+.landing-card--accent {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: #ffffff;
+}
+
+.landing-card__content h3 {
+  font-size: 22px;
   font-weight: 700;
-  margin-bottom: 16px;
-  color: #1f2937;
+  margin-bottom: 12px;
 }
 
-.landing-card p {
-  font-size: 16px;
+.landing-card__content p {
+  font-size: 15px;
   line-height: 1.6;
-  color: #6b7280;
   margin-bottom: 24px;
 }
 
-/* Card Buttons */
+/* Buttons */
 .landing-card .btn {
   display: inline-block;
-  padding: 12px 28px;
+  padding: 12px 24px;
   border-radius: 8px;
   font-weight: 600;
   text-decoration: none;
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
   transition: all 0.2s ease;
-  text-align: center;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-}
-
-.btn-secondary {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-}
-
-.btn-accent {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
 }
 
 .landing-card .btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.6);
 }
 
-/* Responsive - stack on mobile */
+/* Responsive: stack cards on tablet/mobile */
 @media (max-width: 1024px) {
   .landing-cards-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
 }
 
