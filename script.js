@@ -1093,17 +1093,6 @@
 })();
 
 (function () {
-  var localePrefix = (window.location.pathname.match(/^\/hc\/[^\/]+/) || [""])[0];
-  var path = window.location.pathname.replace(localePrefix, "");
-  var isRequestsList =
-    path === "/requests" ||
-    path === "/requests/" ||
-    /^\/requests\/(?!new)/.test(path);
-  if (isRequestsList) {
-    window.location.replace("{{#if settings.external_support_form_id}}{{page_path 'new_request' ticket_form_id=settings.external_support_form_id}}{{else}}{{page_path 'new_request' ticket_form_id=23381214703004}}{{/if}}");
-  }
-})();
-(function () {
 function logFailure(img, phase) {
   console.warn("[DIGIFY-THEME] Image failed to load", {
     alt: img.alt,
