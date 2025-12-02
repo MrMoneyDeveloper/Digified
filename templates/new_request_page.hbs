@@ -39,4 +39,38 @@
   };
 
   renderNewRequestForm(settings, props, container);
+
+  const homePath = {{json (page_path 'help_center')}};
+  const storageKey = "digifyRedirectAfterRequest";
+
+  const armRedirect = (form) => {
+    if (form.dataset.digifyRedirectHooked) return;
+    form.dataset.digifyRedirectHooked = "true";
+    form.addEventListener("submit", () => {
+      sessionStorage.setItem(
+        storageKey,
+        JSON.stringify({ target: homePath, timestamp: Date.now() })
+      );
+    });
+  };
+
+  const removeSuggestions = () => {
+    const suggestions = container.querySelector('[data-test-id="suggested-articles"]');
+    if (suggestions) {
+      suggestions.remove();
+    }
+  };
+
+  const connect = () => {
+    const form = container.querySelector("form");
+    if (form) {
+      armRedirect(form);
+      removeSuggestions();
+      observer.disconnect();
+    }
+  };
+
+  const observer = new MutationObserver(connect);
+  observer.observe(container, { childList: true, subtree: true });
+  connect();
 </script>

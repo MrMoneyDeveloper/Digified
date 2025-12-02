@@ -2066,6 +2066,11 @@ a[href*="/hc/"][href*="activities"],
   padding: 2.5rem 0 4rem;
 }
 
+/* Hide suggested articles list on all request forms */
+.dbpo-request [data-test-id="suggested-articles"] {
+  display: none !important;
+}
+
 .policy-card,
 .dbpo-policies-list a {
   transition: transform 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;

@@ -265,3 +265,29 @@
     </section>
   </div>
 </div>
+
+<script>
+  (function () {
+    const storageKey = "digifyRedirectAfterRequest";
+    const stored = sessionStorage.getItem(storageKey);
+    if (!stored) return;
+
+    let payload;
+    try {
+      payload = JSON.parse(stored);
+    } catch (e) {
+      sessionStorage.removeItem(storageKey);
+      return;
+    }
+
+    const maxAgeMs = 5 * 60 * 1000;
+    const isFresh = payload.timestamp && Date.now() - payload.timestamp < maxAgeMs;
+    const cameFromForm = document.referrer && document.referrer.includes("/requests/new");
+    if (isFresh && cameFromForm) {
+      sessionStorage.removeItem(storageKey);
+      window.location.assign(payload.target || {{json (page_path 'help_center')}});
+    } else if (!isFresh) {
+      sessionStorage.removeItem(storageKey);
+    }
+  })();
+</script>
