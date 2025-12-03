@@ -3143,3 +3143,107 @@ ol.breadcrumbs li::before {
   color: rgba(255, 255, 255, 0.7);
 }
 
+/* ==================== PENDING APPROVAL HERO ==================== */
+
+.pending-approval-hero {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  padding: 80px 20px;
+  text-align: center;
+  color: white;
+}
+
+.pending-approval-hero .hero-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  display: block;
+  margin-bottom: 16px;
+}
+
+.pending-approval-hero h1 {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: white;
+}
+
+.pending-approval-hero .hero-subtitle {
+  font-size: 18px;
+  line-height: 1.6;
+  max-width: 700px;
+  margin: 0 auto 16px;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.pending-approval-hero .hero-note {
+  font-size: 16px;
+  margin-top: 24px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pending-approval-hero .hero-note a {
+  color: white;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.pending-approval-hero .hero-note a:hover {
+  text-decoration: none;
+}
+
+/* ==================== SIGN-UP OPTIONS CARDS ==================== */
+
+.signup-options-section {
+  padding: 60px 20px;
+  background: #f9fafb;
+}
+
+.signup-options-section .section-title {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 48px;
+  color: #1f2937;
+}
+
+/* Two-column grid for sign-up cards */
+.landing-cards-grid.two-column {
+  grid-template-columns: repeat(2, 1fr);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Sign-up card colors */
+.landing-card--staff {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.landing-card--tenant {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.landing-card__icon {
+  margin-bottom: 24px;
+}
+
+.landing-card__icon svg {
+  width: 48px;
+  height: 48px;
+  stroke: currentColor;
+}
+
+/* Responsive: stack on mobile */
+@media (max-width: 768px) {
+  .landing-cards-grid.two-column {
+    grid-template-columns: 1fr;
+  }
+  
+  .pending-approval-hero h1 {
+    font-size: 32px;
+  }
+}
+

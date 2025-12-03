@@ -114,32 +114,33 @@
 
   function hideUnknownNavItems() {
     const segments = window.DigifiedSegments || {};
-    const allNavItems = document.querySelectorAll(".nav-internal, .nav-tenant");
+    const internalItems = document.querySelectorAll(".nav-internal");
+    const tenantItems = document.querySelectorAll(".nav-tenant");
+    const unknownItems = document.querySelectorAll(".nav-unknown");
 
-    if (!allNavItems.length) {
+    if (!internalItems.length && !tenantItems.length && !unknownItems.length) {
       return;
     }
 
-    if (!segments.isInternalUser && !segments.isTenantUser) {
-      allNavItems.forEach((item) => {
+    const hide = (items) =>
+      items.forEach((item) => {
         item.style.display = "none";
       });
-      return;
-    }
+    const show = (items) =>
+      items.forEach((item) => {
+        item.style.display = "block";
+      });
 
-    // Reset visibility before applying segment-specific rules
-    allNavItems.forEach((item) => {
-      item.style.display = "";
-    });
+    hide(internalItems);
+    hide(tenantItems);
+    hide(unknownItems);
 
     if (segments.isInternalUser) {
-      document.querySelectorAll(".nav-tenant").forEach((item) => {
-        item.style.display = "none";
-      });
+      show(internalItems);
     } else if (segments.isTenantUser) {
-      document.querySelectorAll(".nav-internal").forEach((item) => {
-        item.style.display = "none";
-      });
+      show(tenantItems);
+    } else {
+      show(unknownItems);
     }
   }
 
@@ -273,32 +274,62 @@
     "use strict";
 
     document.addEventListener("DOMContentLoaded", function () {
-      const segments = window.DigifiedSegments || {};
-
       setTimeout(function () {
+        const segments = window.DigifiedSegments || {};
         console.log("[QuickLinks] Segment detection:", segments);
 
-        if (segments.isInternalUser) {
-          document.querySelectorAll(".nav-tenant").forEach((el) => {
+        const hide = (selector) => {
+          document.querySelectorAll(selector).forEach((el) => {
             el.style.display = "none";
           });
-          document.querySelectorAll(".nav-internal").forEach((el) => {
+        };
+        const show = (selector) => {
+          document.querySelectorAll(selector).forEach((el) => {
             el.style.display = "block";
           });
+        };
+
+        hide(".nav-internal, .nav-tenant, .nav-unknown");
+
+        if (segments.isInternalUser) {
+          show(".nav-internal");
           console.log("[QuickLinks] Showing internal links");
         } else if (segments.isTenantUser) {
-          document.querySelectorAll(".nav-internal").forEach((el) => {
-            el.style.display = "none";
-          });
-          document.querySelectorAll(".nav-tenant").forEach((el) => {
-            el.style.display = "block";
-          });
+          show(".nav-tenant");
           console.log("[QuickLinks] Showing tenant links");
         } else {
-          document.querySelectorAll(".nav-link-item").forEach((el) => {
-            el.style.display = "block";
-          });
-          console.log("[QuickLinks] Showing all links (no segment detected)");
+          show(".nav-unknown");
+          console.log("[QuickLinks] Showing sign-up links (no segment detected)");
+        }
+      }, 500);
+    });
+  })();
+
+  // Block untagged users from accessing support forms
+  (function () {
+    "use strict";
+
+    // Only run on request pages
+    if (!/\/hc\/.+\/requests\/new/.test(window.location.pathname)) {
+      return;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      setTimeout(function () {
+        const segments = window.DigifiedSegments || {};
+        const urlParams = new URLSearchParams(window.location.search);
+        const formId = urlParams.get("ticket_form_id");
+
+        // Check if user is trying to access support forms without a segment
+        if (!segments.isInternalUser && !segments.isTenantUser) {
+          // Allow sign-up forms only
+          const signupForms = ["23590656709788", "23590702845724"];
+
+          if (formId && !signupForms.includes(formId)) {
+            // Block access and redirect to home
+            alert("Please complete the sign-up process before accessing support forms.");
+            window.location.href = "/hc/en-us";
+          }
         }
       }, 500);
     });
