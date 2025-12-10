@@ -8,6 +8,7 @@
   const TENANT_SIGNUP_FORM = "23590702845724";
   const STAFF_SUPPORT_FORM = "22989127409436";
   const TENANT_SUPPORT_FORM = "23381214703004";
+  const SIGNUP_FORMS = [STAFF_SIGNUP_FORM, TENANT_SIGNUP_FORM];
 
   const segmentSettings = {
     internalTag: themeSettings.internal_tag || "segment_internal",
@@ -319,17 +320,21 @@
         const segments = window.DigifiedSegments || {};
         const urlParams = new URLSearchParams(window.location.search);
         const formId = urlParams.get("ticket_form_id");
+        const signupForms = SIGNUP_FORMS;
+
+        if (!formId) {
+          return;
+        }
+
+        if (signupForms.includes(formId)) {
+          return;
+        }
 
         // Check if user is trying to access support forms without a segment
         if (!segments.isInternalUser && !segments.isTenantUser) {
-          // Allow sign-up forms only
-          const signupForms = ["23590656709788", "23590702845724"];
-
-          if (formId && !signupForms.includes(formId)) {
-            // Block access and redirect to home
-            alert("Please complete the sign-up process before accessing support forms.");
-            window.location.href = "/hc/en-us";
-          }
+          // Block access and redirect to home
+          alert("Please complete the sign-up process before accessing support forms.");
+          window.location.href = "/hc/en-us";
         }
       }, 500);
     });

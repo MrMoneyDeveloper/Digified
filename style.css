@@ -3070,10 +3070,57 @@ ol.breadcrumbs li::before {
   margin-bottom: 0.5rem;
 }
 
+.digify-footer__building {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(120, 238, 214, 0.25);
+  background: rgba(255, 255, 255, 0.03);
+  flex: 1 1 320px;
+}
+
 .digify-footer__building-img {
   max-height: 60px;
   border-radius: 8px;
   object-fit: cover;
+}
+
+.digify-footer__details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+}
+
+.digify-footer__detail {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.digify-footer__label {
+  font-weight: 700;
+  color: var(--digify-turquoise);
+  min-width: 88px;
+}
+
+.digify-footer__value {
+  color: var(--digify-white);
+  opacity: 0.92;
+}
+
+@media (max-width: 640px) {
+  .digify-footer__building {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .digify-footer__detail {
+    flex-direction: column;
+    gap: 0.15rem;
+  }
 }
 
 .accesshub-policies__image {
