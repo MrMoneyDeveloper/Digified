@@ -856,9 +856,9 @@
     search: window.location.search
   });
 
-  const app = document.getElementById("training-booking-app");
+  const app = document.getElementById("training-booking-root");
   if (!app) {
-    console.warn("[TrainingBooking] Missing #training-booking-app container.");
+    console.warn("[TrainingBooking] Missing #training-booking-root container.");
     return;
   }
 

@@ -1239,7 +1239,7 @@ function logFailure(img, phase) {
     return;
   }
 
-  const app = document.getElementById("training-booking-app");
+  const app = document.getElementById("training-booking-root");
   if (!app) {
     return;
   }

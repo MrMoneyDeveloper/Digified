@@ -1,0 +1,16 @@
+<section class="training-booking">
+  <div class="container">
+    <h1>Training Bookings</h1>
+    {{#if signed_in}}
+      <div id="training-booking-root"></div>
+      <script>
+        window.TrainingApiKey = {{json settings.training_api_key}};
+      </script>
+    {{else}}
+      <p>Sign in to view and book training sessions.</p>
+      <a class="btn btn-primary" href="https://cxe-internal.zendesk.com/hc/{{help_center.locale}}/signin?return_to=https://cxe-internal.zendesk.com/hc/{{help_center.locale}}/p/training_booking">
+        Sign in
+      </a>
+    {{/if}}
+  </div>
+</section>

@@ -34,5 +34,5 @@ Note: The Apps Script handles Zendesk ticket creation internally, so the client 
 
 Custom page setup:
 - Create a Zendesk Guide custom page with slug `training_booking`.
-- Assign the `training_booking` custom template (backed by `custom_page.training_booking.hbs`).
+- Assign the `training_booking` custom template (backed by `templates/custom_pages/training_booking.hbs`).
 - The resulting URL should be `/hc/<locale>/p/training_booking` and is the link used in the theme.
