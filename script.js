@@ -1235,7 +1235,7 @@ function logFailure(img, phase) {
   "use strict";
 
   const path = window.location.pathname || "";
-  if (!/\/hc\/[^/]+\/training_booking/.test(path)) {
+  if (!/\/hc\/[^/]+\/(?:p\/)?training_booking/.test(path)) {
     return;
   }
 
