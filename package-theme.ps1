@@ -15,7 +15,8 @@ $entries = @(
   "translations",
   "script.js",
   "style.css",
-  "manifest.json"
+  "manifest.json",
+  "settings_schema.json"
 )
 
 foreach ($entry in $entries) {

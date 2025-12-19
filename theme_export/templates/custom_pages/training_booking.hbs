@@ -1,14 +1,85 @@
 <section class="training-booking">
   <div class="container">
     <h1>Training Bookings</h1>
+    <p class="training-intro">
+      Select a date range to view available training slots and book a session without leaving the help center.
+    </p>
     {{#if signed_in}}
-      <div id="training-booking-root"></div>
+      <div id="training-booking-root" class="training-booking__root">
+        <div id="training-booking-alert" class="training-booking__alert" role="status" aria-live="polite" hidden></div>
+        <div class="training-booking__panel">
+          <form id="training-booking-filters" class="training-booking__filters" autocomplete="off">
+            <div class="training-booking__field">
+              <label for="training-from">From</label>
+              <input class="form-control" id="training-from" name="from" type="date" required>
+            </div>
+            <div class="training-booking__field">
+              <label for="training-to">To</label>
+              <input class="form-control" id="training-to" name="to" type="date" required>
+            </div>
+            <div class="training-booking__actions">
+              <button class="btn btn-primary" id="training-load" type="submit">Load sessions</button>
+              <button class="btn btn-secondary" id="training-reset" type="button">Reset</button>
+            </div>
+          </form>
+        </div>
+        <div class="training-booking__panel">
+          <div id="training-booking-results" class="training-booking__results">
+            <p class="training-booking__placeholder">Choose a date range and load sessions.</p>
+          </div>
+        </div>
+        <div id="training-booking-fallback" class="training-booking__fallback" hidden>
+          <p>We could not load the booking tool directly. Use the embedded view below.</p>
+          <iframe id="training-booking-iframe" title="Training booking" loading="lazy"></iframe>
+        </div>
+        <div id="training-booking-modal" class="training-booking__modal" aria-hidden="true" hidden>
+          <div class="training-booking__modal-dialog" role="dialog" aria-modal="true" aria-labelledby="training-modal-title">
+            <div class="training-booking__modal-header">
+              <h2 id="training-modal-title">Book session</h2>
+              <button class="training-booking__modal-close" type="button" id="training-modal-close" aria-label="Close">x</button>
+            </div>
+            <div class="training-booking__modal-body">
+              <p id="training-selected-slot" class="training-booking__slot"></p>
+              <form id="training-booking-form">
+                <input id="training-slot-id" type="hidden">
+                <div class="training-booking__field">
+                  <label for="training-requester-name">Requester name</label>
+                  <input class="form-control" id="training-requester-name" name="requester_name" type="text" required>
+                </div>
+                <div class="training-booking__field">
+                  <label for="training-requester-email">Requester email</label>
+                  <input class="form-control" id="training-requester-email" name="requester_email" type="email" required>
+                </div>
+                <div class="training-booking__field">
+                  <label for="training-attendees">Attendees</label>
+                  <input class="form-control" id="training-attendees" name="attendees" type="number" min="1" value="1" required>
+                </div>
+                <div class="training-booking__field">
+                  <label for="training-dept">Department</label>
+                  <input class="form-control" id="training-dept" name="dept" type="text" placeholder="IT">
+                </div>
+                <div class="training-booking__field">
+                  <label for="training-notes">Notes</label>
+                  <textarea class="form-control" id="training-notes" name="notes" rows="3" placeholder="Optional notes"></textarea>
+                </div>
+                <div class="training-booking__actions">
+                  <button class="btn btn-primary" id="training-book-submit" type="submit">Confirm booking</button>
+                  <button class="btn btn-secondary" id="training-modal-cancel" type="button">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
       <script>
-        window.TrainingApiKey = {{json settings.training_api_key}};
+        window.TRAINING_BOOKING_CFG = {
+          baseUrl: {{json settings.training_api_base_url}},
+          apiKey: {{json settings.training_api_key}}
+        };
       </script>
     {{else}}
       <p>Sign in to view and book training sessions.</p>
-      <a class="btn btn-primary" href="https://cxe-internal.zendesk.com/hc/{{help_center.locale}}/signin?return_to=https://cxe-internal.zendesk.com/hc/{{help_center.locale}}/p/training_booking">
+      <a class="btn btn-primary" href="https://cxe-internal.zendesk.com/hc/en-us/signin?return_to=https://cxe-internal.zendesk.com/hc/en-us/p/training_booking">
         Sign in
       </a>
     {{/if}}

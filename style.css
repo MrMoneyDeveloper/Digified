@@ -3371,31 +3371,96 @@ ol.breadcrumbs li::before {
   min-width: 760px;
 }
 
-.training-booking__message {
+.training-booking__alert {
   padding: 1rem 1.25rem;
   border-radius: 0.85rem;
   background: #f8fafc;
   color: #0f172a;
   font-weight: 600;
-  margin: 0;
+  margin-bottom: 1rem;
 }
 
-.training-booking__message--loading {
-  color: #475569;
-}
-
-.training-booking__message--error {
+.training-booking__alert--error {
   color: #b91c1c;
   background: #fef2f2;
 }
 
-.training-booking__message--empty {
-  color: #475569;
+.training-booking__alert--success {
+  color: #166534;
+  background: #f0fdf4;
 }
 
 .training-booking__disabled {
   color: #94a3b8;
   font-weight: 600;
+}
+
+.training-booking__placeholder {
+  margin: 0;
+  color: #64748b;
+}
+
+.training-booking__fallback {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.training-booking__fallback iframe {
+  width: 100%;
+  min-height: 520px;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.85rem;
+  background: #ffffff;
+}
+
+.training-booking__modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1050;
+}
+
+.training-booking__modal[hidden] {
+  display: none;
+}
+
+.training-booking__modal-dialog {
+  width: min(520px, 100%);
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.2);
+}
+
+.training-booking__modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.training-booking__modal-header h2 {
+  margin: 0;
+}
+
+.training-booking__modal-close {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.training-booking__slot {
+  margin-top: 0;
+  color: #475569;
 }
 
 .training-booking__signin {

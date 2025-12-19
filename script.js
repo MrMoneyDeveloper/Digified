@@ -1235,50 +1235,68 @@ function logFailure(img, phase) {
   "use strict";
 
   const path = window.location.pathname || "";
-  if (!/\/hc\/[^/]+\/(?:p\/)?training_booking/.test(path)) {
+  if (!/\/hc\/[^/]+\/p\/training_booking/.test(path)) {
     return;
   }
 
-  const app = document.getElementById("training-booking-root");
-  if (!app) {
+  const root = document.getElementById("training-booking-root");
+  if (!root) {
     return;
   }
 
   const settings = (window.HelpCenter && window.HelpCenter.themeSettings) || {};
-  const apiKey = window.TrainingApiKey || settings.training_api_key || "";
-  const apiEndpoint =
-    "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec";
+  const cfg = window.TRAINING_BOOKING_CFG || {};
+  const baseUrl = (cfg.baseUrl || settings.training_api_base_url || "").trim();
+  const apiKey = (cfg.apiKey || settings.training_api_key || "").trim();
+  const user = (window.HelpCenter && window.HelpCenter.user) || {};
 
-  const filtersForm = document.getElementById("training-filters");
-  const fromInput = document.getElementById("training-filter-from");
-  const toInput = document.getElementById("training-filter-to");
-  const queryInput = document.getElementById("training-filter-query");
-  const openOnlyInput = document.getElementById("training-filter-open");
+  const alertEl = document.getElementById("training-booking-alert");
+  const filtersForm = document.getElementById("training-booking-filters");
+  const fromInput = document.getElementById("training-from");
+  const toInput = document.getElementById("training-to");
+  const loadButton = document.getElementById("training-load");
   const resetButton = document.getElementById("training-reset");
+  const resultsWrap = document.getElementById("training-booking-results");
+  const fallbackWrap = document.getElementById("training-booking-fallback");
+  const fallbackFrame = document.getElementById("training-booking-iframe");
 
-  const deptInput = document.getElementById("training-dept");
+  const modal = document.getElementById("training-booking-modal");
+  const modalForm = document.getElementById("training-booking-form");
+  const modalClose = document.getElementById("training-modal-close");
+  const modalCancel = document.getElementById("training-modal-cancel");
+  const slotLabel = document.getElementById("training-selected-slot");
+  const slotIdInput = document.getElementById("training-slot-id");
+  const requesterNameInput = document.getElementById("training-requester-name");
+  const requesterEmailInput = document.getElementById("training-requester-email");
   const attendeesInput = document.getElementById("training-attendees");
+  const deptInput = document.getElementById("training-dept");
   const notesInput = document.getElementById("training-notes");
+  const bookSubmit = document.getElementById("training-book-submit");
 
   let cachedSessions = [];
+  let activeSession = null;
 
-  function renderMessage(message, type) {
-    const messageEl = document.createElement("p");
-    messageEl.className = "training-booking__message";
-    if (type) {
-      messageEl.className += " training-booking__message--" + type;
+  function setAlert(message, type) {
+    if (!alertEl) {
+      return;
     }
-    messageEl.textContent = message;
 
-    app.innerHTML = "";
-    app.appendChild(messageEl);
+    alertEl.textContent = message;
+    alertEl.className = "training-booking__alert";
+    if (type) {
+      alertEl.classList.add("training-booking__alert--" + type);
+    }
+    alertEl.hidden = false;
   }
 
-  function formatDateInput(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return year + "-" + month + "-" + day;
+  function clearAlert() {
+    if (!alertEl) {
+      return;
+    }
+
+    alertEl.textContent = "";
+    alertEl.hidden = true;
+    alertEl.className = "training-booking__alert";
   }
 
   function setDefaultDateRange() {
@@ -1290,133 +1308,107 @@ function logFailure(img, phase) {
     const future = new Date();
     future.setDate(today.getDate() + 30);
 
+    const toIso = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return year + "-" + month + "-" + day;
+    };
+
     if (!fromInput.value) {
-      fromInput.value = formatDateInput(today);
+      fromInput.value = toIso(today);
     }
 
     if (!toInput.value) {
-      toInput.value = formatDateInput(future);
+      toInput.value = toIso(future);
     }
   }
 
-  function getUserType() {
-    const segments = window.DigifiedSegments || {};
-    if (segments.isManagementUser) {
-      return "management";
+  function setLoading(isLoading) {
+    if (!loadButton) {
+      return;
     }
-    if (segments.isTenantUser) {
-      return "tenant";
-    }
-    if (segments.isInternalUser) {
-      return "staff";
-    }
-    return "staff";
+
+    loadButton.disabled = isLoading;
+    loadButton.textContent = isLoading ? "Loading..." : "Load sessions";
   }
 
-  function hasInternalBookingAccess() {
-    const requiredTag = settings.training_booking_internal_tag || "";
-    if (!requiredTag) {
-      return true;
-    }
-
-    const segments = window.DigifiedSegments || {};
-    if (segments.isManagementUser) {
-      return true;
-    }
-
-    if (!segments.isInternalUser) {
-      return true;
-    }
-
-    return (
-      Array.isArray(segments.userTags) &&
-      segments.userTags.includes(requiredTag)
-    );
+  function isNetworkError(error) {
+    return error && error.name === "TypeError";
   }
 
-  function buildSessionsUrl() {
-    const params = [];
-    const from = fromInput ? fromInput.value : "";
-    const to = toInput ? toInput.value : "";
-
-    params.push("action=sessions");
-    if (from) {
-      params.push("from=" + encodeURIComponent(from));
+  function showIframeFallback() {
+    if (!fallbackWrap || !fallbackFrame || !baseUrl) {
+      return;
     }
-    if (to) {
-      params.push("to=" + encodeURIComponent(to));
-    }
-    params.push("api_key=" + encodeURIComponent(apiKey));
 
-    return apiEndpoint + "?" + params.join("&");
+    fallbackFrame.src = baseUrl + "?action=ui";
+    fallbackWrap.hidden = false;
   }
 
-  async function loadSessions() {
-    if (!apiKey) {
-      throw new Error("Training API key is missing.");
+  function hideIframeFallback() {
+    if (!fallbackWrap || !fallbackFrame) {
+      return;
     }
 
-    const response = await fetch(buildSessionsUrl(), {
-      headers: { Accept: "application/json" },
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to load sessions (" + response.status + ").");
-    }
-
-    const json = await response.json();
-    if (json && json.data && Array.isArray(json.data.sessions)) {
-      return json.data.sessions;
-    }
-
-    return [];
+    fallbackWrap.hidden = true;
+    fallbackFrame.removeAttribute("src");
   }
 
-  function normalize(value) {
-    return String(value || "").toLowerCase();
-  }
+  function buildUrl(action, params) {
+    if (!baseUrl) {
+      return "";
+    }
 
-  function applyClientFilters(sessions) {
-    const query = normalize(queryInput && queryInput.value);
-    const openOnly = openOnlyInput && openOnlyInput.checked;
+    let url;
+    try {
+      url = new URL(baseUrl);
+    } catch (error) {
+      return "";
+    }
 
-    return sessions.filter((session) => {
-      if (openOnly && !session.available) {
-        return false;
-      }
+    if (action) {
+      url.searchParams.set("action", action);
+    }
 
-      if (query) {
-        const haystack = [
-          session.vendor,
-          session.topic,
-          session.date,
-          session.start_time,
-          session.end_time,
-        ]
-          .map(normalize)
-          .join(" ");
-        if (!haystack.includes(query)) {
-          return false;
+    if (params) {
+      Object.keys(params).forEach((key) => {
+        if (params[key]) {
+          url.searchParams.set(key, params[key]);
         }
+      });
+    }
+
+    if (apiKey) {
+      url.searchParams.set("api_key", apiKey);
+    }
+
+    return url.toString();
+  }
+
+  function buildPostUrl() {
+    if (!baseUrl) {
+      return "";
+    }
+
+    try {
+      const url = new URL(baseUrl);
+      if (apiKey) {
+        url.searchParams.set("api_key", apiKey);
       }
-
-      return true;
-    });
+      return url.toString();
+    } catch (error) {
+      return "";
+    }
   }
 
-  function sessionStatus(session) {
-    if (session.available) {
-      return "Open";
-    }
-
-    if (session.status === "cancelled") {
-      return "Cancelled";
-    }
-
-    return "Full";
+  function createCell(text) {
+    const cell = document.createElement("td");
+    cell.textContent = text || "";
+    return cell;
   }
 
-  function formatTimeRange(session) {
+  function formatTime(session) {
     const start = session.start_time || "";
     const end = session.end_time || "";
     if (start && end) {
@@ -1425,10 +1417,9 @@ function logFailure(img, phase) {
     return start || end;
   }
 
-  function formatCapacity(session) {
+  function formatSeats(session) {
     const capacity = Number(session.capacity);
     const booked = Number(session.booked_count);
-
     if (!Number.isNaN(capacity) && !Number.isNaN(booked)) {
       return booked + " / " + capacity;
     }
@@ -1438,15 +1429,31 @@ function logFailure(img, phase) {
     return "";
   }
 
-  function createCell(text) {
-    const cell = document.createElement("td");
-    cell.textContent = text || "";
-    return cell;
+  function sessionStatus(session) {
+    if (session.available) {
+      return "Open";
+    }
+    if (session.status === "cancelled") {
+      return "Cancelled";
+    }
+    return "Full";
+  }
+
+  function renderPlaceholder(message) {
+    if (!resultsWrap) {
+      return;
+    }
+    resultsWrap.innerHTML =
+      '<p class="training-booking__placeholder">' + message + "</p>";
   }
 
   function renderSessions(sessions) {
+    if (!resultsWrap) {
+      return;
+    }
+
     if (!sessions.length) {
-      renderMessage("No sessions match the selected filters.", "empty");
+      renderPlaceholder("No sessions found for the selected range.");
       return;
     }
 
@@ -1466,19 +1473,13 @@ function logFailure(img, phase) {
     table.appendChild(thead);
 
     const tbody = document.createElement("tbody");
-    const sorted = sessions.slice().sort((a, b) => {
-      const aKey = String(a.date || "") + " " + String(a.start_time || "");
-      const bKey = String(b.date || "") + " " + String(b.start_time || "");
-      return aKey.localeCompare(bKey);
-    });
-
-    sorted.forEach((session) => {
+    sessions.forEach((session) => {
       const row = document.createElement("tr");
       row.appendChild(createCell(session.date));
-      row.appendChild(createCell(formatTimeRange(session)));
+      row.appendChild(createCell(formatTime(session)));
       row.appendChild(createCell(session.vendor));
       row.appendChild(createCell(session.topic));
-      row.appendChild(createCell(formatCapacity(session)));
+      row.appendChild(createCell(formatSeats(session)));
       row.appendChild(createCell(sessionStatus(session)));
 
       const actionCell = document.createElement("td");
@@ -1488,7 +1489,7 @@ function logFailure(img, phase) {
         button.className = "btn btn-primary";
         button.textContent = "Book";
         button.addEventListener("click", function () {
-          bookSlot(session.slot_id, button);
+          openModal(session);
         });
         actionCell.appendChild(button);
       } else {
@@ -1498,7 +1499,6 @@ function logFailure(img, phase) {
         actionCell.appendChild(status);
       }
       row.appendChild(actionCell);
-
       tbody.appendChild(row);
     });
     table.appendChild(tbody);
@@ -1507,58 +1507,142 @@ function logFailure(img, phase) {
     wrapper.className = "training-booking__table";
     wrapper.appendChild(table);
 
-    app.innerHTML = "";
-    app.appendChild(wrapper);
+    resultsWrap.innerHTML = "";
+    resultsWrap.appendChild(wrapper);
   }
 
-  async function bookSlot(slotId, button) {
-    if (!apiKey) {
-      alert("Training API key is missing. Please contact support.");
+  function openModal(session) {
+    if (!modal || !modalForm) {
       return;
     }
 
-    if (!hasInternalBookingAccess()) {
-      alert("You do not have access to book training sessions.");
+    activeSession = session;
+    if (slotIdInput) {
+      slotIdInput.value = session.slot_id || "";
+    }
+    if (slotLabel) {
+      slotLabel.textContent =
+        session.date +
+        " - " +
+        formatTime(session) +
+        (session.topic ? " - " + session.topic : "");
+    }
+    modal.hidden = false;
+    modal.setAttribute("aria-hidden", "false");
+  }
+
+  function closeModal() {
+    if (!modal) {
       return;
     }
+    modal.hidden = true;
+    modal.setAttribute("aria-hidden", "true");
+  }
 
-    const user = (window.HelpCenter && window.HelpCenter.user) || {};
-    if (!user.email) {
-      alert("Please sign in to book a session.");
-      return;
-    }
-
-    const dept = deptInput ? deptInput.value.trim() : "";
-    const attendeesValue = attendeesInput ? attendeesInput.value : "";
-    const attendees = Math.max(parseInt(attendeesValue, 10) || 1, 1);
-    const notes = notesInput ? notesInput.value.trim() : "";
-
-    const payload = {
+  function buildBookingPayload() {
+    return {
       action: "book",
-      slot_id: slotId,
-      requester_email: user.email,
-      requester_name: user.name || user.email,
-      dept: dept,
-      attendees: attendees,
-      notes: notes,
-      user_type: getUserType(),
+      slot_id: slotIdInput ? slotIdInput.value : "",
+      requester_email: requesterEmailInput ? requesterEmailInput.value.trim() : "",
+      requester_name: requesterNameInput ? requesterNameInput.value.trim() : "",
+      attendees: attendeesInput ? attendeesInput.value : "",
+      dept: deptInput ? deptInput.value.trim() : "",
+      notes: notesInput ? notesInput.value.trim() : "",
     };
+  }
 
-    const originalLabel = button ? button.textContent : "";
-    if (button) {
-      button.disabled = true;
-      button.textContent = "Booking...";
+  async function fetchSessions() {
+    if (!baseUrl) {
+      setAlert("Set Training API base URL in theme settings.", "error");
+      return [];
+    }
+
+    const from = fromInput ? fromInput.value : "";
+    const to = toInput ? toInput.value : "";
+    const url = buildUrl("sessions", { from: from, to: to });
+    if (!url) {
+      setAlert("Training API URL is invalid.", "error");
+      return [];
+    }
+
+    const response = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!response.ok) {
+      throw new Error("Failed to load sessions (" + response.status + ").");
+    }
+
+    const json = await response.json();
+    if (json && json.data && Array.isArray(json.data.sessions)) {
+      return json.data.sessions;
+    }
+
+    return [];
+  }
+
+  async function loadAndRender() {
+    clearAlert();
+    hideIframeFallback();
+    setLoading(true);
+    try {
+      cachedSessions = await fetchSessions();
+      renderSessions(cachedSessions);
+    } catch (error) {
+      if (isNetworkError(error)) {
+        setAlert(
+          "Unable to reach the booking API. Showing the embedded view instead.",
+          "error"
+        );
+        showIframeFallback();
+        return;
+      }
+      setAlert(
+        error && error.message
+          ? error.message
+          : "Unable to load sessions right now.",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function submitBooking(event) {
+    if (event) {
+      event.preventDefault();
+    }
+
+    if (!baseUrl) {
+      setAlert("Set Training API base URL in theme settings.", "error");
+      return;
+    }
+
+    const payload = buildBookingPayload();
+    if (!payload.slot_id) {
+      setAlert("Please select a training slot.", "error");
+      return;
+    }
+
+    if (!payload.requester_email || !payload.requester_name) {
+      setAlert("Requester name and email are required.", "error");
+      return;
+    }
+
+    const postUrl = buildPostUrl();
+    if (!postUrl) {
+      setAlert("Training API URL is invalid.", "error");
+      return;
+    }
+
+    if (bookSubmit) {
+      bookSubmit.disabled = true;
+      bookSubmit.textContent = "Booking...";
     }
 
     try {
-      const response = await fetch(
-        apiEndpoint + "?api_key=" + encodeURIComponent(apiKey),
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await fetch(postUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
       const json = await response.json();
 
       if (!response.ok || !json || !json.success) {
@@ -1567,67 +1651,41 @@ function logFailure(img, phase) {
       }
 
       const ticketId =
-        json.data &&
-        json.data.zendesk &&
-        json.data.zendesk.ticket_id;
-      alert(
-        "Booking successful! Your ticket number is " +
-          (ticketId || "pending") +
-          "."
+        json.data && json.data.zendesk && json.data.zendesk.ticket_id;
+      setAlert(
+        "Booking confirmed. Ticket " + (ticketId || "pending") + ".",
+        "success"
       );
+      closeModal();
       await loadAndRender();
     } catch (error) {
-      console.error("[Training booking] Booking failed", error);
-      alert(
-        "Booking failed: " +
-          (error && error.message ? error.message : "Please try again.")
+      if (isNetworkError(error)) {
+        setAlert(
+          "Unable to reach the booking API. Showing the embedded view instead.",
+          "error"
+        );
+        showIframeFallback();
+        return;
+      }
+      setAlert(
+        error && error.message
+          ? error.message
+          : "Booking failed. Please try again.",
+        "error"
       );
     } finally {
-      if (button) {
-        button.disabled = false;
-        button.textContent = originalLabel || "Book";
+      if (bookSubmit) {
+        bookSubmit.disabled = false;
+        bookSubmit.textContent = "Confirm booking";
       }
     }
   }
 
-  function renderFiltered() {
-    if (!cachedSessions.length) {
-      renderMessage("No sessions are available right now.", "empty");
-      return;
-    }
-
-    const filtered = applyClientFilters(cachedSessions);
-    renderSessions(filtered);
+  if (requesterNameInput && user.name) {
+    requesterNameInput.value = user.name;
   }
-
-  async function loadAndRender() {
-    if (!apiKey) {
-      renderMessage(
-        "Training API key is not configured. Please contact support.",
-        "error"
-      );
-      return;
-    }
-
-    if (!hasInternalBookingAccess()) {
-      renderMessage(
-        "You do not have access to book training sessions.",
-        "error"
-      );
-      return;
-    }
-
-    renderMessage("Loading sessions...", "loading");
-    try {
-      cachedSessions = await loadSessions();
-      renderFiltered();
-    } catch (error) {
-      console.error("[Training booking] Failed to load sessions", error);
-      renderMessage(
-        "Unable to load sessions right now. Please try again later.",
-        "error"
-      );
-    }
+  if (requesterEmailInput && user.email) {
+    requesterEmailInput.value = user.email;
   }
 
   if (filtersForm) {
@@ -1637,22 +1695,26 @@ function logFailure(img, phase) {
     });
   }
 
-  if (queryInput) {
-    queryInput.addEventListener("input", renderFiltered);
-  }
-
-  if (openOnlyInput) {
-    openOnlyInput.addEventListener("change", renderFiltered);
-  }
-
   if (resetButton) {
     resetButton.addEventListener("click", function () {
       if (filtersForm) {
         filtersForm.reset();
       }
       setDefaultDateRange();
-      loadAndRender();
+      clearAlert();
+      hideIframeFallback();
+      renderPlaceholder("Choose a date range and load sessions.");
     });
+  }
+
+  if (modalClose) {
+    modalClose.addEventListener("click", closeModal);
+  }
+  if (modalCancel) {
+    modalCancel.addEventListener("click", closeModal);
+  }
+  if (modalForm) {
+    modalForm.addEventListener("submit", submitBooking);
   }
 
   setDefaultDateRange();
