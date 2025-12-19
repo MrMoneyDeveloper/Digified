@@ -22,7 +22,9 @@
       </li>
     {{/unless}}
     {{#if signed_in}}
-      {{!-- Only show Home when signed in; no extra nav items --}}
+      <li>
+        <a class="dbpo-nav-link nav-link" href="{{page_path 'training_booking'}}">Book Training</a>
+      </li>
     {{/if}}
   </ul>
 </nav>
