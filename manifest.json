@@ -242,6 +242,20 @@
           "value": "segment_tenant"
         },
         {
+          "identifier": "management_tag",
+          "type": "text",
+          "label": "Management user tag",
+          "description": "User tag applied to management users.",
+          "value": "segment_management"
+        },
+        {
+          "identifier": "management_org_id",
+          "type": "text",
+          "label": "Management organization ID",
+          "description": "Organization ID used to segment management users.",
+          "value": ""
+        },
+        {
           "identifier": "internal_form_id",
           "type": "text",
           "label": "Internal form ID",
@@ -864,6 +878,13 @@
           "type": "text",
           "label": "Training API key",
           "description": "API key for the training booking Apps Script.",
+          "value": ""
+        },
+        {
+          "identifier": "training_booking_internal_tag",
+          "type": "text",
+          "label": "Training booking internal tag",
+          "description": "Optional user tag required for internal users to see booking links.",
           "value": ""
         }
       ]

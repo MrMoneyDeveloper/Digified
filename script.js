@@ -13,20 +13,26 @@
   const segmentSettings = {
     internalTag: themeSettings.internal_tag || "segment_internal",
     tenantTag: themeSettings.tenant_tag || "segment_tenant",
+    managementTag: themeSettings.management_tag || "segment_management",
     internalOrgId: themeSettings.internal_org_id || "23530444315804",
     tenantOrgId: themeSettings.tenant_org_id || "23530712292892",
-      // Request form routing
-      internalFormId:
-      themeSettings.internal_request_form_id || STAFF_SUPPORT_FORM,
-      tenantFormId:
-        themeSettings.tenant_request_form_id || TENANT_SUPPORT_FORM
-    };
+    managementOrgId: themeSettings.management_org_id || "",
+    // Request form routing
+    internalFormId: themeSettings.internal_request_form_id || STAFF_SUPPORT_FORM,
+    tenantFormId: themeSettings.tenant_request_form_id || TENANT_SUPPORT_FORM,
+  };
+
+  const trainingSettings = {
+    internalBookingTag: themeSettings.training_booking_internal_tag || "",
+  };
 
   window.isInternalUser = false;
   window.isTenantUser = false;
+  window.isManagementUser = false;
   window.DigifiedSegments = {
     isInternalUser: false,
     isTenantUser: false,
+    isManagementUser: false,
     userTags: [],
     orgIds: []
   };
@@ -44,9 +50,15 @@
     const isTenant =
       userTags.includes(segmentSettings.tenantTag) ||
       orgIds.includes(segmentSettings.tenantOrgId);
+    const isManagement =
+      userTags.includes(segmentSettings.managementTag) ||
+      (segmentSettings.managementOrgId &&
+        orgIds.includes(segmentSettings.managementOrgId));
 
     let segmentClass = "hc-unknown-user";
-    if (isInternal && !isTenant) {
+    if (isManagement) {
+      segmentClass = "hc-management-user";
+    } else if (isInternal && !isTenant) {
       segmentClass = "hc-internal-user";
     } else if (isTenant && !isInternal) {
       segmentClass = "hc-tenant-user";
@@ -57,6 +69,7 @@
       orgIds,
       isInternal,
       isTenant,
+      isManagement,
       hasUser: !!user,
       segmentClass
     };
@@ -66,15 +79,18 @@
     document.documentElement.classList.remove(
       "hc-internal-user",
       "hc-tenant-user",
+      "hc-management-user",
       "hc-unknown-user"
     );
     document.documentElement.classList.add(result.segmentClass);
 
     window.isInternalUser = result.isInternal;
     window.isTenantUser = result.isTenant;
+    window.isManagementUser = result.isManagement;
     window.DigifiedSegments = {
       isInternalUser: result.isInternal,
       isTenantUser: result.isTenant,
+      isManagementUser: result.isManagement,
       userTags: result.userTags,
       orgIds: result.orgIds
     };
@@ -117,9 +133,15 @@
     const segments = window.DigifiedSegments || {};
     const internalItems = document.querySelectorAll(".nav-internal");
     const tenantItems = document.querySelectorAll(".nav-tenant");
+    const managementItems = document.querySelectorAll(".nav-management");
     const unknownItems = document.querySelectorAll(".nav-unknown");
 
-    if (!internalItems.length && !tenantItems.length && !unknownItems.length) {
+    if (
+      !internalItems.length &&
+      !tenantItems.length &&
+      !managementItems.length &&
+      !unknownItems.length
+    ) {
       return;
     }
 
@@ -134,14 +156,44 @@
 
     hide(internalItems);
     hide(tenantItems);
+    hide(managementItems);
     hide(unknownItems);
 
-    if (segments.isInternalUser) {
+    if (segments.isManagementUser) {
+      show(managementItems);
+      show(internalItems);
+    } else if (segments.isInternalUser) {
       show(internalItems);
     } else if (segments.isTenantUser) {
       show(tenantItems);
     } else {
       show(unknownItems);
+    }
+
+    applyTrainingVisibility(segments);
+  }
+
+  function applyTrainingVisibility(segments) {
+    const trainingLinks = document.querySelectorAll(".nav-training-booking");
+    if (!trainingLinks.length) {
+      return;
+    }
+
+    const requiredTag = trainingSettings.internalBookingTag;
+    if (!requiredTag) {
+      return;
+    }
+
+    if (
+      segments.isInternalUser &&
+      !segments.isManagementUser &&
+      !segments.userTags.includes(requiredTag)
+    ) {
+      trainingLinks.forEach((item) => {
+        if (item.classList.contains("nav-internal")) {
+          item.style.display = "none";
+        }
+      });
     }
   }
 
@@ -290,9 +342,13 @@
           });
         };
 
-        hide(".nav-internal, .nav-tenant, .nav-unknown");
+        hide(".nav-internal, .nav-tenant, .nav-management, .nav-unknown");
 
-        if (segments.isInternalUser) {
+        if (segments.isManagementUser) {
+          show(".nav-management");
+          show(".nav-internal");
+          console.log("[QuickLinks] Showing management links");
+        } else if (segments.isInternalUser) {
           show(".nav-internal");
           console.log("[QuickLinks] Showing internal links");
         } else if (segments.isTenantUser) {
@@ -301,6 +357,18 @@
         } else {
           show(".nav-unknown");
           console.log("[QuickLinks] Showing sign-up links (no segment detected)");
+        }
+
+        const trainingTag =
+          ((window.HelpCenter && window.HelpCenter.themeSettings) || {})
+            .training_booking_internal_tag || "";
+        if (trainingTag && segments.isInternalUser && !segments.isManagementUser) {
+          const hasTrainingTag =
+            Array.isArray(segments.userTags) &&
+            segments.userTags.includes(trainingTag);
+          if (!hasTrainingTag) {
+            hide(".nav-training-booking.nav-internal");
+          }
         }
       }, 500);
     });
@@ -1161,5 +1229,433 @@ function logFailure(img, phase) {
   } else {
     watchImages();
   }
+})();
+
+(function () {
+  "use strict";
+
+  const path = window.location.pathname || "";
+  if (!/\/hc\/[^/]+\/training_booking/.test(path)) {
+    return;
+  }
+
+  const app = document.getElementById("training-booking-app");
+  if (!app) {
+    return;
+  }
+
+  const settings = (window.HelpCenter && window.HelpCenter.themeSettings) || {};
+  const apiKey = window.TrainingApiKey || settings.training_api_key || "";
+  const apiEndpoint =
+    "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec";
+
+  const filtersForm = document.getElementById("training-filters");
+  const fromInput = document.getElementById("training-filter-from");
+  const toInput = document.getElementById("training-filter-to");
+  const queryInput = document.getElementById("training-filter-query");
+  const openOnlyInput = document.getElementById("training-filter-open");
+  const resetButton = document.getElementById("training-reset");
+
+  const deptInput = document.getElementById("training-dept");
+  const attendeesInput = document.getElementById("training-attendees");
+  const notesInput = document.getElementById("training-notes");
+
+  let cachedSessions = [];
+
+  function renderMessage(message, type) {
+    const messageEl = document.createElement("p");
+    messageEl.className = "training-booking__message";
+    if (type) {
+      messageEl.className += " training-booking__message--" + type;
+    }
+    messageEl.textContent = message;
+
+    app.innerHTML = "";
+    app.appendChild(messageEl);
+  }
+
+  function formatDateInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return year + "-" + month + "-" + day;
+  }
+
+  function setDefaultDateRange() {
+    if (!fromInput || !toInput) {
+      return;
+    }
+
+    const today = new Date();
+    const future = new Date();
+    future.setDate(today.getDate() + 30);
+
+    if (!fromInput.value) {
+      fromInput.value = formatDateInput(today);
+    }
+
+    if (!toInput.value) {
+      toInput.value = formatDateInput(future);
+    }
+  }
+
+  function getUserType() {
+    const segments = window.DigifiedSegments || {};
+    if (segments.isManagementUser) {
+      return "management";
+    }
+    if (segments.isTenantUser) {
+      return "tenant";
+    }
+    if (segments.isInternalUser) {
+      return "staff";
+    }
+    return "staff";
+  }
+
+  function hasInternalBookingAccess() {
+    const requiredTag = settings.training_booking_internal_tag || "";
+    if (!requiredTag) {
+      return true;
+    }
+
+    const segments = window.DigifiedSegments || {};
+    if (segments.isManagementUser) {
+      return true;
+    }
+
+    if (!segments.isInternalUser) {
+      return true;
+    }
+
+    return (
+      Array.isArray(segments.userTags) &&
+      segments.userTags.includes(requiredTag)
+    );
+  }
+
+  function buildSessionsUrl() {
+    const params = [];
+    const from = fromInput ? fromInput.value : "";
+    const to = toInput ? toInput.value : "";
+
+    params.push("action=sessions");
+    if (from) {
+      params.push("from=" + encodeURIComponent(from));
+    }
+    if (to) {
+      params.push("to=" + encodeURIComponent(to));
+    }
+    params.push("api_key=" + encodeURIComponent(apiKey));
+
+    return apiEndpoint + "?" + params.join("&");
+  }
+
+  async function loadSessions() {
+    if (!apiKey) {
+      throw new Error("Training API key is missing.");
+    }
+
+    const response = await fetch(buildSessionsUrl(), {
+      headers: { Accept: "application/json" },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to load sessions (" + response.status + ").");
+    }
+
+    const json = await response.json();
+    if (json && json.data && Array.isArray(json.data.sessions)) {
+      return json.data.sessions;
+    }
+
+    return [];
+  }
+
+  function normalize(value) {
+    return String(value || "").toLowerCase();
+  }
+
+  function applyClientFilters(sessions) {
+    const query = normalize(queryInput && queryInput.value);
+    const openOnly = openOnlyInput && openOnlyInput.checked;
+
+    return sessions.filter((session) => {
+      if (openOnly && !session.available) {
+        return false;
+      }
+
+      if (query) {
+        const haystack = [
+          session.vendor,
+          session.topic,
+          session.date,
+          session.start_time,
+          session.end_time,
+        ]
+          .map(normalize)
+          .join(" ");
+        if (!haystack.includes(query)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }
+
+  function sessionStatus(session) {
+    if (session.available) {
+      return "Open";
+    }
+
+    if (session.status === "cancelled") {
+      return "Cancelled";
+    }
+
+    return "Full";
+  }
+
+  function formatTimeRange(session) {
+    const start = session.start_time || "";
+    const end = session.end_time || "";
+    if (start && end) {
+      return start + " - " + end;
+    }
+    return start || end;
+  }
+
+  function formatCapacity(session) {
+    const capacity = Number(session.capacity);
+    const booked = Number(session.booked_count);
+
+    if (!Number.isNaN(capacity) && !Number.isNaN(booked)) {
+      return booked + " / " + capacity;
+    }
+    if (!Number.isNaN(capacity)) {
+      return String(capacity);
+    }
+    return "";
+  }
+
+  function createCell(text) {
+    const cell = document.createElement("td");
+    cell.textContent = text || "";
+    return cell;
+  }
+
+  function renderSessions(sessions) {
+    if (!sessions.length) {
+      renderMessage("No sessions match the selected filters.", "empty");
+      return;
+    }
+
+    const table = document.createElement("table");
+    table.className = "table training-sessions";
+
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    ["Date", "Time", "Vendor", "Topic", "Seats", "Status", ""].forEach(
+      (label) => {
+        const th = document.createElement("th");
+        th.textContent = label;
+        headerRow.appendChild(th);
+      }
+    );
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    const sorted = sessions.slice().sort((a, b) => {
+      const aKey = String(a.date || "") + " " + String(a.start_time || "");
+      const bKey = String(b.date || "") + " " + String(b.start_time || "");
+      return aKey.localeCompare(bKey);
+    });
+
+    sorted.forEach((session) => {
+      const row = document.createElement("tr");
+      row.appendChild(createCell(session.date));
+      row.appendChild(createCell(formatTimeRange(session)));
+      row.appendChild(createCell(session.vendor));
+      row.appendChild(createCell(session.topic));
+      row.appendChild(createCell(formatCapacity(session)));
+      row.appendChild(createCell(sessionStatus(session)));
+
+      const actionCell = document.createElement("td");
+      if (session.available && session.slot_id) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn btn-primary";
+        button.textContent = "Book";
+        button.addEventListener("click", function () {
+          bookSlot(session.slot_id, button);
+        });
+        actionCell.appendChild(button);
+      } else {
+        const status = document.createElement("span");
+        status.className = "training-booking__disabled";
+        status.textContent = "Unavailable";
+        actionCell.appendChild(status);
+      }
+      row.appendChild(actionCell);
+
+      tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "training-booking__table";
+    wrapper.appendChild(table);
+
+    app.innerHTML = "";
+    app.appendChild(wrapper);
+  }
+
+  async function bookSlot(slotId, button) {
+    if (!apiKey) {
+      alert("Training API key is missing. Please contact support.");
+      return;
+    }
+
+    if (!hasInternalBookingAccess()) {
+      alert("You do not have access to book training sessions.");
+      return;
+    }
+
+    const user = (window.HelpCenter && window.HelpCenter.user) || {};
+    if (!user.email) {
+      alert("Please sign in to book a session.");
+      return;
+    }
+
+    const dept = deptInput ? deptInput.value.trim() : "";
+    const attendeesValue = attendeesInput ? attendeesInput.value : "";
+    const attendees = Math.max(parseInt(attendeesValue, 10) || 1, 1);
+    const notes = notesInput ? notesInput.value.trim() : "";
+
+    const payload = {
+      action: "book",
+      slot_id: slotId,
+      requester_email: user.email,
+      requester_name: user.name || user.email,
+      dept: dept,
+      attendees: attendees,
+      notes: notes,
+      user_type: getUserType(),
+    };
+
+    const originalLabel = button ? button.textContent : "";
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Booking...";
+    }
+
+    try {
+      const response = await fetch(
+        apiEndpoint + "?api_key=" + encodeURIComponent(apiKey),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+      const json = await response.json();
+
+      if (!response.ok || !json || !json.success) {
+        const message = (json && json.message) || "Booking failed.";
+        throw new Error(message);
+      }
+
+      const ticketId =
+        json.data &&
+        json.data.zendesk &&
+        json.data.zendesk.ticket_id;
+      alert(
+        "Booking successful! Your ticket number is " +
+          (ticketId || "pending") +
+          "."
+      );
+      await loadAndRender();
+    } catch (error) {
+      console.error("[Training booking] Booking failed", error);
+      alert(
+        "Booking failed: " +
+          (error && error.message ? error.message : "Please try again.")
+      );
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.textContent = originalLabel || "Book";
+      }
+    }
+  }
+
+  function renderFiltered() {
+    if (!cachedSessions.length) {
+      renderMessage("No sessions are available right now.", "empty");
+      return;
+    }
+
+    const filtered = applyClientFilters(cachedSessions);
+    renderSessions(filtered);
+  }
+
+  async function loadAndRender() {
+    if (!apiKey) {
+      renderMessage(
+        "Training API key is not configured. Please contact support.",
+        "error"
+      );
+      return;
+    }
+
+    if (!hasInternalBookingAccess()) {
+      renderMessage(
+        "You do not have access to book training sessions.",
+        "error"
+      );
+      return;
+    }
+
+    renderMessage("Loading sessions...", "loading");
+    try {
+      cachedSessions = await loadSessions();
+      renderFiltered();
+    } catch (error) {
+      console.error("[Training booking] Failed to load sessions", error);
+      renderMessage(
+        "Unable to load sessions right now. Please try again later.",
+        "error"
+      );
+    }
+  }
+
+  if (filtersForm) {
+    filtersForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      loadAndRender();
+    });
+  }
+
+  if (queryInput) {
+    queryInput.addEventListener("input", renderFiltered);
+  }
+
+  if (openOnlyInput) {
+    openOnlyInput.addEventListener("change", renderFiltered);
+  }
+
+  if (resetButton) {
+    resetButton.addEventListener("click", function () {
+      if (filtersForm) {
+        filtersForm.reset();
+      }
+      setDefaultDateRange();
+      loadAndRender();
+    });
+  }
+
+  setDefaultDateRange();
+  loadAndRender();
 })();
 

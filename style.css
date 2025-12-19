@@ -3283,6 +3283,139 @@ ol.breadcrumbs li::before {
   stroke: currentColor;
 }
 
+/* Training booking */
+.training-booking {
+  padding: 3rem 0 4rem;
+}
+
+.training-booking .container {
+  max-width: 1200px;
+}
+
+.training-intro {
+  color: #475569;
+  margin-bottom: 1.5rem;
+  max-width: 720px;
+}
+
+.training-booking__panel {
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  margin-bottom: 1.5rem;
+}
+
+.training-booking__filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.training-booking__details h2 {
+  margin-top: 0;
+  font-size: 1.4rem;
+}
+
+.training-booking__details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.training-booking__field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: #0f172a;
+}
+
+.training-booking__field--wide {
+  grid-column: span 2;
+}
+
+.training-booking__field--full {
+  grid-column: 1 / -1;
+}
+
+.training-booking__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.training-booking__actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.training-booking__note {
+  margin: 0.75rem 0 0;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.training-booking__table {
+  overflow-x: auto;
+}
+
+.training-sessions {
+  width: 100%;
+  min-width: 760px;
+}
+
+.training-booking__message {
+  padding: 1rem 1.25rem;
+  border-radius: 0.85rem;
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 600;
+  margin: 0;
+}
+
+.training-booking__message--loading {
+  color: #475569;
+}
+
+.training-booking__message--error {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.training-booking__message--empty {
+  color: #475569;
+}
+
+.training-booking__disabled {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.training-booking__signin {
+  background: #f8fafc;
+  border-radius: 1rem;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+}
+
+@media (max-width: 768px) {
+  .training-booking__filters {
+    grid-template-columns: 1fr;
+  }
+
+  .training-booking__field--wide {
+    grid-column: 1 / -1;
+  }
+}
+
 /* Responsive: stack on mobile */
 @media (max-width: 768px) {
   .landing-cards-grid.two-column {
