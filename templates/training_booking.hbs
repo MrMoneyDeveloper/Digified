@@ -1,0 +1,13 @@
+<section class="training-booking">
+  <div class="container">
+    <h1>Book a Training Session</h1>
+    <p class="training-intro">
+      Select an available slot below to reserve your training session. You can only book open slots; full or cancelled sessions are disabled.
+    </p>
+    <div id="training-booking-app"></div>
+  </div>
+</section>
+<script>
+  window.TrainingApiKey = {{json settings.training_api_key}};
+</script>
+<script src="{{asset 'training-booking.js'}}" defer></script>

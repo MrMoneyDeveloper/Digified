@@ -855,6 +855,18 @@
           "value": "/hc/en-us/articles/23441684280348-Sexual-Harassment-Policy"
         }
       ]
+    },
+    {
+      "label": "Training booking",
+      "variables": [
+        {
+          "identifier": "training_api_key",
+          "type": "text",
+          "label": "Training API key",
+          "description": "API key for the training booking Apps Script.",
+          "value": ""
+        }
+      ]
     }
   ]
 }
