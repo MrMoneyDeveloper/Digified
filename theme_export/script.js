@@ -821,6 +821,31 @@
 (function () {
   "use strict";
 
+  document.addEventListener("DOMContentLoaded", function () {
+    var trainingLinks = document.querySelectorAll("[data-training-booking-link]");
+    if (!trainingLinks.length) {
+      console.info("[TrainingBooking] No nav link found on this page.");
+      return;
+    }
+
+    trainingLinks.forEach(function (link) {
+      link.addEventListener("click", function (event) {
+        console.info("[TrainingBooking] Nav click", {
+          href: link.getAttribute("href"),
+          currentPath: window.location.pathname,
+          currentSearch: window.location.search,
+          signedIn: Boolean(window.HelpCenter && window.HelpCenter.user),
+          linkTarget: link.getAttribute("data-training-booking-link"),
+          defaultPrevented: event.defaultPrevented
+        });
+      });
+    });
+  });
+})();
+
+(function () {
+  "use strict";
+
   const path = window.location.pathname || "";
   if (!/\/hc\/[^/]+\/training_booking/.test(path)) {
     return;
