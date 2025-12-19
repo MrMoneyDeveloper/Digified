@@ -851,8 +851,14 @@
     return;
   }
 
+  console.info("[TrainingBooking] Page init", {
+    path: window.location.pathname,
+    search: window.location.search
+  });
+
   const app = document.getElementById("training-booking-app");
   if (!app) {
+    console.warn("[TrainingBooking] Missing #training-booking-app container.");
     return;
   }
 
@@ -875,6 +881,8 @@
 
   let cachedSessions = [];
   const segments = detectSegments();
+
+  console.info("[TrainingBooking] Segment snapshot", segments);
 
   function detectSegments() {
     const user = (window.HelpCenter && window.HelpCenter.user) || null;
@@ -993,6 +1001,7 @@
 
   async function loadSessions() {
     if (!apiKey) {
+      console.warn("[TrainingBooking] API key missing.");
       throw new Error("Training API key is missing.");
     }
 
@@ -1001,6 +1010,7 @@
     });
 
     if (!response.ok) {
+      console.warn("[TrainingBooking] Sessions fetch failed", response.status);
       throw new Error("Failed to load sessions (" + response.status + ").");
     }
 
@@ -1153,17 +1163,20 @@
 
   async function bookSlot(slotId, button) {
     if (!apiKey) {
+      console.warn("[TrainingBooking] API key missing on booking.");
       alert("Training API key is missing. Please contact support.");
       return;
     }
 
     if (!hasInternalBookingAccess()) {
+      console.warn("[TrainingBooking] Booking blocked by access check.");
       alert("You do not have access to book training sessions.");
       return;
     }
 
     const user = (window.HelpCenter && window.HelpCenter.user) || {};
     if (!user.email) {
+      console.warn("[TrainingBooking] Booking blocked: user not signed in.");
       alert("Please sign in to book a session.");
       return;
     }
@@ -1191,6 +1204,7 @@
     }
 
     try {
+      console.info("[TrainingBooking] Booking request", payload);
       const response = await fetch(
         apiEndpoint + "?api_key=" + encodeURIComponent(apiKey),
         {
