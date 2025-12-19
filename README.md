@@ -31,3 +31,8 @@ Zendesk theme settings:
 - Optional: set `training_booking_internal_tag` if internal users need a specific tag to see booking links.
 
 Note: The Apps Script handles Zendesk ticket creation internally, so the client does not call the Zendesk API directly.
+
+Custom page setup:
+- Create a Zendesk Guide custom page with slug `training_booking`.
+- Assign the `training_booking` custom template (backed by `custom_page.training_booking.hbs`).
+- The resulting URL should be `/hc/<locale>/p/training_booking` and is the link used in the theme.
