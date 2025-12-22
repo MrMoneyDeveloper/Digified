@@ -1246,7 +1246,12 @@ function logFailure(img, phase) {
 
   const settings = (window.HelpCenter && window.HelpCenter.themeSettings) || {};
   const cfg = window.TRAINING_BOOKING_CFG || {};
-  const baseUrl = (cfg.baseUrl || settings.training_api_base_url || "").trim();
+  const baseUrl = (
+    cfg.baseUrl ||
+    settings.training_api_url ||
+    settings.training_api_base_url ||
+    ""
+  ).trim();
   const apiKey = (cfg.apiKey || settings.training_api_key || "").trim();
   const apiModeRaw = (cfg.mode || settings.training_api_mode || "jsonp").trim();
   const apiMode = apiModeRaw.toLowerCase() === "fetch" ? "fetch" : "jsonp";
@@ -1343,6 +1348,25 @@ function logFailure(img, phase) {
         typeof error.message === "string" &&
         error.message.indexOf("JSONP request") === 0)
     );
+  }
+
+  function apiErrorMessage(json) {
+    if (!json || typeof json !== "object") {
+      return "";
+    }
+
+    const statusCode = Number(json.statusCode);
+    const hasStatus = !Number.isNaN(statusCode) && statusCode !== 0;
+    const hasError = json.success === false || (hasStatus && statusCode !== 200);
+
+    if (!hasError) {
+      return "";
+    }
+
+    const code = json.code ? String(json.code) : "ERROR";
+    const message = json.message ? String(json.message) : "Request failed.";
+    const statusText = hasStatus ? " (status " + statusCode + ")" : "";
+    return code + ": " + message + statusText;
   }
 
   function showIframeFallback() {
@@ -1622,7 +1646,7 @@ function logFailure(img, phase) {
 
   async function fetchSessions() {
     if (!baseUrl) {
-      setAlert("Set Training API base URL in theme settings.", "error");
+      setAlert("Set Training API URL in theme settings.", "error");
       if (iframeUrl) {
         showIframeFallback();
       }
@@ -1653,14 +1677,23 @@ function logFailure(img, phase) {
       const response = await fetch(url, {
         headers: { Accept: "application/json" },
       });
+      try {
+        json = await response.json();
+      } catch (error) {
+        json = null;
+      }
       if (!response.ok) {
+        const apiError = apiErrorMessage(json);
+        if (apiError) {
+          throw new Error(apiError);
+        }
         throw new Error("Failed to load sessions (" + response.status + ").");
       }
-      json = await response.json();
     }
 
-    if (json && json.success === false) {
-      throw new Error(json.message || "Unable to load sessions.");
+    const apiError = apiErrorMessage(json);
+    if (apiError) {
+      throw new Error(apiError);
     }
 
     if (json && json.data && Array.isArray(json.data.sessions)) {
@@ -1707,7 +1740,7 @@ function logFailure(img, phase) {
     }
 
     if (!baseUrl) {
-      setAlert("Set Training API base URL in theme settings.", "error");
+      setAlert("Set Training API URL in theme settings.", "error");
       if (iframeUrl) {
         showIframeFallback();
       }
@@ -1749,9 +1782,9 @@ function logFailure(img, phase) {
       if (apiMode === "jsonp") {
         const jsonpPayload = buildBookingPayload(false);
         json = await jsonpRequest("book", jsonpPayload);
-        if (!json || json.success === false) {
-          const message = (json && json.message) || "Booking failed.";
-          throw new Error(message);
+        const apiError = apiErrorMessage(json);
+        if (apiError) {
+          throw new Error(apiError);
         }
       } else {
         const response = await fetch(postUrl, {
@@ -1759,11 +1792,23 @@ function logFailure(img, phase) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        json = await response.json();
+        try {
+          json = await response.json();
+        } catch (error) {
+          json = null;
+        }
 
-        if (!response.ok || !json || !json.success) {
-          const message = (json && json.message) || "Booking failed.";
-          throw new Error(message);
+        if (!response.ok) {
+          const apiError = apiErrorMessage(json);
+          if (apiError) {
+            throw new Error(apiError);
+          }
+          throw new Error("Booking failed.");
+        }
+
+        const apiError = apiErrorMessage(json);
+        if (apiError) {
+          throw new Error(apiError);
         }
       }
 

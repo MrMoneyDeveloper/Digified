@@ -1,7 +1,7 @@
 {
   "name": "Copenhagen",
   "author": "Zendesk",
-  "version": "100.1.8",
+  "version": "100.1.9",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -758,10 +758,10 @@
       "label": "Training booking",
       "variables": [
         {
-          "identifier": "training_api_base_url",
+          "identifier": "training_api_url",
           "type": "text",
-          "label": "Training API base URL",
-          "description": "Base URL for the training booking Apps Script.",
+          "label": "Training API URL",
+          "description": "URL for the training booking Apps Script.",
           "value": "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec"
         },
         {

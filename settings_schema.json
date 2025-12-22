@@ -3,9 +3,9 @@
     "name": "Training booking",
     "settings": [
       {
-        "id": "training_api_base_url",
+        "id": "training_api_url",
         "type": "text",
-        "label": "Training API Base URL",
+        "label": "Training API URL",
         "default": "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec"
       },
       {
