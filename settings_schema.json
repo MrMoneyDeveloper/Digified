@@ -13,6 +13,28 @@
         "type": "text",
         "label": "Training API Key",
         "default": ""
+      },
+      {
+        "id": "training_api_mode",
+        "type": "enum",
+        "label": "Training API Mode",
+        "default": "jsonp",
+        "options": [
+          {
+            "label": "JSONP",
+            "value": "jsonp"
+          },
+          {
+            "label": "Fetch",
+            "value": "fetch"
+          }
+        ]
+      },
+      {
+        "id": "training_iframe_url",
+        "type": "text",
+        "label": "Training Iframe URL",
+        "default": ""
       }
     ]
   }

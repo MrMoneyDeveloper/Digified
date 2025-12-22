@@ -1248,6 +1248,9 @@ function logFailure(img, phase) {
   const cfg = window.TRAINING_BOOKING_CFG || {};
   const baseUrl = (cfg.baseUrl || settings.training_api_base_url || "").trim();
   const apiKey = (cfg.apiKey || settings.training_api_key || "").trim();
+  const apiModeRaw = (cfg.mode || settings.training_api_mode || "jsonp").trim();
+  const apiMode = apiModeRaw.toLowerCase() === "fetch" ? "fetch" : "jsonp";
+  const iframeUrl = (cfg.iframeUrl || settings.training_iframe_url || "").trim();
   const user = (window.HelpCenter && window.HelpCenter.user) || {};
 
   const alertEl = document.getElementById("training-booking-alert");
@@ -1334,15 +1337,24 @@ function logFailure(img, phase) {
   }
 
   function isNetworkError(error) {
-    return error && error.name === "TypeError";
+    return (
+      (error && error.name === "TypeError") ||
+      (error &&
+        typeof error.message === "string" &&
+        error.message.indexOf("JSONP request") === 0)
+    );
   }
 
   function showIframeFallback() {
-    if (!fallbackWrap || !fallbackFrame || !baseUrl) {
+    if (!fallbackWrap || !fallbackFrame) {
       return;
     }
 
-    fallbackFrame.src = baseUrl + "?action=ui";
+    const src = iframeUrl || (baseUrl ? baseUrl + "?action=ui" : "");
+    if (!src) {
+      return;
+    }
+    fallbackFrame.src = src;
     fallbackWrap.hidden = false;
   }
 
@@ -1400,6 +1412,58 @@ function logFailure(img, phase) {
     } catch (error) {
       return "";
     }
+  }
+
+  function jsonpRequest(action, params) {
+    return new Promise((resolve, reject) => {
+      const callbackName =
+        "trainingJsonpCallback_" +
+        Date.now() +
+        "_" +
+        Math.floor(Math.random() * 1000);
+      const url = buildUrl(
+        action,
+        Object.assign({}, params, { callback: callbackName })
+      );
+
+      if (!url) {
+        reject(new Error("Training API URL is invalid."));
+        return;
+      }
+
+      const script = document.createElement("script");
+      let timeoutId = null;
+
+      function cleanup() {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        if (window[callbackName]) {
+          delete window[callbackName];
+        }
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+      }
+
+      window[callbackName] = function (data) {
+        cleanup();
+        resolve(data);
+      };
+
+      script.onerror = function () {
+        cleanup();
+        reject(new Error("JSONP request failed."));
+      };
+
+      timeoutId = setTimeout(function () {
+        cleanup();
+        reject(new Error("JSONP request timed out."));
+      }, 15000);
+
+      script.src = url;
+      (document.head || document.body).appendChild(script);
+    });
   }
 
   function createCell(text) {
@@ -1539,9 +1603,8 @@ function logFailure(img, phase) {
     modal.setAttribute("aria-hidden", "true");
   }
 
-  function buildBookingPayload() {
-    return {
-      action: "book",
+  function buildBookingPayload(includeAction) {
+    const payload = {
       slot_id: slotIdInput ? slotIdInput.value : "",
       requester_email: requesterEmailInput ? requesterEmailInput.value.trim() : "",
       requester_name: requesterNameInput ? requesterNameInput.value.trim() : "",
@@ -1549,28 +1612,57 @@ function logFailure(img, phase) {
       dept: deptInput ? deptInput.value.trim() : "",
       notes: notesInput ? notesInput.value.trim() : "",
     };
+
+    if (includeAction) {
+      payload.action = "book";
+    }
+
+    return payload;
   }
 
   async function fetchSessions() {
     if (!baseUrl) {
       setAlert("Set Training API base URL in theme settings.", "error");
-      return [];
+      if (iframeUrl) {
+        showIframeFallback();
+      }
+      return null;
+    }
+
+    if (!apiKey) {
+      setAlert("Set Training API key in theme settings.", "error");
+      if (iframeUrl) {
+        showIframeFallback();
+      }
+      return null;
     }
 
     const from = fromInput ? fromInput.value : "";
     const to = toInput ? toInput.value : "";
-    const url = buildUrl("sessions", { from: from, to: to });
-    if (!url) {
-      setAlert("Training API URL is invalid.", "error");
-      return [];
+    let json = null;
+
+    if (apiMode === "jsonp") {
+      json = await jsonpRequest("sessions", { from: from, to: to });
+    } else {
+      const url = buildUrl("sessions", { from: from, to: to });
+      if (!url) {
+        setAlert("Training API URL is invalid.", "error");
+        return null;
+      }
+
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to load sessions (" + response.status + ").");
+      }
+      json = await response.json();
     }
 
-    const response = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!response.ok) {
-      throw new Error("Failed to load sessions (" + response.status + ").");
+    if (json && json.success === false) {
+      throw new Error(json.message || "Unable to load sessions.");
     }
 
-    const json = await response.json();
     if (json && json.data && Array.isArray(json.data.sessions)) {
       return json.data.sessions;
     }
@@ -1583,7 +1675,11 @@ function logFailure(img, phase) {
     hideIframeFallback();
     setLoading(true);
     try {
-      cachedSessions = await fetchSessions();
+      const sessions = await fetchSessions();
+      if (sessions === null) {
+        return;
+      }
+      cachedSessions = sessions;
       renderSessions(cachedSessions);
     } catch (error) {
       if (isNetworkError(error)) {
@@ -1612,10 +1708,20 @@ function logFailure(img, phase) {
 
     if (!baseUrl) {
       setAlert("Set Training API base URL in theme settings.", "error");
+      if (iframeUrl) {
+        showIframeFallback();
+      }
+      return;
+    }
+    if (!apiKey) {
+      setAlert("Set Training API key in theme settings.", "error");
+      if (iframeUrl) {
+        showIframeFallback();
+      }
       return;
     }
 
-    const payload = buildBookingPayload();
+    const payload = buildBookingPayload(apiMode !== "jsonp");
     if (!payload.slot_id) {
       setAlert("Please select a training slot.", "error");
       return;
@@ -1638,16 +1744,27 @@ function logFailure(img, phase) {
     }
 
     try {
-      const response = await fetch(postUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const json = await response.json();
+      let json = null;
 
-      if (!response.ok || !json || !json.success) {
-        const message = (json && json.message) || "Booking failed.";
-        throw new Error(message);
+      if (apiMode === "jsonp") {
+        const jsonpPayload = buildBookingPayload(false);
+        json = await jsonpRequest("book", jsonpPayload);
+        if (!json || json.success === false) {
+          const message = (json && json.message) || "Booking failed.";
+          throw new Error(message);
+        }
+      } else {
+        const response = await fetch(postUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        json = await response.json();
+
+        if (!response.ok || !json || !json.success) {
+          const message = (json && json.message) || "Booking failed.";
+          throw new Error(message);
+        }
       }
 
       const ticketId =

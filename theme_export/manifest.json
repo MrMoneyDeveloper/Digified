@@ -1,7 +1,7 @@
 {
   "name": "Copenhagen",
   "author": "Zendesk",
-  "version": "100.1.7",
+  "version": "100.1.8",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -769,6 +769,20 @@
           "type": "text",
           "label": "Training API key",
           "description": "API key for the training booking Apps Script.",
+          "value": ""
+        },
+        {
+          "identifier": "training_api_mode",
+          "type": "text",
+          "label": "Training API mode",
+          "description": "Set to jsonp or fetch. Defaults to jsonp.",
+          "value": "jsonp"
+        },
+        {
+          "identifier": "training_iframe_url",
+          "type": "text",
+          "label": "Training iframe URL",
+          "description": "Optional URL for the embedded booking UI.",
           "value": ""
         },
         {

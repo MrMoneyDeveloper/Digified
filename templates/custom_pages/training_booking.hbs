@@ -1,4 +1,12 @@
 <section class="training-booking">
+  <script>
+    window.TRAINING_BOOKING_CFG = {
+      baseUrl: "{{settings.training_api_base_url}}",
+      apiKey: "{{settings.training_api_key}}",
+      mode: "{{settings.training_api_mode}}",
+      iframeUrl: "{{settings.training_iframe_url}}"
+    };
+  </script>
   <div class="container">
     <h1>Training Bookings</h1>
     <p class="training-intro">
@@ -71,12 +79,6 @@
           </div>
         </div>
       </div>
-      <script>
-        window.TRAINING_BOOKING_CFG = {
-          baseUrl: {{json settings.training_api_base_url}},
-          apiKey: {{json settings.training_api_key}}
-        };
-      </script>
     {{else}}
       <p>Sign in to view and book training sessions.</p>
       <a class="btn btn-primary" href="https://cxe-internal.zendesk.com/hc/en-us/signin?return_to=https://cxe-internal.zendesk.com/hc/en-us/p/training_booking">
