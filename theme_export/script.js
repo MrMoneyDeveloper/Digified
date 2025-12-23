@@ -855,6 +855,9 @@
   if (!root) {
     return;
   }
+  if (root.getAttribute("data-training-booking-version") === "v2") {
+    return;
+  }
 
   const settings = (window.HelpCenter && window.HelpCenter.themeSettings) || {};
   const cfg = window.TRAINING_BOOKING_CFG || {};
@@ -1494,4 +1497,3 @@
   setDefaultDateRange();
   loadAndRender();
 })();
-

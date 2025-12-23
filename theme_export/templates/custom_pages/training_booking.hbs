@@ -1,78 +1,124 @@
-<section class="training-booking">
-  <script>
-    window.TRAINING_BOOKING_CFG = {
-      baseUrl: "{{settings.training_api_url}}",
-      apiKey: "{{settings.training_api_key}}",
-      mode: "{{settings.training_api_mode}}",
-      iframeUrl: "{{settings.training_iframe_url}}"
-    };
-  </script>
+<link rel="stylesheet" href="{{asset 'training-bookings.css'}}">
+<script>
+  window.TRAINING_BOOKING_CFG = {
+    baseUrl: "{{settings.training_api_url}}",
+    apiKey: "{{settings.training_api_key}}",
+    mode: "{{settings.training_api_mode}}",
+    iframeUrl: "{{settings.training_iframe_url}}"
+  };
+</script>
+
+<section class="training-bookings">
   <div class="container">
-    <h1>Training Bookings</h1>
-    <p class="training-intro">
-      Select a date range to view available training slots and book a session without leaving the help center.
-    </p>
+    <div class="tb-hero">
+      <h1>Training Bookings</h1>
+      <p class="tb-intro">Browse upcoming training sessions and book a slot directly from the help center.</p>
+    </div>
+
     {{#if signed_in}}
-      <div id="training-booking-root" class="training-booking__root">
-        <div id="training-booking-alert" class="training-booking__alert" role="status" aria-live="polite" hidden></div>
-        <div class="training-booking__panel">
-          <form id="training-booking-filters" class="training-booking__filters" autocomplete="off">
-            <div class="training-booking__field">
-              <label for="training-from">From</label>
-              <input class="form-control" id="training-from" name="from" type="date" required>
-            </div>
-            <div class="training-booking__field">
-              <label for="training-to">To</label>
-              <input class="form-control" id="training-to" name="to" type="date" required>
-            </div>
-            <div class="training-booking__actions">
-              <button class="btn btn-primary" id="training-load" type="submit">Load sessions</button>
-              <button class="btn btn-secondary" id="training-reset" type="button">Reset</button>
-            </div>
-          </form>
-        </div>
-        <div class="training-booking__panel">
-          <div id="training-booking-results" class="training-booking__results">
-            <p class="training-booking__placeholder">Choose a date range and load sessions.</p>
+      <div id="training-booking-root" class="tb-app" data-training-booking-version="v2">
+        <div id="training-booking-alert" class="tb-alert" role="status" aria-live="polite" hidden></div>
+
+        <form id="training-booking-filters" class="tb-filters" autocomplete="off">
+          <div class="tb-field">
+            <label for="training-from">From</label>
+            <input class="form-control" id="training-from" name="from" type="date" required>
           </div>
+          <div class="tb-field">
+            <label for="training-to">To</label>
+            <input class="form-control" id="training-to" name="to" type="date" required>
+          </div>
+          <div class="tb-field">
+            <label for="training-dept-filter">Department</label>
+            <select class="form-control" id="training-dept-filter" name="dept">
+              <option value="">All departments</option>
+              <option value="HR">HR</option>
+              <option value="IT">IT</option>
+              <option value="Finance">Finance</option>
+              <option value="Admin">Admin</option>
+              <option value="Management">Management</option>
+            </select>
+          </div>
+          <div class="tb-field">
+            <label for="training-availability-filter">Availability</label>
+            <select class="form-control" id="training-availability-filter" name="availability">
+              <option value="all">All</option>
+              <option value="open">Open</option>
+              <option value="full">Full</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div class="tb-field">
+            <label for="training-sort">Sort by</label>
+            <select class="form-control" id="training-sort" name="sort">
+              <option value="date">Date</option>
+              <option value="topic">Topic</option>
+              <option value="dept">Department</option>
+            </select>
+          </div>
+          <div class="tb-actions">
+            <button class="btn btn-primary" id="training-load" type="submit">Load sessions</button>
+            <button class="btn btn-secondary" id="training-reset" type="button">Reset</button>
+          </div>
+        </form>
+
+        <div id="training-booking-loading" class="tb-loading" hidden>
+          <span class="tb-spinner" aria-hidden="true"></span>
+          <span>Loading sessions...</span>
         </div>
-        <div id="training-booking-fallback" class="training-booking__fallback" hidden>
-          <p>We could not load the booking tool directly. Use the embedded view below.</p>
-          <iframe id="training-booking-iframe" title="Training booking" loading="lazy"></iframe>
-        </div>
-        <div id="training-booking-modal" class="training-booking__modal" aria-hidden="true" hidden>
-          <div class="training-booking__modal-dialog" role="dialog" aria-modal="true" aria-labelledby="training-modal-title">
-            <div class="training-booking__modal-header">
-              <h2 id="training-modal-title">Book session</h2>
-              <button class="training-booking__modal-close" type="button" id="training-modal-close" aria-label="Close">x</button>
+
+        <div id="training-booking-list" class="tb-list"></div>
+
+        <div id="training-booking-modal" class="tb-modal" aria-hidden="true" hidden>
+          <div class="tb-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="training-booking-modal-title">
+            <div class="tb-modal-header">
+              <h2 class="tb-modal-title" id="training-booking-modal-title">Book a session</h2>
+              <button class="tb-modal-close" type="button" id="training-booking-modal-close" aria-label="Close">x</button>
             </div>
-            <div class="training-booking__modal-body">
-              <p id="training-selected-slot" class="training-booking__slot"></p>
-              <form id="training-booking-form">
-                <input id="training-slot-id" type="hidden">
-                <div class="training-booking__field">
-                  <label for="training-requester-name">Requester name</label>
-                  <input class="form-control" id="training-requester-name" name="requester_name" type="text" required>
+            <div class="tb-modal-body">
+              <div id="training-booking-session-summary" class="tb-session-summary"></div>
+              <form id="training-booking-form" class="tb-form">
+                <input id="training-booking-slot-id" type="hidden">
+                <div class="tb-form-grid">
+                  <div class="tb-field">
+                    <label for="training-booking-requester-name">Requester name</label>
+                    <input class="form-control" id="training-booking-requester-name" name="requester_name" type="text" required>
+                  </div>
+                  <div class="tb-field">
+                    <label for="training-booking-requester-email">Requester email</label>
+                    <input class="form-control" id="training-booking-requester-email" name="requester_email" type="email" required>
+                  </div>
+                  <div class="tb-field">
+                    <label for="training-booking-attendees">Attendees</label>
+                    <input class="form-control" id="training-booking-attendees" name="attendees" type="number" min="1" value="1" required>
+                  </div>
+                  <div class="tb-field">
+                    <label for="training-booking-dept">Department</label>
+                    <select class="form-control" id="training-booking-dept" name="dept">
+                      <option value="">Select department</option>
+                      <option value="HR">HR</option>
+                      <option value="IT">IT</option>
+                      <option value="Finance">Finance</option>
+                      <option value="Admin">Admin</option>
+                      <option value="Management">Management</option>
+                    </select>
+                  </div>
+                  <div class="tb-field">
+                    <label for="training-booking-user-type">User type</label>
+                    <select class="form-control" id="training-booking-user-type" name="user_type" required>
+                      <option value="staff">Staff</option>
+                      <option value="tenant">Tenant</option>
+                      <option value="management">Management</option>
+                    </select>
+                  </div>
+                  <div class="tb-field">
+                    <label for="training-booking-notes">Notes</label>
+                    <textarea class="form-control" id="training-booking-notes" name="notes" rows="3" placeholder="Optional notes"></textarea>
+                  </div>
                 </div>
-                <div class="training-booking__field">
-                  <label for="training-requester-email">Requester email</label>
-                  <input class="form-control" id="training-requester-email" name="requester_email" type="email" required>
-                </div>
-                <div class="training-booking__field">
-                  <label for="training-attendees">Attendees</label>
-                  <input class="form-control" id="training-attendees" name="attendees" type="number" min="1" value="1" required>
-                </div>
-                <div class="training-booking__field">
-                  <label for="training-dept">Department</label>
-                  <input class="form-control" id="training-dept" name="dept" type="text" placeholder="IT">
-                </div>
-                <div class="training-booking__field">
-                  <label for="training-notes">Notes</label>
-                  <textarea class="form-control" id="training-notes" name="notes" rows="3" placeholder="Optional notes"></textarea>
-                </div>
-                <div class="training-booking__actions">
-                  <button class="btn btn-primary" id="training-book-submit" type="submit">Confirm booking</button>
-                  <button class="btn btn-secondary" id="training-modal-cancel" type="button">Cancel</button>
+                <div class="tb-modal-actions">
+                  <button class="btn btn-primary" id="training-booking-submit" type="submit">Submit booking</button>
+                  <button class="btn btn-secondary" id="training-booking-modal-cancel" type="button">Cancel</button>
                 </div>
               </form>
             </div>
@@ -80,10 +126,12 @@
         </div>
       </div>
     {{else}}
-      <p>Sign in to view and book training sessions.</p>
-      <a class="btn btn-primary" href="https://cxe-internal.zendesk.com/hc/en-us/signin?return_to=https://cxe-internal.zendesk.com/hc/en-us/p/training_booking">
-        Sign in
-      </a>
+      <div class="tb-signed-out">
+        <p>Please sign in to view and book training sessions.</p>
+        <a class="btn btn-primary" href="/hc/en-us/signin">Sign in</a>
+      </div>
     {{/if}}
   </div>
 </section>
+
+<script src="{{asset 'training-bookings.js'}}" defer></script>
