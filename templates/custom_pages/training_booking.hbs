@@ -11,7 +11,7 @@
 <section class="training-bookings">
   <div class="container">
     <div class="tb-hero">
-      <h1>Training Bookings</h1>
+      <h1>Training Booking System</h1>
       <p class="tb-intro">Browse upcoming training sessions and book a slot directly from the help center.</p>
     </div>
 
@@ -57,7 +57,7 @@
             </select>
           </div>
           <div class="tb-actions">
-            <button class="btn btn-primary" id="training-load" type="submit">Load sessions</button>
+            <button class="btn btn-primary" id="training-load" type="submit">Refresh</button>
             <button class="btn btn-secondary" id="training-reset" type="button">Reset</button>
           </div>
         </form>
@@ -82,11 +82,11 @@
                 <div class="tb-form-grid">
                   <div class="tb-field">
                     <label for="training-booking-requester-name">Requester name</label>
-                    <input class="form-control" id="training-booking-requester-name" name="requester_name" type="text" required>
+                    <input class="form-control" id="training-booking-requester-name" name="requester_name" type="text" readonly required>
                   </div>
                   <div class="tb-field">
                     <label for="training-booking-requester-email">Requester email</label>
-                    <input class="form-control" id="training-booking-requester-email" name="requester_email" type="email" required>
+                    <input class="form-control" id="training-booking-requester-email" name="requester_email" type="email" readonly required>
                   </div>
                   <div class="tb-field">
                     <label for="training-booking-attendees">Attendees</label>
@@ -113,7 +113,7 @@
                   </div>
                   <div class="tb-field">
                     <label for="training-booking-notes">Notes</label>
-                    <textarea class="form-control" id="training-booking-notes" name="notes" rows="3" placeholder="Optional notes"></textarea>
+                    <textarea class="form-control" id="training-booking-notes" name="notes" rows="3" placeholder="Any questions or special requirements?"></textarea>
                   </div>
                 </div>
                 <div class="tb-modal-actions">

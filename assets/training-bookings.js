@@ -67,23 +67,37 @@
   const dateFormatter = new Intl.DateTimeFormat("en-ZA", {
     weekday: "long",
     year: "numeric",
-    month: "short",
+    month: "long",
     day: "numeric",
-    timeZone: "UTC"
+    timeZone: "Africa/Johannesburg"
   });
 
   let cachedSessions = [];
 
   // Status messaging
-  function setAlert(message, type) {
+  function setAlert(message, type, link) {
     if (!alertEl) {
       return;
     }
 
-    alertEl.textContent = message;
     alertEl.className = "tb-alert";
     if (type) {
       alertEl.classList.add("tb-alert--" + type);
+    }
+    alertEl.innerHTML = "";
+    const textNode = document.createElement("span");
+    textNode.textContent = message;
+    alertEl.appendChild(textNode);
+
+    if (link && link.href && link.label) {
+      const spacer = document.createTextNode(" ");
+      const anchor = document.createElement("a");
+      anchor.href = link.href;
+      anchor.textContent = link.label;
+      anchor.target = "_blank";
+      anchor.rel = "noopener";
+      alertEl.appendChild(spacer);
+      alertEl.appendChild(anchor);
     }
     alertEl.hidden = false;
   }
@@ -104,7 +118,7 @@
     }
     if (loadButton) {
       loadButton.disabled = isLoading;
-      loadButton.textContent = isLoading ? "Loading..." : "Load sessions";
+      loadButton.textContent = isLoading ? "Refreshing..." : "Refresh";
     }
   }
 
@@ -117,10 +131,28 @@
   }
 
   function toIsoDate(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(date.getUTCDate()).padStart(2, "0");
     return year + "-" + month + "-" + day;
+  }
+
+  function getSastDate() {
+    const formatter = new Intl.DateTimeFormat("en-ZA", {
+      timeZone: "Africa/Johannesburg",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    });
+    const parts = formatter.formatToParts(new Date());
+    const lookup = {};
+    parts.forEach(function (part) {
+      lookup[part.type] = part.value;
+    });
+    const year = Number(lookup.year);
+    const month = Number(lookup.month);
+    const day = Number(lookup.day);
+    return new Date(Date.UTC(year, month - 1, day));
   }
 
   function setDefaultDates() {
@@ -128,9 +160,9 @@
       return;
     }
 
-    const today = new Date();
-    const future = new Date();
-    future.setDate(today.getDate() + 30);
+    const today = getSastDate();
+    const future = new Date(today);
+    future.setUTCDate(today.getUTCDate() + 30);
 
     if (!fromInput.value) {
       fromInput.value = toIsoDate(today);
@@ -222,7 +254,7 @@
     if (status === "full") {
       return "Full";
     }
-    return "Open";
+    return "Available";
   }
 
   function createMetaRow(label, value) {
@@ -286,14 +318,29 @@
     topic.className = "tb-topic";
     topic.textContent = session.topic || "Training session";
 
+    const badges = document.createElement("div");
+    badges.className = "tb-badges";
+
+    if (session.dept) {
+      const deptBadge = document.createElement("span");
+      deptBadge.className = "tb-dept-badge";
+      deptBadge.textContent = session.dept;
+      badges.appendChild(deptBadge);
+    }
+
+    const statusBadge = document.createElement("span");
+    statusBadge.className = "tb-status-badge tb-status-badge--" + status;
+    statusBadge.textContent = statusLabel(status);
+    badges.appendChild(statusBadge);
+
     const meta = document.createElement("div");
     meta.className = "tb-meta";
     meta.appendChild(createMetaRow("Vendor", session.vendor || "TBA"));
-    meta.appendChild(createMetaRow("Department", session.dept || "n/a"));
 
     let seatsText = "n/a";
     if (seats.capacity !== null && seats.remaining !== null) {
-      seatsText = seats.remaining + " of " + seats.capacity + " seats";
+      seatsText =
+        seats.remaining + " of " + seats.capacity + " spots remaining";
     }
     meta.appendChild(createMetaRow("Availability", seatsText));
 
@@ -301,39 +348,29 @@
     meta.appendChild(statusRow);
 
     body.appendChild(topic);
+    body.appendChild(badges);
     body.appendChild(meta);
 
     const actions = document.createElement("div");
     actions.className = "tb-card-actions";
 
-    if (status === "full") {
-      const badge = document.createElement("span");
-      badge.className = "tb-badge tb-badge--full";
-      badge.textContent = "FULL";
-      actions.appendChild(badge);
-    }
-
-    if (status === "cancelled") {
-      const badge = document.createElement("span");
-      badge.className = "tb-badge tb-badge--cancelled";
-      badge.textContent = "Cancelled";
-      actions.appendChild(badge);
-    }
-
     if (status === "open" && session.slot_id) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "btn btn-primary";
-      button.textContent = "Book";
+      button.textContent = "Book Now";
       button.addEventListener("click", function () {
         openModal(session);
       });
       actions.appendChild(button);
-    } else if (status !== "open") {
-      const note = document.createElement("span");
-      note.className = "tb-card-note";
-      note.textContent = statusLabel(status);
-      actions.appendChild(note);
+    } else {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn btn-primary";
+      button.textContent = "Book Now";
+      button.disabled = true;
+      button.setAttribute("aria-disabled", "true");
+      actions.appendChild(button);
     }
 
     card.appendChild(header);
@@ -633,7 +670,8 @@
         " | " +
         formatTimeRange(session.start_time, session.end_time) +
         " | " +
-        (session.topic || "Training session");
+        (session.topic || "Training session") +
+        (session.vendor ? " | " + session.vendor : "");
     }
 
     if (deptSelect && session.dept) {
@@ -645,8 +683,19 @@
     if (requesterEmailInput && user.email && !requesterEmailInput.value) {
       requesterEmailInput.value = user.email;
     }
-    if (attendeesInput && !attendeesInput.value) {
-      attendeesInput.value = "1";
+    if (attendeesInput) {
+      if (!attendeesInput.value) {
+        attendeesInput.value = "1";
+      }
+      const seats = seatInfo(session);
+      if (seats.capacity !== null) {
+        attendeesInput.max = String(seats.capacity);
+        if (Number(attendeesInput.value) > seats.capacity) {
+          attendeesInput.value = String(seats.capacity);
+        }
+      } else {
+        attendeesInput.removeAttribute("max");
+      }
     }
 
     modal.hidden = false;
@@ -744,9 +793,22 @@
       }
 
       const bookingId = json && json.data && json.data.booking_id;
+      const ticketUrl =
+        json && json.data && json.data.zendesk && json.data.zendesk.ticket_url;
+      const ticketId =
+        json && json.data && json.data.zendesk && json.data.zendesk.ticket_id;
+      const link = ticketUrl
+        ? {
+            href: ticketUrl,
+            label: ticketId
+              ? "Zendesk ticket #" + ticketId
+              : "View Zendesk ticket"
+          }
+        : null;
       setAlert(
         "Booking confirmed. Reference " + (bookingId || "created") + ".",
-        "success"
+        "success",
+        link
       );
       closeModal();
       await loadSessions();

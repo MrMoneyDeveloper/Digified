@@ -38,6 +38,12 @@
   color: #1c5f34;
 }
 
+.tb-alert a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 .tb-filters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -144,6 +150,41 @@
   color: #1a202c;
 }
 
+.tb-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tb-dept-badge {
+  background: #ebf4ff;
+  color: #2b6cb0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.tb-status-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #e9f8ee;
+  color: #1c5f34;
+}
+
+.tb-status-badge--full {
+  background: #fde2e2;
+  color: #9b1c1c;
+}
+
+.tb-status-badge--cancelled {
+  background: #edf2f7;
+  color: #4a5568;
+}
+
 .tb-meta {
   display: grid;
   gap: 6px;
@@ -170,8 +211,13 @@
   margin-top: auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 10px;
+}
+
+.tb-card-actions .btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .tb-badge {
