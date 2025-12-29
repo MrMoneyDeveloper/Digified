@@ -20,9 +20,12 @@
     settings.training_api_base_url ||
     ""
   ).trim();
-  const apiKey = (cfg.apiKey || settings.training_api_key || "").trim();
+  const apiKey = cfg.apiKey || "";
   const mode = (cfg.mode || settings.training_api_mode || "jsonp").toLowerCase();
   const useJsonp = mode === "jsonp";
+
+  console.log("[training_booking] baseUrl", baseUrl);
+  console.log("[training_booking] apiKey length", apiKey.length);
 
   // Core UI elements
   const alertEl = document.getElementById("training-booking-alert");
@@ -61,7 +64,7 @@
     FAIL_ALREADY_BOOKED: "You have already booked this session.",
     FAIL_INVALID_SLOT: "This session is no longer available.",
     FAIL_CANCELLED: "This session has been cancelled.",
-    UNAUTHORIZED: "API key not accepted. Update training_api_key."
+    UNAUTHORIZED: "API key not accepted."
   };
 
   const dateFormatter = new Intl.DateTimeFormat("en-ZA", {
@@ -579,7 +582,10 @@
       return null;
     }
     if (!apiKey) {
-      setAlert("Set Training API key in theme settings.", "error");
+      setAlert(
+        "Training booking is not configured (missing API key).",
+        "error"
+      );
       return null;
     }
 
@@ -620,7 +626,10 @@
       return;
     }
     if (!apiKey) {
-      setAlert("Set Training API key in theme settings.", "error");
+      setAlert(
+        "Training booking is not configured (missing API key).",
+        "error"
+      );
       return;
     }
 
@@ -757,7 +766,10 @@
       return;
     }
     if (!apiKey) {
-      setAlert("Set Training API key in theme settings.", "error");
+      setAlert(
+        "Training booking is not configured (missing API key).",
+        "error"
+      );
       return;
     }
 
