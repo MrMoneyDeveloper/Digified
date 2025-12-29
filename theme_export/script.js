@@ -1497,3 +1497,330 @@
   setDefaultDateRange();
   loadAndRender();
 })();
+
+(function () {
+  "use strict";
+
+  /*
+   * Digify Calendar API Module
+   *
+   * This module provides functions to interact with the training Calendar API.
+   * It uses a fixed API key and base URL (deployment) as configured in the Digify theme.
+   * By default, it uses the Fetch API for requests. If Fetch requests are blocked
+   * (for example due to CORS), you can switch to JSONP mode by calling
+   * CalendarAPI.setMode("jsonp").
+   *
+   * Usage (Help Center agent guide):
+   * 1. Copy and paste this entire module into the browser console or a snippet
+   *    runner on the help center.
+   * 2. Use the functions to query or book sessions. Examples:
+   *    - CalendarAPI.getSessions("2025-12-01", "2025-12-31").then(console.log).catch(console.error)
+   *    - CalendarAPI.getCalendarSummary("2025-12-01", "2025-12-31").then(console.log).catch(console.error)
+   *    - CalendarAPI.bookSlot("<slotId>", { requester_name: "Agent Name", requester_email: "agent@example.com", attendees: 1, user_type: "staff" }).then(console.log).catch(console.error)
+   * 3. Check the console output for results or error messages.
+   *    Errors are logged with "Calendar API error:".
+   */
+
+  const API_KEY = "c8032a6a14e04710a701aadd27f8e5d5";
+  const BASE_URL =
+    "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec";
+
+  let useJsonp = false;
+
+  const errorMessages = {
+    FAIL_SLOT_FULL: "Sorry, this session is now full.",
+    FAIL_ALREADY_BOOKED: "You have already booked this session.",
+    FAIL_INVALID_SLOT: "This session is no longer available.",
+    FAIL_CANCELLED: "This session has been cancelled.",
+    UNAUTHORIZED: "API key not accepted."
+  };
+
+  function setMode(mode) {
+    useJsonp = typeof mode === "string" && mode.toLowerCase() === "jsonp";
+    console.log(
+      "[CalendarAPI] Mode set to:",
+      useJsonp ? "JSONP (no-CORS)" : "Fetch"
+    );
+  }
+
+  function buildUrl(action, params) {
+    if (!BASE_URL) {
+      return "";
+    }
+    let url;
+    try {
+      url = new URL(BASE_URL);
+    } catch (error) {
+      return "";
+    }
+    if (action) {
+      url.searchParams.set("action", action);
+    }
+    if (params && typeof params === "object") {
+      Object.keys(params).forEach((key) => {
+        if (params[key]) {
+          url.searchParams.set(key, params[key]);
+        }
+      });
+    }
+    if (API_KEY) {
+      url.searchParams.set("api_key", API_KEY);
+    }
+    return url.toString();
+  }
+
+  function buildPostUrl() {
+    if (!BASE_URL) {
+      return "";
+    }
+    try {
+      const url = new URL(BASE_URL);
+      if (API_KEY) {
+        url.searchParams.set("api_key", API_KEY);
+      }
+      return url.toString();
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function jsonpRequest(url) {
+    return new Promise((resolve, reject) => {
+      const callbackName =
+        "calApiJsonpCb_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+      const script = document.createElement("script");
+      let timeoutId = null;
+
+      function cleanup() {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        if (window[callbackName]) {
+          delete window[callbackName];
+        }
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+      }
+
+      window[callbackName] = (data) => {
+        cleanup();
+        resolve(data);
+      };
+
+      script.onerror = () => {
+        cleanup();
+        reject(new Error("JSONP request failed."));
+      };
+
+      timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error("JSONP request timed out."));
+      }, 15000);
+
+      const jsonpUrl =
+        url + (url.indexOf("?") >= 0 ? "&" : "?") + "callback=" + callbackName;
+      script.src = jsonpUrl;
+      (document.head || document.body).appendChild(script);
+    });
+  }
+
+  async function safeJson(response) {
+    if (!response) {
+      return null;
+    }
+    try {
+      return await response.json();
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function apiErrorMessage(json) {
+    if (!json || typeof json !== "object") {
+      return "";
+    }
+    const statusCode = Number(json.statusCode);
+    const hasStatus = !Number.isNaN(statusCode) && statusCode !== 0;
+    const isError = json.success === false || (hasStatus && statusCode !== 200);
+
+    if (!isError) {
+      return "";
+    }
+
+    const code = json.code ? String(json.code) : "";
+    if (code && errorMessages[code]) {
+      return errorMessages[code];
+    }
+
+    const message = json.message ? String(json.message) : "Request failed.";
+    if (code) {
+      return code + ": " + message;
+    }
+    if (hasStatus) {
+      return message + " (status " + statusCode + ")";
+    }
+    return message;
+  }
+
+  function isNetworkError(error) {
+    return error && error.name === "TypeError";
+  }
+
+  async function getSessions(from, to) {
+    try {
+      const url = buildUrl("sessions", { from: from, to: to });
+      if (!url) {
+        throw new Error("Invalid base URL (check BASE_URL).");
+      }
+
+      let json;
+      if (useJsonp) {
+        json = await jsonpRequest(url);
+      } else {
+        const response = await fetch(url, {
+          headers: { Accept: "application/json" }
+        });
+        json = await safeJson(response);
+        if (!response.ok) {
+          throw new Error(apiErrorMessage(json) || "Failed to load sessions.");
+        }
+      }
+
+      const apiErrMsg = apiErrorMessage(json);
+      if (apiErrMsg) {
+        throw new Error(apiErrMsg);
+      }
+
+      if (json && json.data && Array.isArray(json.data.sessions)) {
+        return json.data.sessions;
+      }
+      return [];
+    } catch (error) {
+      if (isNetworkError(error)) {
+        console.error(
+          "Calendar API error: Unable to reach the API (network or CORS issue)."
+        );
+      } else {
+        console.error("Calendar API error:", error.message || error);
+      }
+      throw error;
+    }
+  }
+
+  async function getCalendarSummary(from, to) {
+    try {
+      const url = buildUrl("summary", { from: from, to: to });
+      if (!url) {
+        throw new Error("Invalid base URL (check BASE_URL).");
+      }
+
+      let json;
+      if (useJsonp) {
+        json = await jsonpRequest(url);
+      } else {
+        const response = await fetch(url, {
+          headers: { Accept: "application/json" }
+        });
+        json = await safeJson(response);
+        if (!response.ok) {
+          throw new Error(
+            apiErrorMessage(json) || "Failed to load calendar summary."
+          );
+        }
+      }
+
+      const apiErrMsg = apiErrorMessage(json);
+      if (apiErrMsg) {
+        throw new Error(apiErrMsg);
+      }
+
+      if (json && json.data && json.data.summary) {
+        return json.data.summary;
+      }
+      return {};
+    } catch (error) {
+      if (isNetworkError(error)) {
+        console.error(
+          "Calendar API error: Unable to reach the API (network or CORS issue)."
+        );
+      } else {
+        console.error("Calendar API error:", error.message || error);
+      }
+      throw error;
+    }
+  }
+
+  async function bookSlot(slotId, userInfo) {
+    try {
+      if (!slotId) {
+        throw new Error("Slot ID is required to book a session.");
+      }
+
+      const info = userInfo || {};
+      const payload = {
+        action: "book",
+        slot_id: slotId,
+        requester_name: info.requester_name || "",
+        requester_email: info.requester_email || "",
+        attendees: info.attendees ? String(info.attendees) : "",
+        user_type: info.user_type || "",
+        dept: info.dept || "",
+        notes: info.notes || ""
+      };
+
+      if (!payload.requester_name) {
+        throw new Error("Requester name is required.");
+      }
+      if (!payload.requester_email) {
+        throw new Error("Requester email is required.");
+      }
+      const numAttendees = parseInt(payload.attendees, 10);
+      if (!(numAttendees >= 1)) {
+        throw new Error("Attendees must be at least 1.");
+      }
+      if (!payload.user_type) {
+        throw new Error("User type is required.");
+      }
+
+      const url = buildPostUrl();
+      if (!url) {
+        throw new Error("Invalid base URL (check BASE_URL).");
+      }
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const json = await safeJson(response);
+
+      if (!response.ok) {
+        throw new Error(apiErrorMessage(json) || "Booking failed.");
+      }
+
+      const apiErrMsg = apiErrorMessage(json);
+      if (apiErrMsg) {
+        throw new Error(apiErrMsg);
+      }
+
+      return json && json.data ? json.data : json;
+    } catch (error) {
+      if (isNetworkError(error)) {
+        console.error(
+          "Calendar API error: Unable to reach the API (network or CORS issue)."
+        );
+      } else {
+        console.error("Calendar API error:", error.message || error);
+      }
+      throw error;
+    }
+  }
+
+  window.CalendarAPI = {
+    setMode: setMode,
+    getSessions: getSessions,
+    getCalendarSummary: getCalendarSummary,
+    bookSlot: bookSlot
+  };
+})();
