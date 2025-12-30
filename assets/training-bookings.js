@@ -22,7 +22,15 @@
   ).trim();
   const apiKey = cfg.apiKey || "";
   const mode = (cfg.mode || settings.training_api_mode || "jsonp").toLowerCase();
-  const useJsonp = mode === "jsonp";
+  let isCrossOrigin = false;
+  if (baseUrl) {
+    try {
+      isCrossOrigin = new URL(baseUrl).origin !== window.location.origin;
+    } catch (error) {
+      isCrossOrigin = false;
+    }
+  }
+  const useJsonp = mode === "jsonp" || isCrossOrigin;
 
   console.log("[training_booking] baseUrl", baseUrl);
   console.log("[training_booking] apiKey length", apiKey.length);
