@@ -1505,7 +1505,7 @@
    * Digify Calendar API Module
    *
    * This module provides functions to interact with the training Calendar API.
-   * It pulls the API URL/key from window.TRAINING_BOOKING_CFG or theme settings.
+   * It pulls the API URL/key from booking-config.js (with fallback support).
    * JSONP is used for browser requests to avoid CORS issues. You can still call
    * CalendarAPI.setMode("jsonp") to force JSONP explicitly.
    *
@@ -1521,6 +1521,15 @@
    */
 
   function getConfig() {
+    const configProvider = window.DigifyBookingConfig;
+    if (configProvider && typeof configProvider.getConfig === "function") {
+      const config = configProvider.getConfig();
+      return {
+        baseUrl: (config.baseUrl || "").trim(),
+        apiKey: config.apiKey || ""
+      };
+    }
+
     const helpCenter = window.HelpCenter || {};
     const settings = helpCenter.themeSettings || {};
     const cfg = window.TRAINING_BOOKING_CFG || {};

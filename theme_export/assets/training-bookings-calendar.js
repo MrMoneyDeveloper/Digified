@@ -2,7 +2,7 @@
   "use strict";
 
   // Booking widget notes:
-  // - Uses runtime config from TRAINING_BOOKING_CFG, data attributes, or theme settings.
+  // - Uses runtime config with fallback via booking-config.js.
   // - Auto-detects user type (tenant/staff) from Digify segments.
   // - Single-date UI (no department/availability filters) with today's date defaulted.
   // - JSONP GET for sessions and bookings to avoid CORS.
@@ -18,22 +18,13 @@
   }
 
   const helpCenter = window.HelpCenter || {};
-  const settings = helpCenter.themeSettings || {};
-  // Config block: allow injection via window config, data attributes, or theme settings.
-  const cfg = window.TRAINING_BOOKING_CFG || {};
-  const rootCfg = {
-    baseUrl: root.getAttribute("data-training-base-url") || "",
-    apiKey: root.getAttribute("data-training-api-key") || ""
-  };
-  const baseUrl = (
-    cfg.baseUrl ||
-    rootCfg.baseUrl ||
-    settings.training_api_url ||
-    settings.training_api_base_url ||
-    ""
-  ).trim();
-  const apiKey =
-    cfg.apiKey || rootCfg.apiKey || settings.training_api_key || "";
+  const configProvider = window.DigifyBookingConfig;
+  const config =
+    configProvider && typeof configProvider.getConfig === "function"
+      ? configProvider.getConfig(root)
+      : { baseUrl: "", apiKey: "" };
+  const baseUrl = (config.baseUrl || "").trim();
+  const apiKey = config.apiKey || "";
 
   console.log("[training_booking] baseUrl", baseUrl);
   console.log("[training_booking] apiKey length", apiKey.length);
