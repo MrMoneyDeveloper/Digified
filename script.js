@@ -1908,10 +1908,6 @@ function logFailure(img, phase) {
    *    Errors are logged with "Calendar API error:".
    */
 
-  const DEFAULT_BASE_URL =
-    "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec";
-  const DEFAULT_API_KEY = "c8032a6a14e04710a701aadd27f8e5d5";
-
   function getConfig() {
     const helpCenter = window.HelpCenter || {};
     const settings = helpCenter.themeSettings || {};
@@ -1923,8 +1919,8 @@ function logFailure(img, phase) {
       "";
     const rawApiKey = cfg.apiKey || settings.training_api_key || "";
     return {
-      baseUrl: (rawBaseUrl || DEFAULT_BASE_URL || "").trim(),
-      apiKey: rawApiKey || DEFAULT_API_KEY
+      baseUrl: (rawBaseUrl || "").trim(),
+      apiKey: rawApiKey || ""
     };
   }
 

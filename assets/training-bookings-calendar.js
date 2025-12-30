@@ -2,13 +2,10 @@
   "use strict";
 
   // Booking widget notes:
-  // - Uses dynamic config with fallback defaults for baseUrl/apiKey.
+  // - Uses runtime config from TRAINING_BOOKING_CFG, data attributes, or theme settings.
   // - Auto-detects user type (tenant/staff) from Digify segments.
   // - Single-date UI (no department/availability filters) with today's date defaulted.
   // - JSONP GET for sessions and bookings to avoid CORS.
-  const DEFAULT_BASE_URL =
-    "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec";
-  const DEFAULT_API_KEY = "c8032a6a14e04710a701aadd27f8e5d5";
 
   const path = window.location.pathname || "";
   if (!/\/hc\/[^/]+\/p\/training_booking/.test(path)) {
@@ -33,12 +30,10 @@
     rootCfg.baseUrl ||
     settings.training_api_url ||
     settings.training_api_base_url ||
-    DEFAULT_BASE_URL ||
     ""
   ).trim();
-  const rawApiKey =
+  const apiKey =
     cfg.apiKey || rootCfg.apiKey || settings.training_api_key || "";
-  const apiKey = rawApiKey || DEFAULT_API_KEY;
 
   console.log("[training_booking] baseUrl", baseUrl);
   console.log("[training_booking] apiKey length", apiKey.length);
@@ -91,19 +86,15 @@
 
   function resolveUserType() {
     const segments = window.DigifySegments || window.DigifiedSegments || {};
-    if (segments.isTenantUser || window.isTenantUser) {
-      return "tenant";
-    }
-    if (segments.isInternalUser || segments.isManagementUser || window.isInternalUser) {
-      return "staff";
-    }
-    return "tenant";
+    const isTenant =
+      segments.isTenantUser === true || window.isTenantUser === true;
+    return isTenant ? "tenant" : "staff";
   }
 
   function ensureConfig() {
     if (!baseUrl || !apiKey) {
       throw new Error(
-        "Training booking configuration is missing. Please contact support."
+        "Training booking isn't configured. Please contact support."
       );
     }
   }
@@ -333,16 +324,6 @@
     const todayValue = toIsoDate(today);
     dateInput.value = todayValue;
     selectedDate = todayValue;
-  }
-
-  function addDays(value, days) {
-    const parts = parseDateParts(value);
-    if (!parts) {
-      return value;
-    }
-    const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
-    date.setUTCDate(date.getUTCDate() + days);
-    return toIsoDate(date);
   }
 
   function getSelectedDate() {
@@ -590,10 +571,9 @@
 
     setLoading(true);
     try {
-      const rangeEnd = addDays(selectedDate, 30);
       const json = await jsonpRequest("sessions", {
         from: selectedDate,
-        to: rangeEnd
+        to: selectedDate
       });
       const apiError = apiErrorMessage(json);
       if (apiError) {
