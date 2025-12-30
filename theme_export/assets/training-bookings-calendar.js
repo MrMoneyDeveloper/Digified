@@ -13,29 +13,21 @@
 
   const helpCenter = window.HelpCenter || {};
   const settings = helpCenter.themeSettings || {};
+  // Config block: allow injection via window config, data attributes, or theme settings.
   const cfg = window.TRAINING_BOOKING_CFG || {};
+  const rootCfg = {
+    baseUrl: root.getAttribute("data-training-base-url") || "",
+    apiKey: root.getAttribute("data-training-api-key") || ""
+  };
   const baseUrl = (
     cfg.baseUrl ||
+    rootCfg.baseUrl ||
     settings.training_api_url ||
     settings.training_api_base_url ||
     ""
   ).trim();
-  const apiKey = cfg.apiKey || "";
-  const mode = (cfg.mode || settings.training_api_mode || "jsonp").toLowerCase();
-  let isCrossOrigin = false;
-  if (baseUrl) {
-    try {
-      isCrossOrigin = new URL(baseUrl).origin !== window.location.origin;
-    } catch (error) {
-      isCrossOrigin = false;
-    }
-  }
-  let calendarMode = mode === "fetch" ? "fetch" : "jsonp";
-  if (isCrossOrigin) {
-    calendarMode = "jsonp";
-  }
-  const calendarApi = window.CalendarAPI || null;
-  let calendarApiReady = false;
+  const apiKey =
+    cfg.apiKey || rootCfg.apiKey || settings.training_api_key || "";
 
   console.log("[training_booking] baseUrl", baseUrl);
   console.log("[training_booking] apiKey length", apiKey.length);
@@ -43,9 +35,7 @@
   // Core UI elements
   const alertEl = document.getElementById("training-booking-alert");
   const filtersForm = document.getElementById("training-booking-filters");
-  const fromInput = document.getElementById("training-from");
-  const toInput = document.getElementById("training-to");
-  const deptFilter = document.getElementById("training-dept-filter");
+  const dateInput = document.getElementById("training-date");
   const availabilityFilter = document.getElementById("training-availability-filter");
   const sortSelect = document.getElementById("training-sort");
   const loadButton = document.getElementById("training-load");
@@ -66,12 +56,17 @@
     "training-booking-requester-email"
   );
   const attendeesInput = document.getElementById("training-booking-attendees");
-  const deptSelect = document.getElementById("training-booking-dept");
-  const userTypeSelect = document.getElementById("training-booking-user-type");
   const notesInput = document.getElementById("training-booking-notes");
   const submitButton = document.getElementById("training-booking-submit");
 
   const user = helpCenter.user || {};
+  const errorMessages = {
+    FAIL_SLOT_FULL: "Sorry, this session is now full.",
+    FAIL_ALREADY_BOOKED: "You have already booked this session.",
+    FAIL_INVALID_SLOT: "This session is no longer available.",
+    FAIL_CANCELLED: "This session has been cancelled.",
+    UNAUTHORIZED: "API key not accepted."
+  };
 
   const dateFormatter = new Intl.DateTimeFormat("en-ZA", {
     weekday: "long",
@@ -82,31 +77,142 @@
   });
 
   let cachedSessions = [];
+  let selectedDate = "";
+  let userType = "";
 
-  function initCalendarApi() {
-    if (calendarApiReady) {
-      return true;
+  function resolveUserType() {
+    const segments = window.DigifiedSegments || {};
+    if (segments.isTenantUser || window.isTenantUser) {
+      return "tenant";
     }
-    if (
-      !calendarApi ||
-      typeof calendarApi.getSessions !== "function" ||
-      typeof calendarApi.bookSlot !== "function"
-    ) {
-      return false;
+    if (segments.isInternalUser || segments.isManagementUser || window.isInternalUser) {
+      return "staff";
     }
-    if (typeof calendarApi.setMode === "function") {
-      calendarApi.setMode(calendarMode);
-    }
-    calendarApiReady = true;
-    return true;
+    return "tenant";
   }
 
-  function isNetworkError(error) {
-    return error && error.name === "TypeError";
+  function buildApiUrl(action, params) {
+    if (!baseUrl) {
+      return "";
+    }
+
+    let url;
+    try {
+      url = new URL(baseUrl);
+    } catch (error) {
+      return "";
+    }
+
+    if (action) {
+      url.searchParams.set("action", action);
+    }
+    if (apiKey) {
+      url.searchParams.set("api_key", apiKey);
+    }
+    if (params) {
+      Object.keys(params).forEach((key) => {
+        if (params[key]) {
+          url.searchParams.set(key, params[key]);
+        }
+      });
+    }
+
+    return url.toString();
+  }
+
+  function jsonpRequest(action, params) {
+    return new Promise((resolve, reject) => {
+      const callbackName =
+        "calApiJsonpCb_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+      const url = buildApiUrl(
+        action,
+        Object.assign({}, params, {
+          callback: callbackName,
+          _ts: Date.now()
+        })
+      );
+
+      if (!url) {
+        reject(new Error("Training API URL is invalid."));
+        return;
+      }
+
+      const script = document.createElement("script");
+      let timeoutId = null;
+
+      function cleanup() {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        if (window[callbackName]) {
+          delete window[callbackName];
+        }
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+      }
+
+      window[callbackName] = function (data) {
+        cleanup();
+        resolve(data);
+      };
+
+      script.onerror = function () {
+        cleanup();
+        reject(new Error("JSONP request failed."));
+      };
+
+      timeoutId = setTimeout(function () {
+        cleanup();
+        reject(new Error("JSONP request timed out."));
+      }, 10000);
+
+      script.src = url;
+      (document.head || document.body).appendChild(script);
+    });
+  }
+
+  function apiErrorMessage(json) {
+    if (!json || typeof json !== "object") {
+      return "";
+    }
+
+    const statusCode = Number(json.statusCode);
+    const hasStatus = !Number.isNaN(statusCode) && statusCode !== 0;
+    const isError = json.success === false || (hasStatus && statusCode !== 200);
+
+    if (!isError) {
+      return "";
+    }
+
+    const code = json.code ? String(json.code) : "";
+    if (code && errorMessages[code]) {
+      return errorMessages[code];
+    }
+
+    const message = json.message ? String(json.message) : "Request failed.";
+    if (code) {
+      return code + ": " + message;
+    }
+    if (hasStatus) {
+      return message + " (status " + statusCode + ")";
+    }
+    return message;
+  }
+
+  function friendlyErrorMessage(error, fallback) {
+    const message = error && error.message ? String(error.message) : "";
+    if (
+      message === "JSONP request timed out." ||
+      message === "JSONP request failed."
+    ) {
+      return "Unable to reach the training API. Please try again.";
+    }
+    return message || fallback;
   }
 
   // Status messaging
-  function setAlert(message, type, link) {
+  function setAlert(message, type, options) {
     if (!alertEl) {
       return;
     }
@@ -120,15 +226,30 @@
     textNode.textContent = message;
     alertEl.appendChild(textNode);
 
-    if (link && link.href && link.label) {
+    if (options && options.link && options.link.href && options.link.label) {
       const spacer = document.createTextNode(" ");
       const anchor = document.createElement("a");
-      anchor.href = link.href;
-      anchor.textContent = link.label;
+      anchor.href = options.link.href;
+      anchor.textContent = options.link.label;
       anchor.target = "_blank";
       anchor.rel = "noopener";
       alertEl.appendChild(spacer);
       alertEl.appendChild(anchor);
+    }
+    if (
+      options &&
+      options.action &&
+      options.action.label &&
+      typeof options.action.onClick === "function"
+    ) {
+      const spacer = document.createTextNode(" ");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn btn-secondary tb-alert-action";
+      button.textContent = options.action.label;
+      button.addEventListener("click", options.action.onClick);
+      alertEl.appendChild(spacer);
+      alertEl.appendChild(button);
     }
     alertEl.hidden = false;
   }
@@ -187,20 +308,31 @@
   }
 
   function setDefaultDates() {
-    if (!fromInput || !toInput) {
+    if (!dateInput) {
       return;
     }
 
     const today = getSastDate();
-    const future = new Date(today);
-    future.setUTCDate(today.getUTCDate() + 30);
+    const todayValue = toIsoDate(today);
+    dateInput.value = todayValue;
+    selectedDate = todayValue;
+  }
 
-    if (!fromInput.value) {
-      fromInput.value = toIsoDate(today);
+  function addDays(value, days) {
+    const parts = parseDateParts(value);
+    if (!parts) {
+      return value;
     }
-    if (!toInput.value) {
-      toInput.value = toIsoDate(future);
+    const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+    date.setUTCDate(date.getUTCDate() + days);
+    return toIsoDate(date);
+  }
+
+  function getSelectedDate() {
+    if (!dateInput) {
+      return "";
     }
+    return dateInput.value;
   }
 
   function parseDateParts(value) {
@@ -347,17 +479,10 @@
 
     const topic = document.createElement("h3");
     topic.className = "tb-topic";
-    topic.textContent = session.topic || "Training session";
+    topic.textContent = session.topic || "Training Room Session";
 
     const badges = document.createElement("div");
     badges.className = "tb-badges";
-
-    if (session.dept) {
-      const deptBadge = document.createElement("span");
-      deptBadge.className = "tb-dept-badge";
-      deptBadge.textContent = session.dept;
-      badges.appendChild(deptBadge);
-    }
 
     const statusBadge = document.createElement("span");
     statusBadge.className = "tb-status-badge tb-status-badge--" + status;
@@ -416,7 +541,7 @@
     }
 
     if (!sessions.length) {
-      renderPlaceholder("No sessions found for the selected range.");
+      renderPlaceholder("No sessions available for this date.");
       return;
     }
 
@@ -432,14 +557,7 @@
   function applyFilters() {
     let sessions = cachedSessions.slice();
 
-    const dept = deptFilter ? deptFilter.value.trim().toLowerCase() : "";
     const availability = availabilityFilter ? availabilityFilter.value : "all";
-
-    if (dept) {
-      sessions = sessions.filter(function (session) {
-        return String(session.dept || "").toLowerCase() === dept;
-      });
-    }
 
     if (availability !== "all") {
       sessions = sessions.filter(function (session) {
@@ -453,9 +571,6 @@
     sessions.sort(function (a, b) {
       if (sortValue === "topic") {
         return String(a.topic || "").localeCompare(String(b.topic || ""));
-      }
-      if (sortValue === "dept") {
-        return String(a.dept || "").localeCompare(String(b.dept || ""));
       }
 
       const aKey = (a.date || "") + " " + (a.start_time || "");
@@ -475,7 +590,7 @@
     clearAlert();
 
     if (!baseUrl) {
-      setAlert("Set Training API URL in theme settings.", "error");
+      setAlert("Training booking is not configured (missing API URL).", "error");
       return;
     }
     if (!apiKey) {
@@ -485,38 +600,37 @@
       );
       return;
     }
-    if (!initCalendarApi()) {
-      setAlert(
-        "Training booking is not configured (Calendar API module missing).",
-        "error"
-      );
-      return;
-    }
 
-    const from = fromInput ? fromInput.value : "";
-    const to = toInput ? toInput.value : "";
-    if (!from || !to) {
-      setAlert("Select a valid date range.", "error");
+    selectedDate = getSelectedDate();
+    if (!selectedDate) {
+      setAlert("Select a valid date.", "error");
       return;
     }
 
     setLoading(true);
     try {
-      const sessions = await calendarApi.getSessions(from, to);
-      cachedSessions = sessions;
+      const rangeEnd = addDays(selectedDate, 30);
+      const json = await jsonpRequest("sessions", {
+        from: selectedDate,
+        to: rangeEnd
+      });
+      const apiError = apiErrorMessage(json);
+      if (apiError) {
+        throw new Error(apiError);
+      }
+      const sessions =
+        json && json.data && Array.isArray(json.data.sessions)
+          ? json.data.sessions
+          : [];
+      cachedSessions = sessions.filter(function (session) {
+        return session && session.date === selectedDate;
+      });
       applyFiltersAndRender();
     } catch (error) {
-      if (isNetworkError(error)) {
-        setAlert(
-          "Unable to reach the training API. Check network or CORS settings.",
-          "error"
-        );
-        return;
-      }
-      setAlert(
-        error && error.message ? error.message : "Unable to load sessions.",
-        "error"
-      );
+      const message = friendlyErrorMessage(error, "Unable to load sessions.");
+      setAlert(message, "error", {
+        action: { label: "Retry", onClick: loadSessions }
+      });
     } finally {
       setLoading(false);
     }
@@ -524,6 +638,10 @@
 
   function openModal(session) {
     if (!modal) {
+      return;
+    }
+    if (session && session.date && selectedDate && session.date !== selectedDate) {
+      setAlert("Select a session for the chosen date.", "error");
       return;
     }
 
@@ -536,13 +654,10 @@
         " | " +
         formatTimeRange(session.start_time, session.end_time) +
         " | " +
-        (session.topic || "Training session") +
+        (session.topic || "Training Room Session") +
         (session.vendor ? " | " + session.vendor : "");
     }
 
-    if (deptSelect && session.dept) {
-      deptSelect.value = session.dept;
-    }
     if (requesterNameInput && user.name && !requesterNameInput.value) {
       requesterNameInput.value = user.name;
     }
@@ -579,15 +694,27 @@
   }
 
   function buildBookingPayload() {
+    const requesterName =
+      (requesterNameInput && requesterNameInput.value.trim()) ||
+      user.name ||
+      "Zendesk User";
+    const requesterEmail =
+      (requesterEmailInput && requesterEmailInput.value.trim()) ||
+      user.email ||
+      "unknown@example.com";
+    const resolvedUserType = resolveUserType();
+    userType = resolvedUserType;
+    const rawNotes = notesInput ? notesInput.value.trim() : "";
+    const combinedNotes = rawNotes
+      ? "Book Training Room - " + rawNotes
+      : "Book Training Room";
     return {
-      action: "book",
       slot_id: slotIdInput ? slotIdInput.value : "",
-      requester_email: requesterEmailInput ? requesterEmailInput.value.trim() : "",
-      requester_name: requesterNameInput ? requesterNameInput.value.trim() : "",
+      requester_email: requesterEmail,
+      requester_name: requesterName,
       attendees: attendeesInput ? attendeesInput.value : "",
-      notes: notesInput ? notesInput.value.trim() : "",
-      dept: deptSelect ? deptSelect.value : "",
-      user_type: userTypeSelect ? userTypeSelect.value : ""
+      notes: combinedNotes,
+      user_type: resolvedUserType
     };
   }
 
@@ -606,7 +733,7 @@
       return "Attendees must be at least 1.";
     }
     if (!payload.user_type) {
-      return "Select a user type.";
+      return "User type is not available.";
     }
     return "";
   }
@@ -619,19 +746,12 @@
 
     clearAlert();
     if (!baseUrl) {
-      setAlert("Set Training API URL in theme settings.", "error");
+      setAlert("Training booking is not configured (missing API URL).", "error");
       return;
     }
     if (!apiKey) {
       setAlert(
         "Training booking is not configured (missing API key).",
-        "error"
-      );
-      return;
-    }
-    if (!initCalendarApi()) {
-      setAlert(
-        "Training booking is not configured (Calendar API module missing).",
         "error"
       );
       return;
@@ -646,15 +766,20 @@
 
     setBookingLoading(true);
     try {
-      const bookingData = await calendarApi.bookSlot(payload.slot_id, {
+      const json = await jsonpRequest("book", {
+        slot_id: payload.slot_id,
         requester_name: payload.requester_name,
         requester_email: payload.requester_email,
         attendees: payload.attendees,
         user_type: payload.user_type,
-        dept: payload.dept,
         notes: payload.notes
       });
+      const apiError = apiErrorMessage(json);
+      if (apiError) {
+        throw new Error(apiError);
+      }
 
+      const bookingData = json && json.data ? json.data : json;
       const bookingId = bookingData && bookingData.booking_id;
       const ticketUrl =
         bookingData && bookingData.zendesk && bookingData.zendesk.ticket_url;
@@ -671,26 +796,23 @@
       setAlert(
         "Booking confirmed. Reference " + (bookingId || "created") + ".",
         "success",
-        link
+        { link: link }
       );
       closeModal();
       await loadSessions();
     } catch (error) {
-      if (isNetworkError(error)) {
-        setAlert(
-          "Unable to reach the training API. Check network or CORS settings.",
-          "error"
-        );
-        return;
-      }
-      setAlert(error && error.message ? error.message : "Booking failed.", "error");
+      const message = friendlyErrorMessage(error, "Booking failed.");
+      setAlert(message, "error", {
+        action: { label: "Retry", onClick: function () { submitBooking(); } }
+      });
     } finally {
       setBookingLoading(false);
     }
   }
 
+  userType = resolveUserType();
   setDefaultDates();
-  renderPlaceholder("Choose a date range and load sessions.");
+  renderPlaceholder("Choose a date to load sessions.");
 
   if (requesterNameInput && user.name) {
     requesterNameInput.value = user.name;
@@ -714,13 +836,17 @@
       setDefaultDates();
       cachedSessions = [];
       clearAlert();
-      renderPlaceholder("Choose a date range and load sessions.");
+      renderPlaceholder("Choose a date to load sessions.");
     });
   }
 
-  if (deptFilter) {
-    deptFilter.addEventListener("change", applyFiltersAndRender);
+  if (dateInput) {
+    dateInput.addEventListener("change", function () {
+      selectedDate = getSelectedDate();
+      loadSessions();
+    });
   }
+
   if (availabilityFilter) {
     availabilityFilter.addEventListener("change", applyFiltersAndRender);
   }

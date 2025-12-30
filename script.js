@@ -1893,10 +1893,9 @@ function logFailure(img, phase) {
    * Digify Calendar API Module
    *
    * This module provides functions to interact with the training Calendar API.
-   * It uses a fixed API key and base URL (deployment) as configured in the Digify theme.
-   * By default, it uses the Fetch API for requests. If Fetch requests are blocked
-   * (for example due to CORS), you can switch to JSONP mode by calling
-   * CalendarAPI.setMode("jsonp").
+   * It pulls the API URL/key from window.TRAINING_BOOKING_CFG or theme settings.
+   * JSONP is used for browser requests to avoid CORS issues. You can still call
+   * CalendarAPI.setMode("jsonp") to force JSONP explicitly.
    *
    * Usage (Help Center agent guide):
    * 1. Copy and paste this entire module into the browser console or a snippet
@@ -1909,11 +1908,22 @@ function logFailure(img, phase) {
    *    Errors are logged with "Calendar API error:".
    */
 
-  const API_KEY = "c8032a6a14e04710a701aadd27f8e5d5";
-  const BASE_URL =
-    "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec";
+  function getConfig() {
+    const helpCenter = window.HelpCenter || {};
+    const settings = helpCenter.themeSettings || {};
+    const cfg = window.TRAINING_BOOKING_CFG || {};
+    return {
+      baseUrl: (
+        cfg.baseUrl ||
+        settings.training_api_url ||
+        settings.training_api_base_url ||
+        ""
+      ).trim(),
+      apiKey: cfg.apiKey || settings.training_api_key || ""
+    };
+  }
 
-  let useJsonp = false;
+  let useJsonp = true;
 
   const errorMessages = {
     FAIL_SLOT_FULL: "Sorry, this session is now full.",
@@ -1924,20 +1934,24 @@ function logFailure(img, phase) {
   };
 
   function setMode(mode) {
-    useJsonp = typeof mode === "string" && mode.toLowerCase() === "jsonp";
-    console.log(
-      "[CalendarAPI] Mode set to:",
-      useJsonp ? "JSONP (no-CORS)" : "Fetch"
-    );
+    const requested = typeof mode === "string" ? mode.toLowerCase() : "";
+    if (requested && requested !== "jsonp") {
+      console.warn(
+        "[CalendarAPI] Fetch mode is not supported in the Help Center; using JSONP."
+      );
+    }
+    useJsonp = true;
+    console.log("[CalendarAPI] Mode set to:", "JSONP (no-CORS)");
   }
 
   function buildUrl(action, params) {
-    if (!BASE_URL) {
+    const config = getConfig();
+    if (!config.baseUrl) {
       return "";
     }
     let url;
     try {
-      url = new URL(BASE_URL);
+      url = new URL(config.baseUrl);
     } catch (error) {
       return "";
     }
@@ -1951,31 +1965,27 @@ function logFailure(img, phase) {
         }
       });
     }
-    if (API_KEY) {
-      url.searchParams.set("api_key", API_KEY);
+    if (config.apiKey) {
+      url.searchParams.set("api_key", config.apiKey);
     }
     return url.toString();
   }
 
-  function buildPostUrl() {
-    if (!BASE_URL) {
-      return "";
-    }
-    try {
-      const url = new URL(BASE_URL);
-      if (API_KEY) {
-        url.searchParams.set("api_key", API_KEY);
-      }
-      return url.toString();
-    } catch (error) {
-      return "";
-    }
-  }
-
-  function jsonpRequest(url) {
+  function jsonpRequest(action, params) {
     return new Promise((resolve, reject) => {
       const callbackName =
         "calApiJsonpCb_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+      const url = buildUrl(
+        action,
+        Object.assign({}, params, {
+          callback: callbackName,
+          _ts: Date.now()
+        })
+      );
+      if (!url) {
+        reject(new Error("Invalid base URL (check theme settings)."));
+        return;
+      }
       const script = document.createElement("script");
       let timeoutId = null;
 
@@ -2006,22 +2016,9 @@ function logFailure(img, phase) {
         reject(new Error("JSONP request timed out."));
       }, 15000);
 
-      const jsonpUrl =
-        url + (url.indexOf("?") >= 0 ? "&" : "?") + "callback=" + callbackName;
-      script.src = jsonpUrl;
+      script.src = url;
       (document.head || document.body).appendChild(script);
     });
-  }
-
-  async function safeJson(response) {
-    if (!response) {
-      return null;
-    }
-    try {
-      return await response.json();
-    } catch (error) {
-      return null;
-    }
   }
 
   function apiErrorMessage(json) {
@@ -2051,29 +2048,13 @@ function logFailure(img, phase) {
     return message;
   }
 
-  function isNetworkError(error) {
-    return error && error.name === "TypeError";
-  }
 
   async function getSessions(from, to) {
     try {
-      const url = buildUrl("sessions", { from: from, to: to });
-      if (!url) {
-        throw new Error("Invalid base URL (check BASE_URL).");
+      if (!useJsonp) {
+        setMode("jsonp");
       }
-
-      let json;
-      if (useJsonp) {
-        json = await jsonpRequest(url);
-      } else {
-        const response = await fetch(url, {
-          headers: { Accept: "application/json" }
-        });
-        json = await safeJson(response);
-        if (!response.ok) {
-          throw new Error(apiErrorMessage(json) || "Failed to load sessions.");
-        }
-      }
+      const json = await jsonpRequest("sessions", { from: from, to: to });
 
       const apiErrMsg = apiErrorMessage(json);
       if (apiErrMsg) {
@@ -2085,38 +2066,17 @@ function logFailure(img, phase) {
       }
       return [];
     } catch (error) {
-      if (isNetworkError(error)) {
-        console.error(
-          "Calendar API error: Unable to reach the API (network or CORS issue)."
-        );
-      } else {
-        console.error("Calendar API error:", error.message || error);
-      }
+      console.error("Calendar API error:", error.message || error);
       throw error;
     }
   }
 
   async function getCalendarSummary(from, to) {
     try {
-      const url = buildUrl("summary", { from: from, to: to });
-      if (!url) {
-        throw new Error("Invalid base URL (check BASE_URL).");
+      if (!useJsonp) {
+        setMode("jsonp");
       }
-
-      let json;
-      if (useJsonp) {
-        json = await jsonpRequest(url);
-      } else {
-        const response = await fetch(url, {
-          headers: { Accept: "application/json" }
-        });
-        json = await safeJson(response);
-        if (!response.ok) {
-          throw new Error(
-            apiErrorMessage(json) || "Failed to load calendar summary."
-          );
-        }
-      }
+      const json = await jsonpRequest("summary", { from: from, to: to });
 
       const apiErrMsg = apiErrorMessage(json);
       if (apiErrMsg) {
@@ -2128,13 +2088,7 @@ function logFailure(img, phase) {
       }
       return {};
     } catch (error) {
-      if (isNetworkError(error)) {
-        console.error(
-          "Calendar API error: Unable to reach the API (network or CORS issue)."
-        );
-      } else {
-        console.error("Calendar API error:", error.message || error);
-      }
+      console.error("Calendar API error:", error.message || error);
       throw error;
     }
   }
@@ -2147,13 +2101,11 @@ function logFailure(img, phase) {
 
       const info = userInfo || {};
       const payload = {
-        action: "book",
         slot_id: slotId,
         requester_name: info.requester_name || "",
         requester_email: info.requester_email || "",
         attendees: info.attendees ? String(info.attendees) : "",
         user_type: info.user_type || "",
-        dept: info.dept || "",
         notes: info.notes || ""
       };
 
@@ -2171,22 +2123,11 @@ function logFailure(img, phase) {
         throw new Error("User type is required.");
       }
 
-      const url = buildPostUrl();
-      if (!url) {
-        throw new Error("Invalid base URL (check BASE_URL).");
+      if (!useJsonp) {
+        setMode("jsonp");
       }
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const json = await safeJson(response);
-
-      if (!response.ok) {
-        throw new Error(apiErrorMessage(json) || "Booking failed.");
-      }
-
+      const json = await jsonpRequest("book", payload);
       const apiErrMsg = apiErrorMessage(json);
       if (apiErrMsg) {
         throw new Error(apiErrMsg);
@@ -2194,13 +2135,7 @@ function logFailure(img, phase) {
 
       return json && json.data ? json.data : json;
     } catch (error) {
-      if (isNetworkError(error)) {
-        console.error(
-          "Calendar API error: Unable to reach the API (network or CORS issue)."
-        );
-      } else {
-        console.error("Calendar API error:", error.message || error);
-      }
+      console.error("Calendar API error:", error.message || error);
       throw error;
     }
   }

@@ -1,43 +1,32 @@
 <link rel="stylesheet" href="{{asset 'training-bookings.css'}}">
 <script>
   window.TRAINING_BOOKING_CFG = {
-    baseUrl: "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec",
-    apiKey: "c8032a6a14e04710a701aadd27f8e5d5",
-    mode: "{{settings.training_api_mode}}",
-    iframeUrl: "{{settings.training_iframe_url}}"
+    baseUrl: "{{settings.training_api_url}}",
+    apiKey: "{{settings.training_api_key}}"
   };
 </script>
 
 <section class="training-bookings">
   <div class="container">
     <div class="tb-hero">
-      <h1>Training Booking System</h1>
-      <p class="tb-intro">Browse upcoming training sessions and book a slot directly from the help center.</p>
+      <h1>Book Training Room</h1>
+      <p class="tb-intro">Select a date to view available training room sessions.</p>
     </div>
 
     {{#if signed_in}}
-      <div id="training-booking-root" class="tb-app" data-training-booking-version="v2">
+      <div
+        id="training-booking-root"
+        class="tb-app"
+        data-training-booking-version="v2"
+        data-training-base-url="{{settings.training_api_url}}"
+        data-training-api-key="{{settings.training_api_key}}"
+      >
         <div id="training-booking-alert" class="tb-alert" role="status" aria-live="polite" hidden></div>
 
         <form id="training-booking-filters" class="tb-filters" autocomplete="off">
           <div class="tb-field">
-            <label for="training-from">From</label>
-            <input class="form-control" id="training-from" name="from" type="date" required>
-          </div>
-          <div class="tb-field">
-            <label for="training-to">To</label>
-            <input class="form-control" id="training-to" name="to" type="date" required>
-          </div>
-          <div class="tb-field">
-            <label for="training-dept-filter">Department</label>
-            <select class="form-control" id="training-dept-filter" name="dept">
-              <option value="">All departments</option>
-              <option value="HR">HR</option>
-              <option value="IT">IT</option>
-              <option value="Finance">Finance</option>
-              <option value="Admin">Admin</option>
-              <option value="Management">Management</option>
-            </select>
+            <label for="training-date">Date</label>
+            <input class="form-control" id="training-date" name="date" type="date" required>
           </div>
           <div class="tb-field">
             <label for="training-availability-filter">Availability</label>
@@ -53,7 +42,6 @@
             <select class="form-control" id="training-sort" name="sort">
               <option value="date">Date</option>
               <option value="topic">Topic</option>
-              <option value="dept">Department</option>
             </select>
           </div>
           <div class="tb-actions">
@@ -91,25 +79,6 @@
                   <div class="tb-field">
                     <label for="training-booking-attendees">Attendees</label>
                     <input class="form-control" id="training-booking-attendees" name="attendees" type="number" min="1" value="1" required>
-                  </div>
-                  <div class="tb-field">
-                    <label for="training-booking-dept">Department</label>
-                    <select class="form-control" id="training-booking-dept" name="dept">
-                      <option value="">Select department</option>
-                      <option value="HR">HR</option>
-                      <option value="IT">IT</option>
-                      <option value="Finance">Finance</option>
-                      <option value="Admin">Admin</option>
-                      <option value="Management">Management</option>
-                    </select>
-                  </div>
-                  <div class="tb-field">
-                    <label for="training-booking-user-type">User type</label>
-                    <select class="form-control" id="training-booking-user-type" name="user_type" required>
-                      <option value="staff">Staff</option>
-                      <option value="tenant">Tenant</option>
-                      <option value="management">Management</option>
-                    </select>
                   </div>
                   <div class="tb-field">
                     <label for="training-booking-notes">Notes</label>
