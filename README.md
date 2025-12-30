@@ -41,7 +41,7 @@ Custom page setup:
 - Create a Zendesk Guide custom page with slug `training_booking`.
 - Assign the `training_booking` custom template (backed by `templates/custom_pages/training_booking.hbs`).
 - The resulting URL should be `/hc/en-us/p/training_booking`.
-- The template loads `assets/training-bookings.js` and `assets/training-bookings.css` for the booking UI.
+- The template loads `assets/training-bookings-calendar.js` and `assets/training-bookings.css` for the booking UI.
 
 Validation checklist:
 - Visit `https://cxe-internal.zendesk.com/hc/en-us/p/training_booking` and confirm the template loads.
