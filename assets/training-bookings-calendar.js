@@ -5,7 +5,7 @@
   // - Uses runtime config with fallback via booking-config.js.
   // - Auto-detects user type (tenant/staff) from Digify segments.
   // - Attendees are fixed at 1; only notes are editable.
-  // - Vendor is set to the booker's name after booking.
+  // - "Reserved by" is set to the booker's name after booking.
   // - Zendesk ticket creation happens server-side (Apps Script).
   // - Single-date UI (no department/availability filters) with today's date defaulted.
   // - JSONP GET for sessions and bookings to avoid CORS.
@@ -378,6 +378,39 @@
     return single ? single + " SAST" : "";
   }
 
+  function parseTimeToMinutes(value) {
+    if (!value) {
+      return null;
+    }
+    const parts = value.split(":");
+    if (parts.length < 2) {
+      return null;
+    }
+    const hours = Number(parts[0]);
+    const minutes = Number(parts[1]);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+      return null;
+    }
+    return hours * 60 + minutes;
+  }
+
+  function isWithinSessionWindow(session) {
+    const startMinutes = parseTimeToMinutes(session.start_time);
+    const endMinutes = parseTimeToMinutes(session.end_time);
+    const windowStart = 8 * 60;
+    const windowEnd = 12 * 60;
+    if (startMinutes === null) {
+      return true;
+    }
+    if (startMinutes < windowStart || startMinutes >= windowEnd) {
+      return false;
+    }
+    if (endMinutes !== null && endMinutes > windowEnd) {
+      return false;
+    }
+    return true;
+  }
+
   function seatInfo(session) {
     const capacity = Number(session.capacity);
     const booked = Number(session.booked_count);
@@ -414,7 +447,8 @@
     return "Available";
   }
 
-  function createMetaRow(label, value) {
+  function createMetaRow(label, value, options) {
+    const allowBlank = options && options.allowBlank;
     const row = document.createElement("div");
     row.className = "tb-meta-row";
 
@@ -424,7 +458,7 @@
 
     const valueEl = document.createElement("span");
     valueEl.className = "tb-meta-value";
-    valueEl.textContent = value || "n/a";
+    valueEl.textContent = allowBlank ? value || "" : value || "n/a";
 
     row.appendChild(labelEl);
     row.appendChild(valueEl);
@@ -485,7 +519,10 @@
 
     const meta = document.createElement("div");
     meta.className = "tb-meta";
-    meta.appendChild(createMetaRow("Vendor", session.vendor || "CX Experts"));
+    const reservedBy = status === "open" ? "" : session.vendor || "";
+    meta.appendChild(
+      createMetaRow("Reserved by", reservedBy, { allowBlank: true })
+    );
 
     let seatsText = "n/a";
     if (seats.capacity !== null && seats.remaining !== null) {
@@ -581,7 +618,11 @@
           : [];
       cachedSessions = sessions
         .filter(function (session) {
-          return session && session.date === selectedDate;
+          return (
+            session &&
+            session.date === selectedDate &&
+            isWithinSessionWindow(session)
+          );
         })
         .sort(function (a, b) {
           const aKey = (a.start_time || "") + " " + (a.end_time || "");
@@ -618,7 +659,7 @@
         formatTimeRange(session.start_time, session.end_time) +
         " | " +
         (session.topic || "Training Room Session") +
-        (session.vendor ? " | " + session.vendor : "");
+        (session.vendor ? " | Reserved by " + session.vendor : "");
     }
 
     if (requesterNameInput && user.name && !requesterNameInput.value) {
