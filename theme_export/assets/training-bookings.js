@@ -30,7 +30,12 @@
       isCrossOrigin = false;
     }
   }
-  const useJsonp = mode === "jsonp" || isCrossOrigin;
+  let calendarMode = mode === "fetch" ? "fetch" : "jsonp";
+  if (isCrossOrigin) {
+    calendarMode = "jsonp";
+  }
+  const calendarApi = window.CalendarAPI || null;
+  let calendarApiReady = false;
 
   console.log("[training_booking] baseUrl", baseUrl);
   console.log("[training_booking] apiKey length", apiKey.length);
@@ -67,13 +72,6 @@
   const submitButton = document.getElementById("training-booking-submit");
 
   const user = helpCenter.user || {};
-  const errorMessages = {
-    FAIL_SLOT_FULL: "Sorry, this session is now full.",
-    FAIL_ALREADY_BOOKED: "You have already booked this session.",
-    FAIL_INVALID_SLOT: "This session is no longer available.",
-    FAIL_CANCELLED: "This session has been cancelled.",
-    UNAUTHORIZED: "API key not accepted."
-  };
 
   const dateFormatter = new Intl.DateTimeFormat("en-ZA", {
     weekday: "long",
@@ -84,6 +82,28 @@
   });
 
   let cachedSessions = [];
+
+  function initCalendarApi() {
+    if (calendarApiReady) {
+      return true;
+    }
+    if (
+      !calendarApi ||
+      typeof calendarApi.getSessions !== "function" ||
+      typeof calendarApi.bookSlot !== "function"
+    ) {
+      return false;
+    }
+    if (typeof calendarApi.setMode === "function") {
+      calendarApi.setMode(calendarMode);
+    }
+    calendarApiReady = true;
+    return true;
+  }
+
+  function isNetworkError(error) {
+    return error && error.name === "TypeError";
+  }
 
   // Status messaging
   function setAlert(message, type, link) {
@@ -450,182 +470,7 @@
     renderSessions(applyFilters());
   }
 
-  // API helpers
-  function buildUrl(action, params) {
-    if (!baseUrl) {
-      return "";
-    }
-
-    let url;
-    try {
-      url = new URL(baseUrl);
-    } catch (error) {
-      return "";
-    }
-
-    if (action) {
-      url.searchParams.set("action", action);
-    }
-
-    if (params) {
-      Object.keys(params).forEach(function (key) {
-        if (params[key]) {
-          url.searchParams.set(key, params[key]);
-        }
-      });
-    }
-
-    if (apiKey) {
-      url.searchParams.set("api_key", apiKey);
-    }
-
-    return url.toString();
-  }
-
-  function buildPostUrl() {
-    if (!baseUrl) {
-      return "";
-    }
-    try {
-      const url = new URL(baseUrl);
-      if (apiKey) {
-        url.searchParams.set("api_key", apiKey);
-      }
-      return url.toString();
-    } catch (error) {
-      return "";
-    }
-  }
-
-  function jsonpRequest(url) {
-    return new Promise(function (resolve, reject) {
-      const callbackName =
-        "trainingJsonpCallback_" +
-        Date.now() +
-        "_" +
-        Math.floor(Math.random() * 1000);
-      const script = document.createElement("script");
-      let timeoutId = null;
-
-      function cleanup() {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-        if (window[callbackName]) {
-          delete window[callbackName];
-        }
-        if (script.parentNode) {
-          script.parentNode.removeChild(script);
-        }
-      }
-
-      window[callbackName] = function (data) {
-        cleanup();
-        resolve(data);
-      };
-
-      script.onerror = function () {
-        cleanup();
-        reject(new Error("JSONP request failed."));
-      };
-
-      timeoutId = setTimeout(function () {
-        cleanup();
-        reject(new Error("JSONP request timed out."));
-      }, 15000);
-
-      const jsonpUrl = url + (url.indexOf("?") >= 0 ? "&" : "?") + "callback=" + callbackName;
-      script.src = jsonpUrl;
-      (document.head || document.body).appendChild(script);
-    });
-  }
-
-  function safeJson(response) {
-    if (!response) {
-      return Promise.resolve(null);
-    }
-    return response
-      .json()
-      .catch(function () {
-        return null;
-      });
-  }
-
-  function apiErrorMessage(json) {
-    if (!json || typeof json !== "object") {
-      return "";
-    }
-
-    const statusCode = Number(json.statusCode);
-    const hasStatus = !Number.isNaN(statusCode) && statusCode !== 0;
-    const isError = json.success === false || (hasStatus && statusCode !== 200);
-
-    if (!isError) {
-      return "";
-    }
-
-    const code = json.code ? String(json.code) : "";
-    if (code && errorMessages[code]) {
-      return errorMessages[code];
-    }
-
-    const message = json.message ? String(json.message) : "Request failed.";
-    if (code) {
-      return code + ": " + message;
-    }
-    if (hasStatus) {
-      return message + " (status " + statusCode + ")";
-    }
-    return message;
-  }
-
-  function isNetworkError(error) {
-    return error && error.name === "TypeError";
-  }
-
   // Sessions flow
-  async function fetchSessions(from, to) {
-    if (!baseUrl) {
-      setAlert("Set Training API URL in theme settings.", "error");
-      return null;
-    }
-    if (!apiKey) {
-      setAlert(
-        "Training booking is not configured (missing API key).",
-        "error"
-      );
-      return null;
-    }
-
-    const url = buildUrl("sessions", { from: from, to: to });
-    if (!url) {
-      setAlert("Training API URL is invalid.", "error");
-      return null;
-    }
-
-    let json = null;
-    if (useJsonp) {
-      json = await jsonpRequest(url);
-    } else {
-      const response = await fetch(url, { headers: { Accept: "application/json" } });
-      json = await safeJson(response);
-      if (!response.ok) {
-        throw new Error(apiErrorMessage(json) || "Failed to load sessions.");
-      }
-    }
-
-    const apiError = apiErrorMessage(json);
-    if (apiError) {
-      throw new Error(apiError);
-    }
-
-    if (json && json.data && Array.isArray(json.data.sessions)) {
-      return json.data.sessions;
-    }
-
-    return [];
-  }
-
   async function loadSessions() {
     clearAlert();
 
@@ -640,6 +485,13 @@
       );
       return;
     }
+    if (!initCalendarApi()) {
+      setAlert(
+        "Training booking is not configured (Calendar API module missing).",
+        "error"
+      );
+      return;
+    }
 
     const from = fromInput ? fromInput.value : "";
     const to = toInput ? toInput.value : "";
@@ -650,10 +502,7 @@
 
     setLoading(true);
     try {
-      const sessions = await fetchSessions(from, to);
-      if (sessions === null) {
-        return;
-      }
+      const sessions = await calendarApi.getSessions(from, to);
       cachedSessions = sessions;
       applyFiltersAndRender();
     } catch (error) {
@@ -780,6 +629,13 @@
       );
       return;
     }
+    if (!initCalendarApi()) {
+      setAlert(
+        "Training booking is not configured (Calendar API module missing).",
+        "error"
+      );
+      return;
+    }
 
     const payload = buildBookingPayload();
     const validation = validatePayload(payload);
@@ -788,35 +644,22 @@
       return;
     }
 
-    const postUrl = buildPostUrl();
-    if (!postUrl) {
-      setAlert("Training API URL is invalid.", "error");
-      return;
-    }
-
     setBookingLoading(true);
     try {
-      const response = await fetch(postUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+      const bookingData = await calendarApi.bookSlot(payload.slot_id, {
+        requester_name: payload.requester_name,
+        requester_email: payload.requester_email,
+        attendees: payload.attendees,
+        user_type: payload.user_type,
+        dept: payload.dept,
+        notes: payload.notes
       });
-      const json = await safeJson(response);
 
-      if (!response.ok) {
-        throw new Error(apiErrorMessage(json) || "Booking failed.");
-      }
-
-      const apiError = apiErrorMessage(json);
-      if (apiError) {
-        throw new Error(apiError);
-      }
-
-      const bookingId = json && json.data && json.data.booking_id;
+      const bookingId = bookingData && bookingData.booking_id;
       const ticketUrl =
-        json && json.data && json.data.zendesk && json.data.zendesk.ticket_url;
+        bookingData && bookingData.zendesk && bookingData.zendesk.ticket_url;
       const ticketId =
-        json && json.data && json.data.zendesk && json.data.zendesk.ticket_id;
+        bookingData && bookingData.zendesk && bookingData.zendesk.ticket_id;
       const link = ticketUrl
         ? {
             href: ticketUrl,
