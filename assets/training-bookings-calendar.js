@@ -4,6 +4,9 @@
   // Booking widget notes:
   // - Uses runtime config with fallback via booking-config.js.
   // - Auto-detects user type (tenant/staff) from Digify segments.
+  // - Attendees are fixed at 1; only notes are editable.
+  // - Vendor is set to the booker's name after booking.
+  // - Zendesk ticket creation happens server-side (Apps Script).
   // - Single-date UI (no department/availability filters) with today's date defaulted.
   // - JSONP GET for sessions and bookings to avoid CORS.
 
@@ -50,7 +53,6 @@
   const requesterEmailInput = document.getElementById(
     "training-booking-requester-email"
   );
-  const attendeesInput = document.getElementById("training-booking-attendees");
   const notesInput = document.getElementById("training-booking-notes");
   const submitButton = document.getElementById("training-booking-submit");
 
@@ -110,8 +112,11 @@
     }
     if (params) {
       Object.keys(params).forEach((key) => {
-        if (params[key]) {
-          url.searchParams.set(key, params[key]);
+        if (Object.prototype.hasOwnProperty.call(params, key)) {
+          const value = params[key];
+          if (value !== undefined && value !== null) {
+            url.searchParams.set(key, value);
+          }
         }
       });
     }
@@ -480,7 +485,7 @@
 
     const meta = document.createElement("div");
     meta.className = "tb-meta";
-    meta.appendChild(createMetaRow("Vendor", session.vendor || "TBA"));
+    meta.appendChild(createMetaRow("Vendor", session.vendor || "CX Experts"));
 
     let seatsText = "n/a";
     if (seats.capacity !== null && seats.remaining !== null) {
@@ -622,21 +627,6 @@
     if (requesterEmailInput && user.email && !requesterEmailInput.value) {
       requesterEmailInput.value = user.email;
     }
-    if (attendeesInput) {
-      if (!attendeesInput.value) {
-        attendeesInput.value = "1";
-      }
-      const seats = seatInfo(session);
-      if (seats.capacity !== null) {
-        attendeesInput.max = String(seats.capacity);
-        if (Number(attendeesInput.value) > seats.capacity) {
-          attendeesInput.value = String(seats.capacity);
-        }
-      } else {
-        attendeesInput.removeAttribute("max");
-      }
-    }
-
     modal.hidden = false;
     modal.setAttribute("aria-hidden", "false");
     document.body.classList.add("tb-modal-open");
@@ -670,7 +660,7 @@
       slot_id: slotIdInput ? slotIdInput.value : "",
       requester_email: requesterEmail,
       requester_name: requesterName,
-      attendees: attendeesInput ? attendeesInput.value : "",
+      attendees: "1",
       notes: combinedNotes,
       user_type: resolvedUserType
     };
@@ -686,14 +676,35 @@
     if (!payload.requester_email) {
       return "Requester email is required.";
     }
-    const attendees = Number(payload.attendees);
-    if (!attendees || attendees < 1) {
-      return "Attendees must be at least 1.";
-    }
     if (!payload.user_type) {
       return "User type is not available.";
     }
     return "";
+  }
+
+  function markSessionBooked(slotId, requesterName) {
+    if (!slotId) {
+      return;
+    }
+    const session = cachedSessions.find(function (item) {
+      return item && item.slot_id === slotId;
+    });
+    if (!session) {
+      return;
+    }
+
+    session.vendor = requesterName || session.vendor;
+    session.available = false;
+    session.status = "full";
+    const capacity = Number(session.capacity);
+    if (!Number.isNaN(capacity) && capacity > 0) {
+      session.booked_count = capacity;
+    } else {
+      session.capacity = session.capacity || 1;
+      session.booked_count = 1;
+    }
+
+    renderSessions(cachedSessions);
   }
 
   // Booking flow
@@ -723,9 +734,10 @@
         slot_id: payload.slot_id,
         requester_name: payload.requester_name,
         requester_email: payload.requester_email,
-        attendees: payload.attendees,
+        attendees: "1",
         user_type: payload.user_type,
-        notes: payload.notes
+        notes: payload.notes,
+        dept: ""
       });
       const apiError = apiErrorMessage(json);
       if (apiError) {
@@ -752,7 +764,7 @@
         { link: link }
       );
       closeModal();
-      await loadSessions();
+      markSessionBooked(payload.slot_id, payload.requester_name);
     } catch (error) {
       const message = friendlyErrorMessage(error, "Booking failed.");
       setAlert(message, "error", {
