@@ -1520,18 +1520,23 @@
    *    Errors are logged with "Calendar API error:".
    */
 
+  const DEFAULT_BASE_URL =
+    "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec";
+  const DEFAULT_API_KEY = "c8032a6a14e04710a701aadd27f8e5d5";
+
   function getConfig() {
     const helpCenter = window.HelpCenter || {};
     const settings = helpCenter.themeSettings || {};
     const cfg = window.TRAINING_BOOKING_CFG || {};
+    const rawBaseUrl =
+      cfg.baseUrl ||
+      settings.training_api_url ||
+      settings.training_api_base_url ||
+      "";
+    const rawApiKey = cfg.apiKey || settings.training_api_key || "";
     return {
-      baseUrl: (
-        cfg.baseUrl ||
-        settings.training_api_url ||
-        settings.training_api_base_url ||
-        ""
-      ).trim(),
-      apiKey: cfg.apiKey || settings.training_api_key || ""
+      baseUrl: (rawBaseUrl || DEFAULT_BASE_URL || "").trim(),
+      apiKey: rawApiKey || DEFAULT_API_KEY
     };
   }
 
@@ -1558,7 +1563,7 @@
 
   function buildUrl(action, params) {
     const config = getConfig();
-    if (!config.baseUrl) {
+    if (!config.baseUrl || !config.apiKey) {
       return "";
     }
     let url;
@@ -1595,7 +1600,11 @@
         })
       );
       if (!url) {
-        reject(new Error("Invalid base URL (check theme settings)."));
+        reject(
+          new Error(
+            "Training booking configuration is missing. Please contact support."
+          )
+        );
         return;
       }
       const script = document.createElement("script");

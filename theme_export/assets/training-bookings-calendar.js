@@ -1,6 +1,15 @@
 (function () {
   "use strict";
 
+  // Booking widget notes:
+  // - Uses dynamic config with fallback defaults for baseUrl/apiKey.
+  // - Auto-detects user type (tenant/staff) from Digify segments.
+  // - Single-date UI (no department/availability filters) with today's date defaulted.
+  // - JSONP GET for sessions and bookings to avoid CORS.
+  const DEFAULT_BASE_URL =
+    "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec";
+  const DEFAULT_API_KEY = "c8032a6a14e04710a701aadd27f8e5d5";
+
   const path = window.location.pathname || "";
   if (!/\/hc\/[^/]+\/p\/training_booking/.test(path)) {
     return;
@@ -24,10 +33,12 @@
     rootCfg.baseUrl ||
     settings.training_api_url ||
     settings.training_api_base_url ||
+    DEFAULT_BASE_URL ||
     ""
   ).trim();
-  const apiKey =
+  const rawApiKey =
     cfg.apiKey || rootCfg.apiKey || settings.training_api_key || "";
+  const apiKey = rawApiKey || DEFAULT_API_KEY;
 
   console.log("[training_booking] baseUrl", baseUrl);
   console.log("[training_booking] apiKey length", apiKey.length);
@@ -36,8 +47,6 @@
   const alertEl = document.getElementById("training-booking-alert");
   const filtersForm = document.getElementById("training-booking-filters");
   const dateInput = document.getElementById("training-date");
-  const availabilityFilter = document.getElementById("training-availability-filter");
-  const sortSelect = document.getElementById("training-sort");
   const loadButton = document.getElementById("training-load");
   const resetButton = document.getElementById("training-reset");
   const listWrap = document.getElementById("training-booking-list");
@@ -81,7 +90,7 @@
   let userType = "";
 
   function resolveUserType() {
-    const segments = window.DigifiedSegments || {};
+    const segments = window.DigifySegments || window.DigifiedSegments || {};
     if (segments.isTenantUser || window.isTenantUser) {
       return "tenant";
     }
@@ -89,6 +98,14 @@
       return "staff";
     }
     return "tenant";
+  }
+
+  function ensureConfig() {
+    if (!baseUrl || !apiKey) {
+      throw new Error(
+        "Training booking configuration is missing. Please contact support."
+      );
+    }
   }
 
   function buildApiUrl(action, params) {
@@ -554,50 +571,14 @@
     listWrap.appendChild(grid);
   }
 
-  function applyFilters() {
-    let sessions = cachedSessions.slice();
-
-    const availability = availabilityFilter ? availabilityFilter.value : "all";
-
-    if (availability !== "all") {
-      sessions = sessions.filter(function (session) {
-        const seats = seatInfo(session);
-        const status = sessionStatus(session, seats);
-        return status === availability;
-      });
-    }
-
-    const sortValue = sortSelect ? sortSelect.value : "date";
-    sessions.sort(function (a, b) {
-      if (sortValue === "topic") {
-        return String(a.topic || "").localeCompare(String(b.topic || ""));
-      }
-
-      const aKey = (a.date || "") + " " + (a.start_time || "");
-      const bKey = (b.date || "") + " " + (b.start_time || "");
-      return aKey.localeCompare(bKey);
-    });
-
-    return sessions;
-  }
-
-  function applyFiltersAndRender() {
-    renderSessions(applyFilters());
-  }
-
   // Sessions flow
   async function loadSessions() {
     clearAlert();
 
-    if (!baseUrl) {
-      setAlert("Training booking is not configured (missing API URL).", "error");
-      return;
-    }
-    if (!apiKey) {
-      setAlert(
-        "Training booking is not configured (missing API key).",
-        "error"
-      );
+    try {
+      ensureConfig();
+    } catch (error) {
+      setAlert(error.message, "error");
       return;
     }
 
@@ -622,10 +603,16 @@
         json && json.data && Array.isArray(json.data.sessions)
           ? json.data.sessions
           : [];
-      cachedSessions = sessions.filter(function (session) {
-        return session && session.date === selectedDate;
-      });
-      applyFiltersAndRender();
+      cachedSessions = sessions
+        .filter(function (session) {
+          return session && session.date === selectedDate;
+        })
+        .sort(function (a, b) {
+          const aKey = (a.start_time || "") + " " + (a.end_time || "");
+          const bKey = (b.start_time || "") + " " + (b.end_time || "");
+          return aKey.localeCompare(bKey);
+        });
+      renderSessions(cachedSessions);
     } catch (error) {
       const message = friendlyErrorMessage(error, "Unable to load sessions.");
       setAlert(message, "error", {
@@ -745,15 +732,10 @@
     }
 
     clearAlert();
-    if (!baseUrl) {
-      setAlert("Training booking is not configured (missing API URL).", "error");
-      return;
-    }
-    if (!apiKey) {
-      setAlert(
-        "Training booking is not configured (missing API key).",
-        "error"
-      );
+    try {
+      ensureConfig();
+    } catch (error) {
+      setAlert(error.message, "error");
       return;
     }
 
@@ -812,7 +794,7 @@
 
   userType = resolveUserType();
   setDefaultDates();
-  renderPlaceholder("Choose a date to load sessions.");
+  renderPlaceholder("Loading sessions...");
 
   if (requesterNameInput && user.name) {
     requesterNameInput.value = user.name;
@@ -836,7 +818,7 @@
       setDefaultDates();
       cachedSessions = [];
       clearAlert();
-      renderPlaceholder("Choose a date to load sessions.");
+      loadSessions();
     });
   }
 
@@ -845,13 +827,6 @@
       selectedDate = getSelectedDate();
       loadSessions();
     });
-  }
-
-  if (availabilityFilter) {
-    availabilityFilter.addEventListener("change", applyFiltersAndRender);
-  }
-  if (sortSelect) {
-    sortSelect.addEventListener("change", applyFiltersAndRender);
   }
 
   if (modalClose) {

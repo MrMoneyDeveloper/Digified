@@ -1,8 +1,8 @@
 <link rel="stylesheet" href="{{asset 'training-bookings.css'}}">
 <script>
   window.TRAINING_BOOKING_CFG = {
-    baseUrl: "{{settings.training_api_url}}",
-    apiKey: "{{settings.training_api_key}}"
+    baseUrl: "{{#if settings.training_api_url}}{{settings.training_api_url}}{{else}}https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec{{/if}}",
+    apiKey: "{{#if settings.training_api_key}}{{settings.training_api_key}}{{else}}c8032a6a14e04710a701aadd27f8e5d5{{/if}}"
   };
 </script>
 
@@ -18,8 +18,8 @@
         id="training-booking-root"
         class="tb-app"
         data-training-booking-version="v2"
-        data-training-base-url="{{settings.training_api_url}}"
-        data-training-api-key="{{settings.training_api_key}}"
+        data-training-base-url="{{#if settings.training_api_url}}{{settings.training_api_url}}{{else}}https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec{{/if}}"
+        data-training-api-key="{{#if settings.training_api_key}}{{settings.training_api_key}}{{else}}c8032a6a14e04710a701aadd27f8e5d5{{/if}}"
       >
         <div id="training-booking-alert" class="tb-alert" role="status" aria-live="polite" hidden></div>
 
@@ -27,22 +27,6 @@
           <div class="tb-field">
             <label for="training-date">Date</label>
             <input class="form-control" id="training-date" name="date" type="date" required>
-          </div>
-          <div class="tb-field">
-            <label for="training-availability-filter">Availability</label>
-            <select class="form-control" id="training-availability-filter" name="availability">
-              <option value="all">All</option>
-              <option value="open">Open</option>
-              <option value="full">Full</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-          <div class="tb-field">
-            <label for="training-sort">Sort by</label>
-            <select class="form-control" id="training-sort" name="sort">
-              <option value="date">Date</option>
-              <option value="topic">Topic</option>
-            </select>
           </div>
           <div class="tb-actions">
             <button class="btn btn-primary" id="training-load" type="submit">Refresh</button>
@@ -60,7 +44,7 @@
         <div id="training-booking-modal" class="tb-modal" aria-hidden="true" hidden>
           <div class="tb-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="training-booking-modal-title">
             <div class="tb-modal-header">
-              <h2 class="tb-modal-title" id="training-booking-modal-title">Book a session</h2>
+              <h2 class="tb-modal-title" id="training-booking-modal-title">Book Training Room</h2>
               <button class="tb-modal-close" type="button" id="training-booking-modal-close" aria-label="Close">x</button>
             </div>
             <div class="tb-modal-body">
