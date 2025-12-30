@@ -85,7 +85,7 @@
   function ensureConfig() {
     if (!baseUrl || !apiKey) {
       throw new Error(
-        "Training booking isn't configured. Please contact support."
+        "Training booking is not configured. Please contact an admin."
       );
     }
   }

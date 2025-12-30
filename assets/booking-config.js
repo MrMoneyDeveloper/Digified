@@ -2,39 +2,28 @@
   "use strict";
 
   // Booking API config helper.
-  // Reads config from TRAINING_BOOKING_CFG, data attributes, or theme settings.
+  // Reads config from window.TRAINING_BOOKING_CFG first, then falls back.
   // Falls back to the temporary values below if runtime config is missing.
   // NOTE: Remove these fallback values before any public release.
-  const FALLBACK_BASE_URL =
-    "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec";
-  const FALLBACK_API_KEY = "c8032a6a14e04710a701aadd27f8e5d5";
+  const FALLBACK_BOOKING_CONFIG = {
+    baseUrl:
+      "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec",
+    apiKey: "c8032a6a14e04710a701aadd27f8e5d5"
+  };
 
-  function getConfig(rootEl) {
-    const helpCenter = window.HelpCenter || {};
-    const settings = helpCenter.themeSettings || {};
-    const cfg = window.TRAINING_BOOKING_CFG || {};
-    const root =
-      rootEl || document.getElementById("training-booking-root") || null;
-    const rootCfg = root
-      ? {
-          baseUrl: root.getAttribute("data-training-base-url") || "",
-          apiKey: root.getAttribute("data-training-api-key") || ""
-        }
-      : { baseUrl: "", apiKey: "" };
-
-    const baseUrl = (
-      cfg.baseUrl ||
-      rootCfg.baseUrl ||
-      settings.training_api_url ||
-      settings.training_api_base_url ||
-      ""
-    ).trim();
-    const apiKey =
-      cfg.apiKey || rootCfg.apiKey || settings.training_api_key || "";
-
+  function normalizeConfig(cfg) {
     return {
-      baseUrl: baseUrl || FALLBACK_BASE_URL,
-      apiKey: apiKey || FALLBACK_API_KEY
+      baseUrl: cfg && cfg.baseUrl ? String(cfg.baseUrl).trim() : "",
+      apiKey: cfg && cfg.apiKey ? String(cfg.apiKey).trim() : ""
+    };
+  }
+
+  function getConfig() {
+    const runtime = normalizeConfig(window.TRAINING_BOOKING_CFG || {});
+    const fallback = FALLBACK_BOOKING_CONFIG || { baseUrl: "", apiKey: "" };
+    return {
+      baseUrl: runtime.baseUrl || fallback.baseUrl || "",
+      apiKey: runtime.apiKey || fallback.apiKey || ""
     };
   }
 
