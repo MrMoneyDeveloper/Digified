@@ -80,7 +80,9 @@
   function resolveUserType() {
     const segments = window.DigifySegments || window.DigifiedSegments || {};
     const isTenant =
-      segments.isTenantUser === true || window.isTenantUser === true;
+      segments.isTenantUser === true ||
+      window.isTenantUser === true ||
+      document.documentElement.classList.contains("hc-tenant-user");
     return isTenant ? "tenant" : "staff";
   }
 
@@ -128,6 +130,11 @@
     return new Promise((resolve, reject) => {
       const callbackName =
         "calApiJsonpCb_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+      const callbackIsValid = /^[A-Za-z_][A-Za-z0-9_.]*$/.test(callbackName);
+      if (!callbackIsValid) {
+        reject(new Error("Invalid JSONP callback name."));
+        return;
+      }
       const url = buildApiUrl(
         action,
         Object.assign({}, params, {
@@ -378,39 +385,6 @@
     return single ? single + " SAST" : "";
   }
 
-  function parseTimeToMinutes(value) {
-    if (!value) {
-      return null;
-    }
-    const parts = value.split(":");
-    if (parts.length < 2) {
-      return null;
-    }
-    const hours = Number(parts[0]);
-    const minutes = Number(parts[1]);
-    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
-      return null;
-    }
-    return hours * 60 + minutes;
-  }
-
-  function isWithinSessionWindow(session) {
-    const startMinutes = parseTimeToMinutes(session.start_time);
-    const endMinutes = parseTimeToMinutes(session.end_time);
-    const windowStart = 8 * 60;
-    const windowEnd = 12 * 60;
-    if (startMinutes === null) {
-      return true;
-    }
-    if (startMinutes < windowStart || startMinutes >= windowEnd) {
-      return false;
-    }
-    if (endMinutes !== null && endMinutes > windowEnd) {
-      return false;
-    }
-    return true;
-  }
-
   function seatInfo(session) {
     const capacity = Number(session.capacity);
     const booked = Number(session.booked_count);
@@ -507,7 +481,7 @@
 
     const topic = document.createElement("h3");
     topic.className = "tb-topic";
-    topic.textContent = session.topic || "Training Room Session";
+    topic.textContent = "Training Session";
 
     const badges = document.createElement("div");
     badges.className = "tb-badges";
@@ -519,7 +493,7 @@
 
     const meta = document.createElement("div");
     meta.className = "tb-meta";
-    const reservedBy = status === "open" ? "" : session.vendor || "";
+    const reservedBy = session.reserved_by || session.vendor || "";
     meta.appendChild(
       createMetaRow("Reserved by", reservedBy, { allowBlank: true })
     );
@@ -586,8 +560,11 @@
   }
 
   // Sessions flow
-  async function loadSessions() {
-    clearAlert();
+  async function loadSessions(options) {
+    const preserveAlert = options && options.preserveAlert;
+    if (!preserveAlert) {
+      clearAlert();
+    }
 
     try {
       ensureConfig();
@@ -618,11 +595,7 @@
           : [];
       cachedSessions = sessions
         .filter(function (session) {
-          return (
-            session &&
-            session.date === selectedDate &&
-            isWithinSessionWindow(session)
-          );
+          return session && session.date === selectedDate;
         })
         .sort(function (a, b) {
           const aKey = (a.start_time || "") + " " + (a.end_time || "");
@@ -631,6 +604,10 @@
         });
       renderSessions(cachedSessions);
     } catch (error) {
+      if (preserveAlert) {
+        console.warn("[training_booking] Session refresh failed:", error);
+        return;
+      }
       const message = friendlyErrorMessage(error, "Unable to load sessions.");
       setAlert(message, "error", {
         action: { label: "Retry", onClick: loadSessions }
@@ -658,8 +635,10 @@
         " | " +
         formatTimeRange(session.start_time, session.end_time) +
         " | " +
-        (session.topic || "Training Room Session") +
-        (session.vendor ? " | Reserved by " + session.vendor : "");
+        "Training Session" +
+        ((session.reserved_by || session.vendor)
+          ? " | Reserved by " + (session.reserved_by || session.vendor)
+          : "");
     }
 
     if (requesterNameInput && user.name && !requesterNameInput.value) {
@@ -701,7 +680,6 @@
       slot_id: slotIdInput ? slotIdInput.value : "",
       requester_email: requesterEmail,
       requester_name: requesterName,
-      attendees: "1",
       notes: combinedNotes,
       user_type: resolvedUserType
     };
@@ -734,7 +712,10 @@
       return;
     }
 
-    session.vendor = requesterName || session.vendor;
+    const reservedBy =
+      requesterName || session.reserved_by || session.vendor || "";
+    session.vendor = reservedBy;
+    session.reserved_by = reservedBy;
     session.available = false;
     session.status = "full";
     const capacity = Number(session.capacity);
@@ -775,7 +756,6 @@
         slot_id: payload.slot_id,
         requester_name: payload.requester_name,
         requester_email: payload.requester_email,
-        attendees: "1",
         user_type: payload.user_type,
         notes: payload.notes,
         dept: ""
@@ -787,25 +767,27 @@
 
       const bookingData = json && json.data ? json.data : json;
       const bookingId = bookingData && bookingData.booking_id;
-      const ticketUrl =
-        bookingData && bookingData.zendesk && bookingData.zendesk.ticket_url;
-      const ticketId =
-        bookingData && bookingData.zendesk && bookingData.zendesk.ticket_id;
-      const link = ticketUrl
-        ? {
-            href: ticketUrl,
-            label: ticketId
-              ? "Zendesk ticket #" + ticketId
-              : "View Zendesk ticket"
-          }
-        : null;
+      const isStaff = resolveUserType() === "staff";
+      const agentLink =
+        isStaff && bookingId
+          ? {
+              href:
+                "/agent/search/1?query=" + encodeURIComponent(bookingId),
+              label: "Find ticket in Zendesk"
+            }
+          : null;
+      const message =
+        "Booking confirmed." +
+        (bookingId ? " Booking ID " + bookingId + "." : "") +
+        " Zendesk ticket will be created automatically shortly.";
       setAlert(
-        "Booking confirmed. Reference " + (bookingId || "created") + ".",
+        message,
         "success",
-        { link: link }
+        agentLink ? { link: agentLink } : null
       );
       closeModal();
       markSessionBooked(payload.slot_id, payload.requester_name);
+      loadSessions({ preserveAlert: true });
     } catch (error) {
       const message = friendlyErrorMessage(error, "Booking failed.");
       setAlert(message, "error", {
