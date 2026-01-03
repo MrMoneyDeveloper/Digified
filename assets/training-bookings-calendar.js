@@ -113,6 +113,13 @@
     day: "numeric",
     timeZone: "Africa/Johannesburg"
   });
+  const bookedAtFormatter = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
 
   let cachedSessions = [];
   let selectedDate = "";
@@ -444,9 +451,28 @@
     return single ? single + " SAST" : "";
   }
 
+  function formatBookedAt(value) {
+    if (!value) {
+      return "";
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return "";
+    }
+    return bookedAtFormatter.format(parsed);
+  }
+
   function seatInfo(session) {
     const capacity = Number(session.capacity);
-    const booked = Number(session.booked_count);
+    const bookedRaw =
+      session.booked_count !== undefined
+        ? session.booked_count
+        : session.bookedcount !== undefined
+          ? session.bookedcount
+          : session.bookedCount !== undefined
+            ? session.bookedCount
+            : session.booked;
+    const booked = Number(bookedRaw);
     if (Number.isNaN(capacity) || Number.isNaN(booked)) {
       return { capacity: null, booked: null, remaining: null };
     }
@@ -509,12 +535,16 @@
     listWrap.appendChild(placeholder);
   }
 
-  function buildCard(session) {
+  function buildCard(session, index) {
     const seats = seatInfo(session);
     const status = sessionStatus(session, seats);
 
     const card = document.createElement("article");
     card.className = "tb-card tb-card--" + status;
+    if (typeof index === "number") {
+      const delay = Math.min(index * 40, 200);
+      card.style.setProperty("--tb-card-delay", `${delay}ms`);
+    }
     if (session.slot_id) {
       card.setAttribute("data-slot-id", session.slot_id);
     }
@@ -535,8 +565,24 @@
     timeEl.textContent = formatTimeRange(session.start_time, session.end_time);
 
     header.appendChild(dot);
-    header.appendChild(dateEl);
-    header.appendChild(timeEl);
+    const dateWrap = document.createElement("div");
+    dateWrap.className = "tb-date-wrap";
+    const dateIcon = document.createElement("span");
+    dateIcon.className = "tb-icon tb-icon--date";
+    dateIcon.setAttribute("aria-hidden", "true");
+    dateWrap.appendChild(dateIcon);
+    dateWrap.appendChild(dateEl);
+
+    const timeWrap = document.createElement("div");
+    timeWrap.className = "tb-time-wrap";
+    const timeIcon = document.createElement("span");
+    timeIcon.className = "tb-icon tb-icon--time";
+    timeIcon.setAttribute("aria-hidden", "true");
+    timeWrap.appendChild(timeIcon);
+    timeWrap.appendChild(timeEl);
+
+    header.appendChild(dateWrap);
+    header.appendChild(timeWrap);
 
     const body = document.createElement("div");
     body.className = "tb-card-body";
@@ -557,10 +603,16 @@
     meta.className = "tb-meta";
     const reservedBy =
       session.reserved_by || session.reservedby || session.vendor || "";
+    const bookedAt = session.booked_at || session.bookedAt || "";
+    const bookedAtLabel = formatBookedAt(bookedAt);
     const isBooked = status === "full";
     if (isBooked) {
       const bookerName = reservedBy || "Unknown";
-      card.setAttribute("title", "Booked by: " + bookerName);
+      card.setAttribute("data-tooltip-title", "Reserved by " + bookerName);
+      card.setAttribute(
+        "data-tooltip-sub",
+        bookedAtLabel || "Booking time unavailable"
+      );
     }
     const reservedRow = createMetaRow("Reserved by", reservedBy, {
       allowBlank: true
@@ -574,6 +626,28 @@
         seats.remaining + " of " + seats.capacity + " spots remaining";
     }
     meta.appendChild(createMetaRow("Availability", seatsText));
+
+    const progress = document.createElement("div");
+    progress.className = "tb-progress";
+    const progressTrack = document.createElement("div");
+    progressTrack.className = "tb-progress__track";
+    const progressBar = document.createElement("div");
+    progressBar.className = "tb-progress__bar tb-progress__bar--" + status;
+    const progressRatio =
+      seats.capacity && seats.booked !== null && seats.capacity > 0
+        ? Math.min(seats.booked / seats.capacity, 1)
+        : 0;
+    progressBar.style.setProperty("--tb-progress", progressRatio);
+    progressTrack.appendChild(progressBar);
+    const progressLabel = document.createElement("span");
+    progressLabel.className = "tb-progress__label";
+    progressLabel.textContent =
+      seats.capacity !== null && seats.booked !== null
+        ? `${seats.booked} of ${seats.capacity} booked`
+        : "Availability pending";
+    progress.appendChild(progressTrack);
+    progress.appendChild(progressLabel);
+    meta.appendChild(progress);
 
     const statusRow = createMetaRow("Status", statusLabel(status));
     meta.appendChild(statusRow);
@@ -623,8 +697,8 @@
     listWrap.innerHTML = "";
     const grid = document.createElement("div");
     grid.className = "tb-grid";
-    sessions.forEach(function (session) {
-      grid.appendChild(buildCard(session));
+    sessions.forEach(function (session, index) {
+      grid.appendChild(buildCard(session, index));
     });
     listWrap.appendChild(grid);
   }
