@@ -71,8 +71,6 @@
   const slotIdInput = document.getElementById("room-booking-slot-id");
   const requesterNameInput = document.getElementById("room-booking-requester-name");
   const requesterEmailInput = document.getElementById("room-booking-requester-email");
-  const purposeInput = document.getElementById("room-booking-purpose");
-  const attendeesInput = document.getElementById("room-booking-attendees");
   const notesInput = document.getElementById("room-booking-notes");
   const bookSubmit = document.getElementById("room-booking-submit");
 
@@ -461,8 +459,6 @@
       start_time: activeSlot ? activeSlot.start_time : "",
       requester_name: requesterNameInput ? requesterNameInput.value.trim() : "",
       requester_email: requesterEmailInput ? requesterEmailInput.value.trim() : "",
-      purpose: purposeInput ? purposeInput.value.trim() : "",
-      attendees: attendeesInput ? attendeesInput.value : "",
       notes: notesInput ? notesInput.value.trim() : ""
     };
 
@@ -478,12 +474,6 @@
         hasEmail: !!payload.requester_email
       });
       setAlert("Name and email are required.", "error");
-      return;
-    }
-
-    if (!payload.purpose) {
-      logger.warn("Booking validation failed - missing purpose", {});
-      setAlert("Please specify the meeting purpose.", "error");
       return;
     }
 
