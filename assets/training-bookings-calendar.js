@@ -117,6 +117,7 @@
   let cachedSessions = [];
   let selectedDate = "";
   let userType = "";
+  window.selectedSession = null;
 
   function resolveUserType() {
     const segments = window.DigifySegments || window.DigifiedSegments || {};
@@ -125,6 +126,22 @@
       window.isTenantUser === true ||
       document.documentElement.classList.contains("hc-tenant-user");
     return isTenant ? "tenant" : "staff";
+  }
+
+  function setSelectedSession(session) {
+    if (!session) {
+      window.selectedSession = null;
+      return;
+    }
+
+    const slotId = session.slot_id || session.slotid || "";
+    window.selectedSession = {
+      slot_id: slotId,
+      slotid: slotId,
+      date: session.date || "",
+      start_time: session.start_time || session.starttime || "",
+      end_time: session.end_time || session.endtime || ""
+    };
   }
 
   function ensureConfig() {
@@ -693,16 +710,20 @@
       return;
     }
 
+    setSelectedSession(null);
+    setSelectedSession(session);
+    const selectedSession = window.selectedSession || {};
+
     if (slotIdInput) {
-      slotIdInput.value = session.slot_id || "";
+      slotIdInput.value = selectedSession.slot_id || "";
     }
     if (sessionSummary) {
       const reservedByLabel =
         session.reserved_by || session.reservedby || session.vendor || "";
       sessionSummary.textContent =
-        formatDateLabel(session.date) +
+        formatDateLabel(selectedSession.date) +
         " | " +
-        formatTimeRange(session.start_time, session.end_time) +
+        formatTimeRange(selectedSession.start_time, selectedSession.end_time) +
         " | " +
         "Training Session" +
         (reservedByLabel
@@ -764,6 +785,7 @@
       return;
     }
 
+    modalForm.reset();
     const confirmation = modal.querySelector(".tb-booking-confirmation");
     if (confirmation) {
       confirmation.remove();
@@ -771,6 +793,12 @@
 
     modalForm.style.display = "";
 
+    if (slotIdInput) {
+      slotIdInput.value = "";
+    }
+    if (sessionSummary) {
+      sessionSummary.textContent = "";
+    }
     if (notesInput) {
       notesInput.value = "";
     }
@@ -797,11 +825,18 @@
     modal.hidden = true;
     modal.setAttribute("aria-hidden", "true");
     document.body.classList.remove("tb-modal-open");
+    window.selectedSession = null;
     resetBookingForm();
   }
 
   function buildBookingPayload() {
     const currentUser = getCurrentUser();
+    const selectedSession = window.selectedSession || {};
+    const slotId =
+      (slotIdInput && slotIdInput.value.trim()) ||
+      selectedSession.slot_id ||
+      selectedSession.slotid ||
+      "";
     const requesterName =
       (requesterNameInput && requesterNameInput.value.trim()) ||
       currentUser.name ||
@@ -817,7 +852,7 @@
       ? "Book Training Room - " + rawNotes
       : "Book Training Room";
     return {
-      slot_id: slotIdInput ? slotIdInput.value : "",
+      slot_id: slotId,
       requester_email: requesterEmail,
       requester_name: requesterName,
       notes: combinedNotes,
@@ -942,9 +977,12 @@
         agentLink ? { link: agentLink } : null
       );
       showBookingConfirmation(payload.requester_email);
-      setTimeout(closeModal, 2000);
-      markSessionBooked(payload.slot_id, payload.requester_name);
-      loadSessions({ preserveAlert: true });
+      setTimeout(function () {
+        closeModal();
+        window.selectedDate = null;
+        markSessionBooked(payload.slot_id, payload.requester_name);
+        loadSessions({ preserveAlert: true });
+      }, 2000);
     } catch (error) {
       const message = friendlyErrorMessage(error, "Booking failed.");
       setAlert(message, "error", {
