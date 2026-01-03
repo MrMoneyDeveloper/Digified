@@ -1,0 +1,392 @@
+/* Room Booking Styles */
+.room-bookings {
+  padding: 3rem 0;
+  min-height: 60vh;
+}
+
+.rb-hero {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.rb-hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.rb-intro {
+  font-size: 1.125rem;
+  color: #666;
+}
+
+/* Filters */
+.rb-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.rb-field {
+  flex: 1;
+}
+
+.rb-field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.rb-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Alert */
+.rb-alert {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.rb-alert--success {
+  background: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.rb-alert--error {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+/* Loading Spinner */
+.rb-loading {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.125rem;
+  color: #666;
+}
+
+.rb-spinner {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #0066cc;
+  border-radius: 50%;
+  animation: rb-spin 0.8s linear infinite;
+  margin-right: 0.75rem;
+}
+
+@keyframes rb-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Timeline Calendar */
+.rb-timeline-calendar {
+  margin: 2rem 0;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.rb-timeline-header {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.rb-timeline-header h3 {
+  font-size: 1.5rem;
+  color: #333;
+  margin: 0;
+}
+
+/* Timeline Grid - Hourly Blocks */
+.rb-timeline-grid {
+  display: grid;
+  grid-template-columns: 80px repeat(auto-fit, minmax(60px, 1fr));
+  gap: 2px;
+  background: #e9ecef;
+  border: 1px solid #dee2e6;
+  overflow-x: auto;
+}
+
+.rb-time-label {
+  background: #f8f9fa;
+  padding: 1rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #495057;
+  text-align: center;
+  border-right: 1px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rb-time-slot {
+  background: #e7f5e7;
+  padding: 1.5rem 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+}
+
+.rb-time-slot.rb-available {
+  background: #d4edda;
+  border: 2px solid #c3e6cb;
+}
+
+.rb-time-slot.rb-available:hover {
+  background: #b8e7c1;
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.rb-time-slot.rb-booked {
+  background: #f8d7da;
+  border: 2px solid #f5c6cb;
+  cursor: default;
+  color: #721c24;
+}
+
+.rb-time-slot.rb-booked::after {
+  content: "BOOKED";
+  display: block;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #dc3545;
+  margin-top: 0.25rem;
+}
+
+/* Hover tooltip for booked slots */
+.rb-time-slot[data-booker]:hover::before {
+  content: attr(data-booker);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  margin-bottom: 0.5rem;
+}
+
+/* Legend */
+.rb-legend {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.rb-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #495057;
+}
+
+.rb-legend-color {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 2px solid #dee2e6;
+}
+
+.rb-legend-color.rb-available {
+  background: #d4edda;
+  border-color: #c3e6cb;
+}
+
+.rb-legend-color.rb-booked {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+}
+
+/* Modal */
+.rb-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.rb-modal-dialog {
+  background: white;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.rb-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.rb-modal-title {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.rb-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.rb-modal-close:hover {
+  background: #f8f9fa;
+  color: #333;
+}
+
+.rb-modal-body {
+  padding: 1.5rem;
+}
+
+.rb-session-summary {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9375rem;
+  color: #495057;
+}
+
+.rb-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.rb-full-width {
+  grid-column: 1 / -1;
+}
+
+.rb-modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+/* Button Styles */
+.btn {
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  font-size: 0.9375rem;
+}
+
+.btn-primary {
+  background: #0066cc;
+  color: white;
+  border-color: #0066cc;
+}
+
+.btn-primary:hover {
+  background: #0052a3;
+  border-color: #0052a3;
+}
+
+.btn-primary:disabled {
+  background: #6c757d;
+  border-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* BOOKED button state */
+.btn-primary.rb-booked-state {
+  background: #dc3545;
+  border-color: #dc3545;
+  cursor: default;
+  pointer-events: none;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+  border-color: #6c757d;
+}
+
+.btn-secondary:hover {
+  background: #5a6268;
+  border-color: #545b62;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .rb-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rb-actions {
+    flex-direction: column;
+  }
+
+  .rb-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rb-timeline-grid {
+    font-size: 0.75rem;
+  }
+
+  .rb-legend {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

@@ -1,23 +1,23 @@
 [
   {
-    "name": "Training booking",
+    "name": "Room booking",
     "settings": [
       {
-        "id": "training_api_url",
+        "id": "room_booking_api_url",
         "type": "text",
-        "label": "Training API URL",
+        "label": "Room booking API URL",
         "default": "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec"
       },
       {
-        "id": "training_api_key",
+        "id": "room_booking_api_key",
         "type": "text",
-        "label": "Training API Key",
+        "label": "Room booking API Key",
         "default": ""
       },
       {
-        "id": "training_api_mode",
+        "id": "room_booking_api_mode",
         "type": "enum",
-        "label": "Training API Mode",
+        "label": "Room booking API Mode",
         "default": "jsonp",
         "options": [
           {
@@ -31,11 +31,18 @@
         ]
       },
       {
-        "id": "training_iframe_url",
+        "id": "room_booking_iframe_url",
         "type": "text",
-        "label": "Training Iframe URL",
+        "label": "Room booking Iframe URL",
+        "default": ""
+      },
+      {
+        "id": "room_booking_internal_tag",
+        "type": "text",
+        "label": "Room booking internal tag",
         "default": ""
       }
     ]
   }
 ]
+

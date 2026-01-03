@@ -871,40 +871,40 @@
       ]
     },
     {
-      "label": "Training booking",
+      "label": "Room booking",
       "variables": [
         {
-          "identifier": "training_api_url",
+          "identifier": "room_booking_api_url",
           "type": "text",
-          "label": "Training API URL",
-          "description": "URL for the training booking Apps Script.",
+          "label": "Room booking API URL",
+          "description": "URL for the room booking Apps Script.",
           "value": "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec"
         },
         {
-          "identifier": "training_api_key",
+          "identifier": "room_booking_api_key",
           "type": "text",
-          "label": "Training API key",
-          "description": "API key for the training booking Apps Script.",
+          "label": "Room booking API key",
+          "description": "API key for the room booking Apps Script.",
           "value": ""
         },
         {
-          "identifier": "training_api_mode",
+          "identifier": "room_booking_api_mode",
           "type": "text",
-          "label": "Training API mode",
+          "label": "Room booking API mode",
           "description": "Set to jsonp or fetch. Defaults to jsonp.",
           "value": "jsonp"
         },
         {
-          "identifier": "training_iframe_url",
+          "identifier": "room_booking_iframe_url",
           "type": "text",
-          "label": "Training iframe URL",
+          "label": "Room booking iframe URL",
           "description": "Optional URL for the embedded booking UI.",
           "value": ""
         },
         {
-          "identifier": "training_booking_internal_tag",
+          "identifier": "room_booking_internal_tag",
           "type": "text",
-          "label": "Training booking internal tag",
+          "label": "Room booking internal tag",
           "description": "Optional user tag required for internal users to see booking links.",
           "value": ""
         }
@@ -912,3 +912,4 @@
     }
   ]
 }
+

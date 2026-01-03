@@ -22,8 +22,8 @@
     tenantFormId: themeSettings.tenant_request_form_id || TENANT_SUPPORT_FORM,
   };
 
-  const trainingSettings = {
-    internalBookingTag: themeSettings.training_booking_internal_tag || "",
+  const roomSettings = {
+    internalBookingTag: themeSettings.room_booking_internal_tag || "",
   };
 
   window.isInternalUser = false;
@@ -170,16 +170,16 @@
       show(unknownItems);
     }
 
-    applyTrainingVisibility(segments);
+    applyRoomVisibility(segments);
   }
 
-  function applyTrainingVisibility(segments) {
-    const trainingLinks = document.querySelectorAll(".nav-training-booking");
-    if (!trainingLinks.length) {
+  function applyRoomVisibility(segments) {
+    const roomLinks = document.querySelectorAll(".nav-room-booking");
+    if (!roomLinks.length) {
       return;
     }
 
-    const requiredTag = trainingSettings.internalBookingTag;
+    const requiredTag = roomSettings.internalBookingTag;
     if (!requiredTag) {
       return;
     }
@@ -189,7 +189,7 @@
       !segments.isManagementUser &&
       !segments.userTags.includes(requiredTag)
     ) {
-      trainingLinks.forEach((item) => {
+      roomLinks.forEach((item) => {
         if (item.classList.contains("nav-internal")) {
           item.style.display = "none";
         }
@@ -359,15 +359,15 @@
           console.log("[QuickLinks] Showing sign-up links (no segment detected)");
         }
 
-        const trainingTag =
+        const roomTag =
           ((window.HelpCenter && window.HelpCenter.themeSettings) || {})
-            .training_booking_internal_tag || "";
-        if (trainingTag && segments.isInternalUser && !segments.isManagementUser) {
-          const hasTrainingTag =
+            .room_booking_internal_tag || "";
+        if (roomTag && segments.isInternalUser && !segments.isManagementUser) {
+          const hasRoomTag =
             Array.isArray(segments.userTags) &&
-            segments.userTags.includes(trainingTag);
-          if (!hasTrainingTag) {
-            hide(".nav-training-booking.nav-internal");
+            segments.userTags.includes(roomTag);
+          if (!hasRoomTag) {
+            hide(".nav-room-booking.nav-internal");
           }
         }
       }, 500);
@@ -1235,54 +1235,54 @@ function logFailure(img, phase) {
   "use strict";
 
   const path = window.location.pathname || "";
-  if (!/\/hc\/[^/]+\/p\/training_booking/.test(path)) {
+  if (!/\/hc\/[^/]+\/p\/room_booking/.test(path)) {
     return;
   }
 
-  const root = document.getElementById("training-booking-root");
+  const root = document.getElementById("room-booking-root");
   if (!root) {
     return;
   }
-  if (root.getAttribute("data-training-booking-version") === "v2") {
+  if (root.getAttribute("data-room-booking-version") === "v2") {
     return;
   }
 
   const settings = (window.HelpCenter && window.HelpCenter.themeSettings) || {};
-  const cfg = window.TRAINING_BOOKING_CFG || {};
+  const cfg = window.ROOM_BOOKING_CFG || {};
   const baseUrl = (
     cfg.baseUrl ||
-    settings.training_api_url ||
-    settings.training_api_base_url ||
+    settings.room_booking_api_url ||
+    settings.room_booking_api_base_url ||
     ""
   ).trim();
-  const apiKey = (cfg.apiKey || settings.training_api_key || "").trim();
-  const apiModeRaw = (cfg.mode || settings.training_api_mode || "jsonp").trim();
+  const apiKey = (cfg.apiKey || settings.room_booking_api_key || "").trim();
+  const apiModeRaw = (cfg.mode || settings.room_booking_api_mode || "jsonp").trim();
   const apiMode = apiModeRaw.toLowerCase() === "fetch" ? "fetch" : "jsonp";
-  const iframeUrl = (cfg.iframeUrl || settings.training_iframe_url || "").trim();
+  const iframeUrl = (cfg.iframeUrl || settings.room_booking_iframe_url || "").trim();
   const user = (window.HelpCenter && window.HelpCenter.user) || {};
 
-  const alertEl = document.getElementById("training-booking-alert");
-  const filtersForm = document.getElementById("training-booking-filters");
-  const fromInput = document.getElementById("training-from");
-  const toInput = document.getElementById("training-to");
-  const loadButton = document.getElementById("training-load");
-  const resetButton = document.getElementById("training-reset");
-  const resultsWrap = document.getElementById("training-booking-results");
-  const fallbackWrap = document.getElementById("training-booking-fallback");
-  const fallbackFrame = document.getElementById("training-booking-iframe");
+  const alertEl = document.getElementById("room-booking-alert");
+  const filtersForm = document.getElementById("room-booking-filters");
+  const fromInput = document.getElementById("room-from");
+  const toInput = document.getElementById("room-to");
+  const loadButton = document.getElementById("room-load");
+  const resetButton = document.getElementById("room-reset");
+  const resultsWrap = document.getElementById("room-booking-results");
+  const fallbackWrap = document.getElementById("room-booking-fallback");
+  const fallbackFrame = document.getElementById("room-booking-iframe");
 
-  const modal = document.getElementById("training-booking-modal");
-  const modalForm = document.getElementById("training-booking-form");
-  const modalClose = document.getElementById("training-modal-close");
-  const modalCancel = document.getElementById("training-modal-cancel");
-  const slotLabel = document.getElementById("training-selected-slot");
-  const slotIdInput = document.getElementById("training-slot-id");
-  const requesterNameInput = document.getElementById("training-requester-name");
-  const requesterEmailInput = document.getElementById("training-requester-email");
-  const attendeesInput = document.getElementById("training-attendees");
-  const deptInput = document.getElementById("training-dept");
-  const notesInput = document.getElementById("training-notes");
-  const bookSubmit = document.getElementById("training-book-submit");
+  const modal = document.getElementById("room-booking-modal");
+  const modalForm = document.getElementById("room-booking-form");
+  const modalClose = document.getElementById("room-modal-close");
+  const modalCancel = document.getElementById("room-modal-cancel");
+  const slotLabel = document.getElementById("room-selected-slot");
+  const slotIdInput = document.getElementById("room-slot-id");
+  const requesterNameInput = document.getElementById("room-requester-name");
+  const requesterEmailInput = document.getElementById("room-requester-email");
+  const attendeesInput = document.getElementById("room-attendees");
+  const deptInput = document.getElementById("room-dept");
+  const notesInput = document.getElementById("room-notes");
+  const bookSubmit = document.getElementById("room-book-submit");
 
   let cachedSessions = [];
   let activeSession = null;
@@ -1293,9 +1293,9 @@ function logFailure(img, phase) {
     }
 
     alertEl.textContent = message;
-    alertEl.className = "training-booking__alert";
+    alertEl.className = "room-booking__alert";
     if (type) {
-      alertEl.classList.add("training-booking__alert--" + type);
+      alertEl.classList.add("room-booking__alert--" + type);
     }
     alertEl.hidden = false;
   }
@@ -1307,7 +1307,7 @@ function logFailure(img, phase) {
 
     alertEl.textContent = "";
     alertEl.hidden = true;
-    alertEl.className = "training-booking__alert";
+    alertEl.className = "room-booking__alert";
   }
 
   function setDefaultDateRange() {
@@ -1444,7 +1444,7 @@ function logFailure(img, phase) {
   function jsonpRequest(action, params) {
     return new Promise((resolve, reject) => {
       const callbackName =
-        "trainingJsonpCallback_" +
+        "roomJsonpCallback_" +
         Date.now() +
         "_" +
         Math.floor(Math.random() * 1000);
@@ -1454,7 +1454,7 @@ function logFailure(img, phase) {
       );
 
       if (!url) {
-        reject(new Error("Training API URL is invalid."));
+        reject(new Error("Room API URL is invalid."));
         return;
       }
 
@@ -1535,7 +1535,7 @@ function logFailure(img, phase) {
       return;
     }
     resultsWrap.innerHTML =
-      '<p class="training-booking__placeholder">' + message + "</p>";
+      '<p class="room-booking__placeholder">' + message + "</p>";
   }
 
   function renderSessions(sessions) {
@@ -1549,7 +1549,7 @@ function logFailure(img, phase) {
     }
 
     const table = document.createElement("table");
-    table.className = "table training-sessions";
+    table.className = "table room-sessions";
 
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
@@ -1585,7 +1585,7 @@ function logFailure(img, phase) {
         actionCell.appendChild(button);
       } else {
         const status = document.createElement("span");
-        status.className = "training-booking__disabled";
+        status.className = "room-booking__disabled";
         status.textContent = "Unavailable";
         actionCell.appendChild(status);
       }
@@ -1595,7 +1595,7 @@ function logFailure(img, phase) {
     table.appendChild(tbody);
 
     const wrapper = document.createElement("div");
-    wrapper.className = "training-booking__table";
+    wrapper.className = "room-booking__table";
     wrapper.appendChild(table);
 
     resultsWrap.innerHTML = "";
@@ -1649,7 +1649,7 @@ function logFailure(img, phase) {
 
   async function fetchSessions() {
     if (!baseUrl) {
-      setAlert("Set Training API URL in theme settings.", "error");
+      setAlert("Set Room API URL in theme settings.", "error");
       if (iframeUrl) {
         showIframeFallback();
       }
@@ -1657,7 +1657,7 @@ function logFailure(img, phase) {
     }
 
     if (!apiKey) {
-      setAlert("Set Training API key in theme settings.", "error");
+      setAlert("Set Room API key in theme settings.", "error");
       if (iframeUrl) {
         showIframeFallback();
       }
@@ -1673,7 +1673,7 @@ function logFailure(img, phase) {
     } else {
       const url = buildUrl("sessions", { from: from, to: to });
       if (!url) {
-        setAlert("Training API URL is invalid.", "error");
+        setAlert("Room API URL is invalid.", "error");
         return null;
       }
 
@@ -1743,14 +1743,14 @@ function logFailure(img, phase) {
     }
 
     if (!baseUrl) {
-      setAlert("Set Training API URL in theme settings.", "error");
+      setAlert("Set Room API URL in theme settings.", "error");
       if (iframeUrl) {
         showIframeFallback();
       }
       return;
     }
     if (!apiKey) {
-      setAlert("Set Training API key in theme settings.", "error");
+      setAlert("Set Room API key in theme settings.", "error");
       if (iframeUrl) {
         showIframeFallback();
       }
@@ -1759,7 +1759,7 @@ function logFailure(img, phase) {
 
     const payload = buildBookingPayload(apiMode !== "jsonp");
     if (!payload.slot_id) {
-      setAlert("Please select a training slot.", "error");
+      setAlert("Please select a room slot.", "error");
       return;
     }
 
@@ -1770,7 +1770,7 @@ function logFailure(img, phase) {
 
     const postUrl = buildPostUrl();
     if (!postUrl) {
-      setAlert("Training API URL is invalid.", "error");
+      setAlert("Room API URL is invalid.", "error");
       return;
     }
 
@@ -1892,7 +1892,7 @@ function logFailure(img, phase) {
   /*
    * Digify Calendar API Module
    *
-   * This module provides functions to interact with the training Calendar API.
+   * This module provides functions to interact with the room Calendar API.
    * It pulls the API URL/key from booking-config.js (with fallback support).
    * JSONP is used for browser requests to avoid CORS issues. You can still call
    * CalendarAPI.setMode("jsonp") to force JSONP explicitly.
@@ -1920,13 +1920,13 @@ function logFailure(img, phase) {
 
     const helpCenter = window.HelpCenter || {};
     const settings = helpCenter.themeSettings || {};
-    const cfg = window.TRAINING_BOOKING_CFG || {};
+    const cfg = window.ROOM_BOOKING_CFG || {};
     const rawBaseUrl =
       cfg.baseUrl ||
-      settings.training_api_url ||
-      settings.training_api_base_url ||
+      settings.room_booking_api_url ||
+      settings.room_booking_api_base_url ||
       "";
-    const rawApiKey = cfg.apiKey || settings.training_api_key || "";
+    const rawApiKey = cfg.apiKey || settings.room_booking_api_key || "";
     return {
       baseUrl: (rawBaseUrl || "").trim(),
       apiKey: rawApiKey || ""
@@ -1995,7 +1995,7 @@ function logFailure(img, phase) {
       if (!url) {
         reject(
           new Error(
-            "Training booking configuration is missing. Please contact support."
+            "Room booking configuration is missing. Please contact support."
           )
         );
         return;
@@ -2161,4 +2161,5 @@ function logFailure(img, phase) {
     bookSlot: bookSlot
   };
 })();
+
 

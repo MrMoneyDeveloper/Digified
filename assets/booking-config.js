@@ -2,7 +2,7 @@
   "use strict";
 
   // Booking API config helper.
-  // Reads config from window.TRAINING_BOOKING_CFG first, then falls back.
+  // Reads config from window.ROOM_BOOKING_CFG first, then falls back.
   // Falls back to the temporary values below if runtime config is missing.
   // NOTE: Remove these fallback values before any public release.
   const FALLBACK_BOOKING_CONFIG = {
@@ -19,7 +19,7 @@
   }
 
   function getConfig() {
-    const runtime = normalizeConfig(window.TRAINING_BOOKING_CFG || {});
+    const runtime = normalizeConfig(window.ROOM_BOOKING_CFG || {});
     const fallback = FALLBACK_BOOKING_CONFIG || { baseUrl: "", apiKey: "" };
     return {
       baseUrl: runtime.baseUrl || fallback.baseUrl || "",
