@@ -220,6 +220,20 @@
   cursor: not-allowed;
 }
 
+.tb-card[title] {
+  cursor: help;
+}
+
+.tb-card--full[title] {
+  cursor: not-allowed;
+}
+
+.tb-card--full:hover {
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
+}
+
 .tb-badge {
   font-size: 12px;
   font-weight: 600;

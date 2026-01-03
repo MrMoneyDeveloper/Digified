@@ -368,6 +368,7 @@
     const todayValue = toIsoDate(today);
     dateInput.value = todayValue;
     selectedDate = todayValue;
+    window.selectedDate = todayValue;
   }
 
   function getSelectedDate() {
@@ -497,6 +498,9 @@
 
     const card = document.createElement("article");
     card.className = "tb-card tb-card--" + status;
+    if (session.slot_id) {
+      card.setAttribute("data-slot-id", session.slot_id);
+    }
 
     const header = document.createElement("div");
     header.className = "tb-card-header";
@@ -711,6 +715,62 @@
     document.body.classList.add("tb-modal-open");
   }
 
+  function showBookingConfirmation(requesterEmail) {
+    if (!modal || !modalForm) {
+      return;
+    }
+
+    modalForm.style.display = "none";
+
+    let confirmation = modal.querySelector(".tb-booking-confirmation");
+    if (!confirmation) {
+      confirmation = document.createElement("div");
+      confirmation.className = "tb-booking-confirmation";
+      modalForm.parentNode.insertBefore(confirmation, modalForm);
+    }
+
+    const emailText = requesterEmail || "your email";
+    confirmation.innerHTML =
+      '<div class="tb-booking-confirmation__body">' +
+      "<h2>You've Booked!</h2>" +
+      "<p>Your training room session has been confirmed.</p>" +
+      '<p class="tb-booking-confirmation__note">A confirmation email has been sent to <strong>' +
+      emailText +
+      "</strong>.</p>" +
+      "</div>";
+  }
+
+  function resetBookingForm() {
+    if (!modalForm) {
+      return;
+    }
+
+    const confirmation = modal.querySelector(".tb-booking-confirmation");
+    if (confirmation) {
+      confirmation.remove();
+    }
+
+    modalForm.style.display = "";
+
+    if (notesInput) {
+      notesInput.value = "";
+    }
+
+    const currentUser = getCurrentUser();
+    if (requesterNameInput) {
+      requesterNameInput.value = currentUser.name;
+      requesterNameInput.setAttribute("readonly", true);
+      requesterNameInput.style.backgroundColor = "#f5f5f5";
+      requesterNameInput.style.cursor = "not-allowed";
+    }
+    if (requesterEmailInput) {
+      requesterEmailInput.value = currentUser.email;
+      requesterEmailInput.setAttribute("readonly", true);
+      requesterEmailInput.style.backgroundColor = "#f5f5f5";
+      requesterEmailInput.style.cursor = "not-allowed";
+    }
+  }
+
   function closeModal() {
     if (!modal) {
       return;
@@ -718,6 +778,7 @@
     modal.hidden = true;
     modal.setAttribute("aria-hidden", "true");
     document.body.classList.remove("tb-modal-open");
+    resetBookingForm();
   }
 
   function buildBookingPayload() {
@@ -850,7 +911,8 @@
         "success",
         agentLink ? { link: agentLink } : null
       );
-      closeModal();
+      showBookingConfirmation(payload.requester_email);
+      setTimeout(closeModal, 2000);
       markSessionBooked(payload.slot_id, payload.requester_name);
       loadSessions({ preserveAlert: true });
     } catch (error) {
@@ -884,6 +946,10 @@
   setDefaultDates();
   renderPlaceholder("Loading sessions...");
 
+  if (loadButton) {
+    loadButton.style.display = "none";
+  }
+
   const initialUser = getCurrentUser();
   if (requesterNameInput && initialUser.name) {
     requesterNameInput.value = initialUser.name;
@@ -914,6 +980,7 @@
   if (dateInput) {
     dateInput.addEventListener("change", function () {
       selectedDate = getSelectedDate();
+      window.selectedDate = selectedDate;
       loadSessions();
     });
   }
