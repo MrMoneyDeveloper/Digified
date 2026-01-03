@@ -451,6 +451,12 @@
 
     activeSlot = slot;
 
+    if (bookSubmit) {
+      bookSubmit.disabled = false;
+      bookSubmit.textContent = "Book Now";
+      bookSubmit.classList.remove("rb-booked-state");
+    }
+
     const currentUser = getCurrentUser();
     console.log("[RoomBooking] Opening modal, user:", currentUser);
 
@@ -496,6 +502,11 @@
     modal.hidden = true;
     modal.setAttribute("aria-hidden", "true");
     if (notesInput) notesInput.value = "";
+    if (bookSubmit) {
+      bookSubmit.disabled = false;
+      bookSubmit.textContent = "Book Now";
+      bookSubmit.classList.remove("rb-booked-state");
+    }
   }
 
   // Submit booking
