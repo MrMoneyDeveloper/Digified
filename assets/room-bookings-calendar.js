@@ -10,6 +10,35 @@
   // Get logger
   const logger = window.RoomBookingLogger || console;
 
+  function getCurrentUser() {
+    if (typeof HelpCenter !== "undefined" && HelpCenter.user) {
+      return {
+        name: HelpCenter.user.name || "",
+        email: HelpCenter.user.email || ""
+      };
+    }
+
+    if (window.TRAINING_BOOKING_USER) {
+      return {
+        name: window.TRAINING_BOOKING_USER.name || "",
+        email: window.TRAINING_BOOKING_USER.email || ""
+      };
+    }
+
+    if (window.currentUserName && window.currentUserEmail) {
+      return {
+        name: window.currentUserName || "",
+        email: window.currentUserEmail || ""
+      };
+    }
+
+    console.warn("[RoomBooking] Could not find user data");
+    return {
+      name: "Unknown User",
+      email: "unknown@example.com"
+    };
+  }
+
   // HARDCODED FALLBACK CONFIGURATION
   // This is your Google Apps Script URL - update if it changes
   const HARDCODED_API_URL = "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec";
@@ -34,7 +63,7 @@
     HARDCODED_API_KEY
   ).trim();
 
-  const user = (window.HelpCenter && window.HelpCenter.user) || {};
+  const user = getCurrentUser();
 
   // Log configuration resolution
   logger.info("Room Booking Configuration Resolved", {
@@ -422,6 +451,9 @@
 
     activeSlot = slot;
 
+    const currentUser = getCurrentUser();
+    console.log("[RoomBooking] Opening modal, user:", currentUser);
+
     logger.info("Booking modal opened", {
       slot_id: slot.slot_id,
       date: slot.date,
@@ -430,6 +462,23 @@
     });
 
     if (slotIdInput) slotIdInput.value = slot.slot_id || "";
+    if (requesterNameInput) {
+      requesterNameInput.value = currentUser.name;
+      requesterNameInput.setAttribute("readonly", true);
+      requesterNameInput.setAttribute("disabled", true);
+      requesterNameInput.style.backgroundColor = "#f5f5f5";
+      requesterNameInput.style.cursor = "not-allowed";
+    }
+    if (requesterEmailInput) {
+      requesterEmailInput.value = currentUser.email;
+      requesterEmailInput.setAttribute("readonly", true);
+      requesterEmailInput.setAttribute("disabled", true);
+      requesterEmailInput.style.backgroundColor = "#f5f5f5";
+      requesterEmailInput.style.cursor = "not-allowed";
+    }
+    if (notesInput) {
+      notesInput.value = "";
+    }
     if (sessionSummary) {
       sessionSummary.innerHTML = `
         <strong>Date:</strong> ${slot.date}<br>
@@ -446,19 +495,20 @@
     if (!modal) return;
     modal.hidden = true;
     modal.setAttribute("aria-hidden", "true");
-    if (modalForm) modalForm.reset();
+    if (notesInput) notesInput.value = "";
   }
 
   // Submit booking
   async function submitBooking(event) {
     if (event) event.preventDefault();
 
+    const currentUser = getCurrentUser();
     const payload = {
       slot_id: slotIdInput ? slotIdInput.value : "",
       date: activeSlot ? activeSlot.date : "",
       start_time: activeSlot ? activeSlot.start_time : "",
-      requester_name: requesterNameInput ? requesterNameInput.value.trim() : "",
-      requester_email: requesterEmailInput ? requesterEmailInput.value.trim() : "",
+      requester_name: currentUser.name || "",
+      requester_email: currentUser.email || "",
       notes: notesInput ? notesInput.value.trim() : ""
     };
 
@@ -484,12 +534,12 @@
 
     try {
       logger.info("Sending booking request to API", {
-        action: "book_room",
+        action: "book",
         slotId: payload.slot_id,
         date: payload.date
       });
 
-      const json = await jsonpRequest("book_room", payload);
+      const json = await jsonpRequest("book", payload);
 
       if (json && json.success) {
         logger.info("Booking successful", {
