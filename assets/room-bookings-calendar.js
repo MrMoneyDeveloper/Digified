@@ -13,7 +13,7 @@
   // HARDCODED FALLBACK CONFIGURATION
   // This is your Google Apps Script URL - update if it changes
   const HARDCODED_API_URL = "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec";
-  const HARDCODED_API_KEY = ""; // Leave empty - Google Apps Script doesn't require API key
+  const HARDCODED_API_KEY = "c8032a6a14e04710a701aadd27f8e5d5";
 
   // Configuration resolution order:
   // 1. Theme settings from Zendesk admin
@@ -138,7 +138,7 @@
   function jsonpRequest(action, params) {
     return new Promise((resolve, reject) => {
       const callbackName = "roomJsonpCb_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-      const url = buildUrl(action, Object.assign({}, params, { callback: callbackName }));
+      const url = buildUrl(action, params);
       const requestId = callbackName;
 
       if (!url) {
@@ -151,11 +151,27 @@
         return;
       }
 
+      let requestUrl = url;
+      try {
+        const urlObj = new URL(url);
+        urlObj.searchParams.set("callback", callbackName);
+        requestUrl = urlObj.toString();
+      } catch (error) {
+        logger.error("Failed to append JSONP callback", {
+          action: action,
+          baseUrl: url,
+          error: error && error.message ? error.message : error
+        });
+        reject(new Error("Room booking API URL is invalid."));
+        return;
+      }
+
       logger.info("JSONP request initiated", {
         requestId: requestId,
         action: action,
-        url: url,
-        params: params
+        url: requestUrl,
+        params: params,
+        callback: callbackName
       });
 
       const script = document.createElement("script");
@@ -191,7 +207,7 @@
           requestId: requestId,
           action: action,
           duration: `${duration}ms`,
-          scriptUrl: url
+          scriptUrl: requestUrl
         });
 
         reject(new Error("JSONP request failed."));
@@ -211,7 +227,7 @@
         reject(new Error("JSONP request timed out."));
       }, 15000);
 
-      script.src = url;
+      script.src = requestUrl;
       (document.head || document.body).appendChild(script);
     });
   }
