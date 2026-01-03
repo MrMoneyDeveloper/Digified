@@ -642,11 +642,13 @@
       if (apiError) {
         throw new Error(apiError);
       }
-      const sessions =
+      const sessionsSource =
         json && json.data && Array.isArray(json.data.sessions)
           ? json.data.sessions
-          : [];
-      const normalizedSessions = sessions.map(function (session) {
+          : json && json.data && Array.isArray(json.data.slots)
+            ? json.data.slots
+            : [];
+      const normalizedSessions = sessionsSource.map(function (session) {
         const copy = Object.assign({}, session);
         const reservedBy =
           copy.reserved_by || copy.reservedby || copy.vendor || "";
