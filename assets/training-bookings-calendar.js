@@ -20,7 +20,6 @@
     return;
   }
 
-  const helpCenter = window.HelpCenter || {};
   const configProvider = window.DigifyBookingConfig;
   const config =
     configProvider && typeof configProvider.getConfig === "function"
@@ -56,7 +55,49 @@
   const notesInput = document.getElementById("training-booking-notes");
   const submitButton = document.getElementById("training-booking-submit");
 
-  const user = helpCenter.user || {};
+  function getCurrentUser() {
+    if (
+      window.TRAINING_BOOKING_USER &&
+      window.TRAINING_BOOKING_USER.isSignedIn
+    ) {
+      return {
+        name: window.TRAINING_BOOKING_USER.name || "Unknown User",
+        email: window.TRAINING_BOOKING_USER.email || "unknown@example.com"
+      };
+    }
+
+    if (typeof HelpCenter !== "undefined" && HelpCenter.user) {
+      return {
+        name: HelpCenter.user.name || "Unknown User",
+        email: HelpCenter.user.email || "unknown@example.com"
+      };
+    }
+
+    const userMetaName = document.querySelector('meta[name="user-name"]');
+    const userMetaEmail = document.querySelector('meta[name="user-email"]');
+
+    if (userMetaName && userMetaEmail) {
+      return {
+        name: userMetaName.getAttribute("content") || "Unknown User",
+        email: userMetaEmail.getAttribute("content") || "unknown@example.com"
+      };
+    }
+
+    if (window.currentUser) {
+      return {
+        name: window.currentUser.name || "Unknown User",
+        email: window.currentUser.email || "unknown@example.com"
+      };
+    }
+
+    console.warn("[RoomBooking] Could not detect signed-in user");
+    return {
+      name: "Unknown User",
+      email: "unknown@example.com"
+    };
+  }
+
+  const user = getCurrentUser();
   const errorMessages = {
     FAIL_SLOT_FULL: "Sorry, this session is now full.",
     FAIL_ALREADY_BOOKED: "You have already booked this session.",
@@ -494,6 +535,11 @@
     const meta = document.createElement("div");
     meta.className = "tb-meta";
     const reservedBy = session.reserved_by || session.vendor || "";
+    const isBooked = status === "full";
+    if (isBooked) {
+      const bookerName = reservedBy || "Unknown";
+      card.setAttribute("title", "Booked by: " + bookerName);
+    }
     meta.appendChild(
       createMetaRow("Reserved by", reservedBy, { allowBlank: true })
     );
@@ -641,11 +687,24 @@
           : "");
     }
 
-    if (requesterNameInput && user.name && !requesterNameInput.value) {
-      requesterNameInput.value = user.name;
+    const currentUser = getCurrentUser();
+
+    console.log("[RoomBooking] Opening modal for user:", {
+      name: currentUser.name,
+      email: currentUser.email
+    });
+
+    if (requesterNameInput) {
+      requesterNameInput.value = currentUser.name;
+      requesterNameInput.setAttribute("readonly", true);
+      requesterNameInput.style.backgroundColor = "#f5f5f5";
+      requesterNameInput.style.cursor = "not-allowed";
     }
-    if (requesterEmailInput && user.email && !requesterEmailInput.value) {
-      requesterEmailInput.value = user.email;
+    if (requesterEmailInput) {
+      requesterEmailInput.value = currentUser.email;
+      requesterEmailInput.setAttribute("readonly", true);
+      requesterEmailInput.style.backgroundColor = "#f5f5f5";
+      requesterEmailInput.style.cursor = "not-allowed";
     }
     modal.hidden = false;
     modal.setAttribute("aria-hidden", "false");
@@ -662,13 +721,14 @@
   }
 
   function buildBookingPayload() {
+    const currentUser = getCurrentUser();
     const requesterName =
       (requesterNameInput && requesterNameInput.value.trim()) ||
-      user.name ||
+      currentUser.name ||
       "Zendesk User";
     const requesterEmail =
       (requesterEmailInput && requesterEmailInput.value.trim()) ||
-      user.email ||
+      currentUser.email ||
       "unknown@example.com";
     const resolvedUserType = resolveUserType();
     userType = resolvedUserType;
@@ -744,6 +804,11 @@
     }
 
     const payload = buildBookingPayload();
+    console.log("[RoomBooking] Submitting booking:", {
+      slot_id: payload.slot_id,
+      requester_name: payload.requester_name,
+      requester_email: payload.requester_email
+    });
     const validation = validatePayload(payload);
     if (validation) {
       setAlert(validation, "error");
@@ -798,15 +863,33 @@
     }
   }
 
+  function logUserDiagnostics() {
+    console.log("[RoomBooking] Checking user sources...");
+    console.log(
+      "  HelpCenter.user:",
+      typeof HelpCenter !== "undefined" ? HelpCenter.user : "undefined"
+    );
+    console.log("  window.currentUser:", window.currentUser);
+    console.log("  window.TRAINING_BOOKING_USER:", window.TRAINING_BOOKING_USER);
+    console.log("[RoomBooking] Resolved user:", getCurrentUser());
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", logUserDiagnostics);
+  } else {
+    logUserDiagnostics();
+  }
+
   userType = resolveUserType();
   setDefaultDates();
   renderPlaceholder("Loading sessions...");
 
-  if (requesterNameInput && user.name) {
-    requesterNameInput.value = user.name;
+  const initialUser = getCurrentUser();
+  if (requesterNameInput && initialUser.name) {
+    requesterNameInput.value = initialUser.name;
   }
-  if (requesterEmailInput && user.email) {
-    requesterEmailInput.value = user.email;
+  if (requesterEmailInput && initialUser.email) {
+    requesterEmailInput.value = initialUser.email;
   }
 
   if (filtersForm) {
