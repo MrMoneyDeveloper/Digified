@@ -6,6 +6,7 @@
         "id": "room_booking_api_url",
         "type": "text",
         "label": "Room booking API URL",
+        "description": "Google Apps Script URL for room booking backend. Auto-populated with default.",
         "default": "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec"
       },
       {

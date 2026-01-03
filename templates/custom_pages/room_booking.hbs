@@ -4,6 +4,58 @@
     baseUrl: "{{settings.room_booking_api_url}}",
     apiKey: "{{settings.room_booking_api_key}}"
   };
+
+  // Logging setup
+  window.RoomBookingLogger = {
+    logs: [],
+    isDev: window.location.hostname.includes("localhost") || window.location.hostname.includes("zendesk.com"),
+
+    log: function(level, message, metadata) {
+      const timestamp = new Date().toISOString();
+      const entry = {
+        timestamp: timestamp,
+        level: level,
+        message: message,
+        metadata: metadata || {},
+        url: window.location.href,
+        userAgent: navigator.userAgent
+      };
+      this.logs.push(entry);
+
+      // Console output
+      const style = level === "ERROR" ? "color: red; font-weight: bold;"
+        : level === "WARN" ? "color: orange; font-weight: bold;"
+        : "color: blue;";
+      console.log(`%c[RoomBooking ${level}] ${timestamp}`, style, message, metadata);
+
+      // Send to backend if configured (optional)
+      if (this.isDev === false && window.ROOM_BOOKING_LOG_ENDPOINT) {
+        fetch(window.ROOM_BOOKING_LOG_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(entry)
+        }).catch(() => {});
+      }
+    },
+
+    info: function(message, metadata) { this.log("INFO", message, metadata); },
+    warn: function(message, metadata) { this.log("WARN", message, metadata); },
+    error: function(message, metadata) { this.log("ERROR", message, metadata); },
+
+    export: function() {
+      return JSON.stringify(this.logs, null, 2);
+    }
+  };
+
+  // Log initial configuration
+  window.RoomBookingLogger.info("Room Booking initialized", {
+    configBaseUrl: window.ROOM_BOOKING_CFG.baseUrl,
+    configHasApiKey: !!window.ROOM_BOOKING_CFG.apiKey,
+    themeSettings: {
+      hasUrl: !!("{{settings.room_booking_api_url}}" || "").trim(),
+      hasKey: !!("{{settings.room_booking_api_key}}" || "").trim()
+    }
+  });
 </script>
 
 <section class="room-bookings">
@@ -20,6 +72,8 @@
         data-room-booking-version="v2"
         data-room-base-url="{{settings.room_booking_api_url}}"
         data-room-api-key="{{settings.room_booking_api_key}}"
+        data-room-config-url="{{settings.room_booking_api_url}}"
+        data-room-config-key-present="{{#if settings.room_booking_api_key}}true{{else}}false{{/if}}"
       >
         <div id="room-booking-alert" class="rb-alert" role="status" aria-live="polite" hidden></div>
 

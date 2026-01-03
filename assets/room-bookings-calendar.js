@@ -7,12 +7,50 @@
     return;
   }
 
-  // Configuration
+  // Get logger
+  const logger = window.RoomBookingLogger || console;
+
+  // HARDCODED FALLBACK CONFIGURATION
+  // This is your Google Apps Script URL - update if it changes
+  const HARDCODED_API_URL = "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec";
+  const HARDCODED_API_KEY = ""; // Leave empty - Google Apps Script doesn't require API key
+
+  // Configuration resolution order:
+  // 1. Theme settings from Zendesk admin
+  // 2. Window config from HTML template
+  // 3. Hardcoded fallback
   const settings = (window.HelpCenter && window.HelpCenter.themeSettings) || {};
   const cfg = window.ROOM_BOOKING_CFG || {};
-  const baseUrl = (cfg.baseUrl || settings.room_booking_api_url || "").trim();
-  const apiKey = (cfg.apiKey || settings.room_booking_api_key || "").trim();
+
+  const baseUrl = (
+    (settings.room_booking_api_url && settings.room_booking_api_url.trim()) ||
+    (cfg.baseUrl && cfg.baseUrl.trim()) ||
+    HARDCODED_API_URL
+  ).trim();
+
+  const apiKey = (
+    (settings.room_booking_api_key && settings.room_booking_api_key.trim()) ||
+    (cfg.apiKey && cfg.apiKey.trim()) ||
+    HARDCODED_API_KEY
+  ).trim();
+
   const user = (window.HelpCenter && window.HelpCenter.user) || {};
+
+  // Log configuration resolution
+  logger.info("Room Booking Configuration Resolved", {
+    baseUrl: baseUrl,
+    apiKeyPresent: apiKey.length > 0,
+    configSource: {
+      cfgBaseUrl: !!cfg.baseUrl,
+      settingsBaseUrl: !!settings.room_booking_api_url,
+      usingFallback: baseUrl === HARDCODED_API_URL
+    },
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email
+    }
+  });
 
   // DOM Elements
   const alertEl = document.getElementById("room-booking-alert");
@@ -96,19 +134,33 @@
     }
   }
 
-  // JSONP request
+  // JSONP request with logging
   function jsonpRequest(action, params) {
     return new Promise((resolve, reject) => {
       const callbackName = "roomJsonpCb_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
       const url = buildUrl(action, Object.assign({}, params, { callback: callbackName }));
+      const requestId = callbackName;
 
       if (!url) {
+        logger.error("Failed to build API URL", {
+          action: action,
+          params: params,
+          baseUrl: baseUrl
+        });
         reject(new Error("Room booking API URL is invalid."));
         return;
       }
 
+      logger.info("JSONP request initiated", {
+        requestId: requestId,
+        action: action,
+        url: url,
+        params: params
+      });
+
       const script = document.createElement("script");
       let timeoutId = null;
+      const startTime = performance.now();
 
       function cleanup() {
         if (timeoutId) clearTimeout(timeoutId);
@@ -117,17 +169,45 @@
       }
 
       window[callbackName] = (data) => {
+        const duration = (performance.now() - startTime).toFixed(2);
         cleanup();
+
+        logger.info("JSONP response received", {
+          requestId: requestId,
+          action: action,
+          duration: `${duration}ms`,
+          success: data && data.success,
+          dataKeys: data ? Object.keys(data) : null
+        });
+
         resolve(data);
       };
 
       script.onerror = () => {
+        const duration = (performance.now() - startTime).toFixed(2);
         cleanup();
+
+        logger.error("JSONP script load error", {
+          requestId: requestId,
+          action: action,
+          duration: `${duration}ms`,
+          scriptUrl: url
+        });
+
         reject(new Error("JSONP request failed."));
       };
 
       timeoutId = setTimeout(() => {
+        const duration = (performance.now() - startTime).toFixed(2);
         cleanup();
+
+        logger.error("JSONP request timeout", {
+          requestId: requestId,
+          action: action,
+          duration: `${duration}ms`,
+          timeout: "15000ms"
+        });
+
         reject(new Error("JSONP request timed out."));
       }, 15000);
 
@@ -138,27 +218,61 @@
 
   // Fetch room slots for selected date
   async function fetchRoomSlots() {
-    if (!baseUrl || !apiKey) {
-      setAlert("Room booking API is not configured.", "error");
+    // Validate configuration
+    if (!baseUrl) {
+      const errorMsg = "Room booking API URL is not configured. Please check theme settings or contact support.";
+      logger.error("Configuration validation failed", {
+        baseUrl: baseUrl,
+        apiKey: apiKey ? "present" : "missing"
+      });
+      setAlert(errorMsg, "error");
       return null;
     }
 
     const date = dateInput ? dateInput.value : "";
     if (!date) {
+      logger.warn("No date selected", {});
       setAlert("Please select a date.", "error");
       return null;
     }
 
+    logger.info("Fetching room slots", { date: date });
+
     try {
+      logger.info("Sending JSONP request", {
+        action: "room_slots",
+        date: date,
+        apiUrl: baseUrl
+      });
+
       const json = await jsonpRequest("room_slots", { date: date });
 
       if (json && json.success && Array.isArray(json.data.slots)) {
+        logger.info("Room slots loaded successfully", {
+          slotCount: json.data.slots.length,
+          slots: json.data.slots.map((slot) => ({
+            date: slot.date,
+            start_time: slot.start_time,
+            booked: slot.booked,
+            booker_name: slot.booker_name
+          }))
+        });
         return json.data.slots;
       }
 
-      throw new Error(json.message || "Failed to load room slots.");
+      const errorMsg = json.message || "Failed to load room slots.";
+      logger.error("API returned unsuccessful response", {
+        response: json,
+        success: json && json.success,
+        hasSlots: json && json.data && Array.isArray(json.data.slots)
+      });
+      throw new Error(errorMsg);
     } catch (error) {
-      console.error("Room API error:", error);
+      logger.error("Room API request failed", {
+        error: error.message,
+        errorStack: error.stack,
+        date: date
+      });
       throw error;
     }
   }
@@ -262,6 +376,13 @@
 
     activeSlot = slot;
 
+    logger.info("Booking modal opened", {
+      slot_id: slot.slot_id,
+      date: slot.date,
+      start_time: slot.start_time,
+      end_time: slot.end_time
+    });
+
     if (slotIdInput) slotIdInput.value = slot.slot_id || "";
     if (sessionSummary) {
       sessionSummary.innerHTML = `
@@ -297,12 +418,23 @@
       notes: notesInput ? notesInput.value.trim() : ""
     };
 
+    logger.info("Booking submission started", {
+      slot_id: payload.slot_id,
+      date: payload.date,
+      requesterName: payload.requester_name
+    });
+
     if (!payload.requester_name || !payload.requester_email) {
+      logger.warn("Booking validation failed - missing name or email", {
+        hasName: !!payload.requester_name,
+        hasEmail: !!payload.requester_email
+      });
       setAlert("Name and email are required.", "error");
       return;
     }
 
     if (!payload.purpose) {
+      logger.warn("Booking validation failed - missing purpose", {});
       setAlert("Please specify the meeting purpose.", "error");
       return;
     }
@@ -313,9 +445,21 @@
     }
 
     try {
+      logger.info("Sending booking request to API", {
+        action: "book_room",
+        slotId: payload.slot_id,
+        date: payload.date
+      });
+
       const json = await jsonpRequest("book_room", payload);
 
       if (json && json.success) {
+        logger.info("Booking successful", {
+          response: json,
+          bookingId: json.data && json.data.booking_id,
+          ticketId: json.data && json.data.ticket_id
+        });
+
         setAlert("Room booked successfully!", "success");
 
         // Change button to red "BOOKED" state
@@ -329,9 +473,20 @@
           loadAndRenderCalendar(); // Refresh calendar
         }, 2000);
       } else {
-        throw new Error(json.message || "Booking failed.");
+        const errorMsg = json.message || "Booking failed.";
+        logger.error("Booking request returned false", {
+          response: json,
+          message: errorMsg
+        });
+        throw new Error(errorMsg);
       }
     } catch (error) {
+      logger.error("Booking submission failed", {
+        error: error.message,
+        errorStack: error.stack,
+        payload: payload
+      });
+
       setAlert(error.message || "Booking failed. Please try again.", "error");
 
       if (bookSubmit) {
@@ -342,18 +497,26 @@
   }
 
   // Initialize
+  logger.info("Initializing room booking system", {
+    hasUser: !!user,
+    userName: user.name,
+    userEmail: user.email
+  });
+
   if (requesterNameInput && user.name) requesterNameInput.value = user.name;
   if (requesterEmailInput && user.email) requesterEmailInput.value = user.email;
 
   if (filtersForm) {
     filtersForm.addEventListener("submit", (e) => {
       e.preventDefault();
+      logger.info("Date filter submitted", { date: dateInput.value });
       loadAndRenderCalendar();
     });
   }
 
   if (resetButton) {
     resetButton.addEventListener("click", () => {
+      logger.info("Reset button clicked", {});
       if (filtersForm) filtersForm.reset();
       setDefaultDate();
       clearAlert();
@@ -361,11 +524,38 @@
     });
   }
 
-  if (modalClose) modalClose.addEventListener("click", closeModal);
-  if (modalCancel) modalCancel.addEventListener("click", closeModal);
+  if (modalClose) {
+    modalClose.addEventListener("click", () => {
+      logger.info("Modal closed via close button", {});
+      closeModal();
+    });
+  }
+  if (modalCancel) {
+    modalCancel.addEventListener("click", () => {
+      logger.info("Modal closed via cancel button", {});
+      closeModal();
+    });
+  }
   if (modalForm) modalForm.addEventListener("submit", submitBooking);
 
   // Load on page load
+  logger.info("Room booking page load complete", {
+    configUrl: baseUrl,
+    userAgent: navigator.userAgent,
+    timestamp: new Date().toISOString()
+  });
+
   setDefaultDate();
   loadAndRenderCalendar();
+
+  // Expose logger for debugging in browser console
+  window.RoomBookingDebug = {
+    logs: function() { return logger.logs || []; },
+    export: function() {
+      return logger.export ? logger.export() : JSON.stringify(logger.logs || [], null, 2);
+    },
+    config: function() { return { baseUrl: baseUrl, apiKeyPresent: apiKey.length > 0 }; },
+    user: function() { return user; }
+  };
+  logger.info("Debug interface available at: window.RoomBookingDebug", {});
 })();
