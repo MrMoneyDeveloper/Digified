@@ -256,31 +256,63 @@
 
     try {
       logger.info("Sending JSONP request", {
-        action: "room_slots",
-        date: date,
+        action: "sessions",
+        from: date,
+        to: date,
         apiUrl: baseUrl
       });
 
-      const json = await jsonpRequest("room_slots", { date: date });
+      const json = await jsonpRequest("sessions", { from: date, to: date });
 
-      if (json && json.success && Array.isArray(json.data.slots)) {
+      if (json && json.success && Array.isArray(json.data.sessions)) {
+        const sessions = json.data.sessions;
+        const slots = sessions.map((session) => {
+          const status = String(session.status || "").toLowerCase();
+          const capacity = Number(session.capacity);
+          const bookedCount = Number(session.booked_count);
+          let booked = false;
+
+          if (session.available === false) {
+            booked = true;
+          }
+          if (status === "full" || status === "cancelled") {
+            booked = true;
+          }
+          if (
+            !Number.isNaN(capacity) &&
+            !Number.isNaN(bookedCount) &&
+            bookedCount >= capacity
+          ) {
+            booked = true;
+          }
+
+          return {
+            slot_id: session.slot_id || "",
+            date: session.date || date,
+            start_time: session.start_time || "",
+            end_time: session.end_time || "",
+            booked: booked,
+            booker_name: session.reserved_by || session.vendor || session.booker_name || null
+          };
+        });
+
         logger.info("Room slots loaded successfully", {
-          slotCount: json.data.slots.length,
-          slots: json.data.slots.map((slot) => ({
+          slotCount: slots.length,
+          slots: slots.map((slot) => ({
             date: slot.date,
             start_time: slot.start_time,
             booked: slot.booked,
             booker_name: slot.booker_name
           }))
         });
-        return json.data.slots;
+        return slots;
       }
 
       const errorMsg = json.message || "Failed to load room slots.";
       logger.error("API returned unsuccessful response", {
         response: json,
         success: json && json.success,
-        hasSlots: json && json.data && Array.isArray(json.data.slots)
+        hasSessions: json && json.data && Array.isArray(json.data.sessions)
       });
       throw new Error(errorMsg);
     } catch (error) {
