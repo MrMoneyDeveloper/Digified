@@ -538,15 +538,18 @@
 
     const meta = document.createElement("div");
     meta.className = "tb-meta";
-    const reservedBy = session.reserved_by || session.vendor || "";
+    const reservedBy =
+      session.reserved_by || session.reservedby || session.vendor || "";
     const isBooked = status === "full";
     if (isBooked) {
       const bookerName = reservedBy || "Unknown";
       card.setAttribute("title", "Booked by: " + bookerName);
     }
-    meta.appendChild(
-      createMetaRow("Reserved by", reservedBy, { allowBlank: true })
-    );
+    const reservedRow = createMetaRow("Reserved by", reservedBy, {
+      allowBlank: true
+    });
+    reservedRow.classList.add("tb-meta-row--reserved");
+    meta.appendChild(reservedRow);
 
     let seatsText = "n/a";
     if (seats.capacity !== null && seats.remaining !== null) {
@@ -643,7 +646,19 @@
         json && json.data && Array.isArray(json.data.sessions)
           ? json.data.sessions
           : [];
-      cachedSessions = sessions
+      const normalizedSessions = sessions.map(function (session) {
+        const copy = Object.assign({}, session);
+        const reservedBy =
+          copy.reserved_by || copy.reservedby || copy.vendor || "";
+        if (reservedBy && !copy.reserved_by) {
+          copy.reserved_by = reservedBy;
+        }
+        if (reservedBy && !copy.vendor) {
+          copy.vendor = reservedBy;
+        }
+        return copy;
+      });
+      cachedSessions = normalizedSessions
         .filter(function (session) {
           return session && session.date === selectedDate;
         })
@@ -680,14 +695,16 @@
       slotIdInput.value = session.slot_id || "";
     }
     if (sessionSummary) {
+      const reservedByLabel =
+        session.reserved_by || session.reservedby || session.vendor || "";
       sessionSummary.textContent =
         formatDateLabel(session.date) +
         " | " +
         formatTimeRange(session.start_time, session.end_time) +
         " | " +
         "Training Session" +
-        ((session.reserved_by || session.vendor)
-          ? " | Reserved by " + (session.reserved_by || session.vendor)
+        (reservedByLabel
+          ? " | Reserved by " + reservedByLabel
           : "");
     }
 
@@ -826,26 +843,37 @@
     if (!slotId) {
       return;
     }
-    const session = cachedSessions.find(function (item) {
+    const sessionIndex = cachedSessions.findIndex(function (item) {
       return item && item.slot_id === slotId;
     });
-    if (!session) {
+    if (sessionIndex === -1) {
       return;
     }
 
     const reservedBy =
-      requesterName || session.reserved_by || session.vendor || "";
-    session.vendor = reservedBy;
-    session.reserved_by = reservedBy;
-    session.available = false;
-    session.status = "full";
+      requesterName ||
+      cachedSessions[sessionIndex].reserved_by ||
+      cachedSessions[sessionIndex].reservedby ||
+      cachedSessions[sessionIndex].vendor ||
+      "";
+    const session = cachedSessions[sessionIndex];
     const capacity = Number(session.capacity);
-    if (!Number.isNaN(capacity) && capacity > 0) {
-      session.booked_count = capacity;
-    } else {
-      session.capacity = session.capacity || 1;
-      session.booked_count = 1;
-    }
+    const bookedCount =
+      !Number.isNaN(capacity) && capacity > 0 ? capacity : 1;
+    const updatedSession = Object.assign({}, session, {
+      vendor: reservedBy,
+      reserved_by: reservedBy,
+      reservedby: reservedBy,
+      available: false,
+      status: "full",
+      capacity:
+        !Number.isNaN(capacity) && capacity > 0 ? session.capacity : session.capacity || 1,
+      booked_count: bookedCount
+    });
+
+    cachedSessions = cachedSessions.map(function (item, index) {
+      return index === sessionIndex ? updatedSession : item;
+    });
 
     renderSessions(cachedSessions);
   }

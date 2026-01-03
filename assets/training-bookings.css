@@ -207,6 +207,16 @@
   text-align: right;
 }
 
+.tb-meta-row--reserved .tb-meta-value {
+  color: #9b1c1c;
+  font-weight: 600;
+}
+
+.tb-card--full {
+  opacity: 0.8;
+  background-color: #fafafa;
+}
+
 .tb-card-actions {
   margin-top: auto;
   display: flex;
