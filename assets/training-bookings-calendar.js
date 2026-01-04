@@ -380,9 +380,12 @@
       "tb-btn--loading",
       "tb-btn--booked",
       "tb-btn--error",
+      "tb-btn--success",
       "booked",
-      "error",
-      "loading"
+      "disabled",
+      "success",
+      "loading",
+      "error"
     );
   }
 
@@ -747,7 +750,7 @@
       button.dataset.endTime = session.end_time || "";
       button.addEventListener("click", function (event) {
         const target = event.currentTarget;
-        openModal({
+        openBookingModal({
           slot_id: target.dataset.slotId,
           date: target.dataset.date,
           start_time: target.dataset.startTime,
@@ -897,7 +900,12 @@
     }
   }
 
-  function openModal(session) {
+  function openBookingModal(session) {
+    window.selectedSession = session;
+
+    // Reset submit button state before showing the modal.
+    resetSubmitButtonState();
+
     if (!modal) {
       return;
     }
@@ -1026,8 +1034,11 @@
     resetSubmitButtonState();
   }
 
-  function closeModal() {
+  function closeBookingModal() {
+    resetSubmitButtonState();
+
     if (!modal) {
+      window.selectedSession = null;
       return;
     }
     modal.hidden = true;
@@ -1122,6 +1133,40 @@
     renderSessions(cachedSessions);
   }
 
+  function handleBookingResponse(response, payload) {
+    const apiError = apiErrorMessage(response);
+    if (apiError) {
+      setAlert(apiError, "error");
+      return { ok: false, message: apiError };
+    }
+
+    const bookingData = response && response.data ? response.data : response;
+    const bookingId = bookingData && bookingData.booking_id;
+    const isStaff = resolveUserType() === "staff";
+    const agentLink =
+      isStaff && bookingId
+        ? {
+            href: "/agent/search/1?query=" + encodeURIComponent(bookingId),
+            label: "Find ticket in Zendesk"
+          }
+        : null;
+    const message =
+      "Booking confirmed." +
+      (bookingId ? " Booking ID " + bookingId + "." : "") +
+      " Zendesk ticket will be created automatically shortly.";
+    setAlert(message, "success", agentLink ? { link: agentLink } : null);
+
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Booked";
+      submitButton.classList.add("tb-btn--booked");
+      submitButton.classList.remove("tb-btn--loading");
+    }
+
+    showBookingConfirmation(payload ? payload.requester_email : "");
+    return { ok: true, bookingId: bookingId };
+  }
+
   // Booking flow
   async function submitBooking(event) {
     if (event) {
@@ -1158,40 +1203,13 @@
         notes: payload.notes,
         dept: ""
       });
-      const apiError = apiErrorMessage(json);
-      if (apiError) {
-        throw new Error(apiError);
+      const result = handleBookingResponse(json, payload);
+      if (!result.ok) {
+        resetSubmitButtonState();
+        return;
       }
-
-      const bookingData = json && json.data ? json.data : json;
-      const bookingId = bookingData && bookingData.booking_id;
-      const isStaff = resolveUserType() === "staff";
-      const agentLink =
-        isStaff && bookingId
-          ? {
-              href:
-                "/agent/search/1?query=" + encodeURIComponent(bookingId),
-              label: "Find ticket in Zendesk"
-            }
-          : null;
-      const message =
-        "Booking confirmed." +
-        (bookingId ? " Booking ID " + bookingId + "." : "") +
-        " Zendesk ticket will be created automatically shortly.";
-      setAlert(
-        message,
-        "success",
-        agentLink ? { link: agentLink } : null
-      );
-      if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.textContent = "Booked ✓";
-        submitButton.classList.add("tb-btn--booked");
-        submitButton.classList.remove("tb-btn--loading");
-      }
-      showBookingConfirmation(payload.requester_email);
       setTimeout(function () {
-        closeModal();
+        closeBookingModal();
         markSessionBooked(payload.slot_id, payload.requester_name);
         loadSessions({ preserveAlert: true });
       }, 2000);
@@ -1267,15 +1285,15 @@
   }
 
   if (modalClose) {
-    modalClose.addEventListener("click", closeModal);
+    modalClose.addEventListener("click", closeBookingModal);
   }
   if (modalCancel) {
-    modalCancel.addEventListener("click", closeModal);
+    modalCancel.addEventListener("click", closeBookingModal);
   }
   if (modal) {
     modal.addEventListener("click", function (event) {
       if (event.target === modal) {
-        closeModal();
+        closeBookingModal();
       }
     });
   }

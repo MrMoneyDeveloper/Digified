@@ -4,6 +4,36 @@
   const themeSettings =
     (window.HelpCenter && window.HelpCenter.themeSettings) || {};
 
+  if (!window.DigifyBookingConfig) {
+    window.DigifyBookingConfig = {
+      getConfig: function (root) {
+        const settings =
+          (window.HelpCenter && window.HelpCenter.themeSettings) || {};
+        const cfg = window.TRAINING_BOOKING_CFG || window.ROOM_BOOKING_CFG || {};
+        const rootData = root && root.dataset ? root.dataset : {};
+        const baseUrl =
+          rootData.trainingBaseUrl ||
+          rootData.roomBaseUrl ||
+          cfg.baseUrl ||
+          settings.training_api_url ||
+          settings.room_booking_api_url ||
+          settings.room_booking_api_base_url ||
+          "";
+        const apiKey =
+          rootData.trainingApiKey ||
+          rootData.roomApiKey ||
+          cfg.apiKey ||
+          settings.training_api_key ||
+          settings.room_booking_api_key ||
+          "";
+        return {
+          baseUrl: String(baseUrl || "").trim(),
+          apiKey: String(apiKey || "").trim()
+        };
+      }
+    };
+  }
+
   const STAFF_SIGNUP_FORM = "23590656709788";
   const TENANT_SIGNUP_FORM = "23590702845724";
   const STAFF_SUPPORT_FORM = "22989127409436";

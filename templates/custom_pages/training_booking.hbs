@@ -1,0 +1,86 @@
+<link rel="stylesheet" href="{{asset 'training-bookings.css'}}">
+<script>
+  window.TRAINING_BOOKING_CFG = {
+    baseUrl: "{{settings.training_api_url}}",
+    apiKey: "{{settings.training_api_key}}"
+  };
+</script>
+
+<section class="training-bookings">
+  <div class="container">
+    <div class="tb-hero">
+      <h1>Book Training Room</h1>
+      <p class="tb-intro">Select a date to view available training room sessions.</p>
+    </div>
+
+    {{#if signed_in}}
+      <div
+        id="training-booking-root"
+        class="tb-app"
+        data-training-booking-version="v2"
+        data-training-base-url="{{settings.training_api_url}}"
+        data-training-api-key="{{settings.training_api_key}}"
+      >
+        <div id="training-booking-alert" class="tb-alert" role="status" aria-live="polite" hidden></div>
+
+        <form id="training-booking-filters" class="tb-filters" autocomplete="off">
+          <div class="tb-field">
+            <label for="training-date">Date</label>
+            <input class="form-control" id="training-date" name="date" type="date" required>
+          </div>
+          <div class="tb-actions">
+            <button class="btn btn-primary" id="training-load" type="submit">Refresh</button>
+            <button class="btn btn-secondary" id="training-reset" type="button">Reset</button>
+          </div>
+        </form>
+
+        <div id="training-booking-loading" class="tb-loading" hidden>
+          <span class="tb-spinner" aria-hidden="true"></span>
+          <span>Loading sessions...</span>
+        </div>
+
+        <div id="training-booking-list" class="tb-list"></div>
+
+        <div id="training-booking-modal" class="tb-modal" aria-hidden="true" hidden>
+          <div class="tb-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="training-booking-modal-title">
+            <div class="tb-modal-header">
+              <h2 class="tb-modal-title" id="training-booking-modal-title">Book Training Room</h2>
+              <button class="tb-modal-close" type="button" id="training-booking-modal-close" aria-label="Close">x</button>
+            </div>
+            <div class="tb-modal-body">
+              <div id="training-booking-session-summary" class="tb-session-summary"></div>
+              <form id="training-booking-form" class="tb-form">
+                <input id="training-booking-slot-id" name="slot_id" type="hidden">
+                <div class="tb-form-grid">
+                  <div class="tb-field">
+                    <label for="training-booking-requester-name">Requester name</label>
+                    <input class="form-control" id="training-booking-requester-name" name="requester_name" type="text" readonly required>
+                  </div>
+                  <div class="tb-field">
+                    <label for="training-booking-requester-email">Requester email</label>
+                    <input class="form-control" id="training-booking-requester-email" name="requester_email" type="email" readonly required>
+                  </div>
+                  <div class="tb-field">
+                    <label for="training-booking-notes">Notes</label>
+                    <textarea class="form-control" id="training-booking-notes" name="notes" rows="3" placeholder="Any questions or special requirements?"></textarea>
+                  </div>
+                </div>
+                <div class="tb-modal-actions">
+                  <button class="btn btn-primary" id="training-booking-submit" type="submit">Book now</button>
+                  <button class="btn btn-secondary" id="training-booking-modal-cancel" type="button">Cancel</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    {{else}}
+      <div class="tb-signed-out">
+        <p>Please sign in to view and book training sessions.</p>
+        <a class="btn btn-primary" href="/hc/en-us/signin">Sign in</a>
+      </div>
+    {{/if}}
+  </div>
+</section>
+
+<script src="{{asset 'training-bookings-calendar.js'}}" defer></script>
