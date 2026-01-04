@@ -1,9 +1,37 @@
 <link rel="stylesheet" href="{{asset 'training-bookings.css'}}">
+
+<!-- ============================================
+     SETUP: Configure your APIs below before deploy
+     ============================================ -->
 <script>
+  /**
+   * BEFORE DEPLOYING:
+   * 1. Replace API_BASE_URL with your Google Apps Script deployment URL
+   * 2. Replace API_KEY with your Apps Script API key
+   * 3. Test in /hc/*/p/training_booking
+   * 
+   * Example values (REPLACE WITH YOUR OWN):
+   * baseUrl: "https://script.google.com/macros/d/YOUR_DEPLOYMENT_ID/usep?v=2"
+   * apiKey: "YOUR_GOOGLE_APPS_SCRIPT_API_KEY"
+   */
   window.TRAINING_BOOKING_CFG = {
-    baseUrl: "{{settings.training_api_url}}",
-    apiKey: "{{settings.training_api_key}}"
+    baseUrl: "API_BASE_URL",
+    apiKey: "API_KEY"
   };
+
+  // Validate config on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.TRAINING_BOOKING_CFG.baseUrl === "API_BASE_URL" || 
+        window.TRAINING_BOOKING_CFG.apiKey === "API_KEY") {
+      console.warn('[RoomBooking] ⚠️ APIs NOT CONFIGURED. Update baseUrl and apiKey in training_booking.hbs before use.');
+      const alert = document.querySelector('#training-booking-alert');
+      if (alert) {
+        alert.className = 'tb-alert tb-alert--error';
+        alert.innerHTML = '❌ <strong>Configuration Error:</strong> Training booking APIs not configured. Contact admin.';
+        alert.hidden = false;
+      }
+    }
+  });
 </script>
 
 <section class="training-bookings">
@@ -18,8 +46,6 @@
         id="training-booking-root"
         class="tb-app"
         data-training-booking-version="v2"
-        data-training-base-url="{{settings.training_api_url}}"
-        data-training-api-key="{{settings.training_api_key}}"
       >
         <div id="training-booking-alert" class="tb-alert" role="status" aria-live="polite" hidden></div>
 
