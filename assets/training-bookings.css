@@ -376,6 +376,17 @@
   transform: translateY(0);
 }
 
+.training-bookings .btn.tb-btn--loading {
+  opacity: 0.85;
+  cursor: wait;
+}
+
+.training-bookings .btn.tb-btn--booked {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  border-color: #15803d;
+  box-shadow: 0 10px 20px rgba(22, 163, 74, 0.25);
+}
+
 .tb-card-actions .btn[disabled] {
   opacity: 0.6;
   cursor: not-allowed;

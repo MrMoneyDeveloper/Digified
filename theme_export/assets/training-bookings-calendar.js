@@ -72,9 +72,10 @@
     day: "numeric",
     timeZone: "Africa/Johannesburg"
   });
-  const bookedAtFormatter = new Intl.DateTimeFormat("en-US", {
+  const bookedAtFormatter = new Intl.DateTimeFormat("en-ZA", {
+    year: "numeric",
     month: "short",
-    day: "numeric",
+    day: "2-digit",
     hour: "numeric",
     minute: "2-digit",
     hour12: true
@@ -100,13 +101,19 @@
       return;
     }
 
-    const slotId = session.slot_id || session.slotid || "";
+    const normalized = normalizeSlot(session);
+    if (!normalized) {
+      window.selectedSession = null;
+      return;
+    }
+
+    const slotId = normalized.slot_id || normalized.slotid || "";
     window.selectedSession = {
       slot_id: slotId,
       slotid: slotId,
-      date: session.date || "",
-      start_time: session.start_time || session.starttime || "",
-      end_time: session.end_time || session.endtime || ""
+      date: normalized.date || "",
+      start_time: normalized.start_time || "",
+      end_time: normalized.end_time || ""
     };
   }
 
@@ -313,8 +320,22 @@
     if (!submitButton) {
       return;
     }
-    submitButton.disabled = isLoading;
-    submitButton.textContent = isLoading ? "Booking..." : "Submit booking";
+    if (isLoading) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Booking...";
+      submitButton.classList.add("tb-btn--loading");
+      return;
+    }
+    submitButton.classList.remove("tb-btn--loading");
+  }
+
+  function resetSubmitButtonState() {
+    if (!submitButton) {
+      return;
+    }
+    submitButton.disabled = false;
+    submitButton.textContent = "Book now";
+    submitButton.classList.remove("tb-btn--loading", "tb-btn--booked", "tb-btn--error");
   }
 
   function toIsoDate(date) {
@@ -420,6 +441,45 @@
     return bookedAtFormatter.format(parsed);
   }
 
+  function normalizeSlot(slot) {
+    if (!slot || typeof slot !== "object") {
+      return null;
+    }
+
+    const dateValue = slot.date || "";
+    const startTimeRaw = slot.start_time || slot.starttime || slot.from || "";
+    const endTimeRaw = slot.end_time || slot.endtime || slot.to || "";
+    const startTime = startTimeRaw ? String(startTimeRaw) : "";
+    const endTime = endTimeRaw ? String(endTimeRaw) : "";
+    const slotId =
+      slot.slot_id ||
+      slot.slotid ||
+      (dateValue && startTime
+        ? `SLOT_${dateValue}_${startTime.replace(":", "")}`.toUpperCase()
+        : null);
+
+    const statusValue = String(slot.status || "").toLowerCase();
+    const booked =
+      slot.booked === true ||
+      slot.available === false ||
+      statusValue === "full";
+
+    const bookerName =
+      slot.booker_name || slot.reserved_by || slot.reservedby || slot.vendor || null;
+
+    const bookedAt = slot.booked_at || slot.bookedAt || null;
+
+    return Object.assign({}, slot, {
+      slot_id: slotId,
+      date: dateValue || slot.date || "",
+      start_time: startTime,
+      end_time: endTime,
+      booked: booked,
+      booker_name: bookerName,
+      booked_at: bookedAt
+    });
+  }
+
   function seatInfo(session) {
     const capacity = Number(session.capacity);
     const bookedRaw =
@@ -430,7 +490,14 @@
           : session.bookedCount !== undefined
             ? session.bookedCount
             : session.booked;
-    const booked = Number(bookedRaw);
+    let booked = Number(bookedRaw);
+    if (Number.isNaN(booked) && !Number.isNaN(capacity)) {
+      if (session.booked === true) {
+        booked = capacity;
+      } else if (session.booked === false) {
+        booked = 0;
+      }
+    }
     if (Number.isNaN(capacity) || Number.isNaN(booked)) {
       return { capacity: null, booked: null, remaining: null };
     }
@@ -442,6 +509,9 @@
     const status = String(session.status || "").toLowerCase();
     if (status === "cancelled") {
       return "cancelled";
+    }
+    if (session.booked === true || status === "full") {
+      return "full";
     }
     if (seats.capacity !== null && seats.booked !== null) {
       if (seats.booked >= seats.capacity) {
@@ -559,20 +629,26 @@
 
     const meta = document.createElement("div");
     meta.className = "tb-meta";
-    const reservedBy =
-      session.reserved_by || session.reservedby || session.vendor || "";
+    const bookerName =
+      session.booker_name ||
+      session.reserved_by ||
+      session.reservedby ||
+      session.vendor ||
+      "";
     const bookedAt = session.booked_at || session.bookedAt || "";
     const bookedAtLabel = formatBookedAt(bookedAt);
     const isBooked = status === "full";
-    if (isBooked) {
-      const bookerName = reservedBy || "Unknown";
-      card.setAttribute("data-tooltip-title", "Reserved by " + bookerName);
-      card.setAttribute(
-        "data-tooltip-sub",
-        bookedAtLabel || "Booking time unavailable"
-      );
+    if (isBooked && bookerName) {
+      card.setAttribute("data-booker-name", bookerName);
+      if (bookedAt) {
+        card.setAttribute("data-booked-at", bookedAt);
+      }
+      card.setAttribute("data-tooltip-title", "Reserved by: " + bookerName);
+      if (bookedAtLabel) {
+        card.setAttribute("data-tooltip-sub", bookedAtLabel);
+      }
     }
-    const reservedRow = createMetaRow("Reserved by", reservedBy, {
+    const reservedRow = createMetaRow("Reserved by", bookerName, {
       allowBlank: true
     });
     reservedRow.classList.add("tb-meta-row--reserved");
@@ -622,8 +698,18 @@
       button.type = "button";
       button.className = "btn btn-primary";
       button.textContent = "Book Now";
-      button.addEventListener("click", function () {
-        openModal(session);
+      button.dataset.slotId = session.slot_id;
+      button.dataset.date = session.date || "";
+      button.dataset.startTime = session.start_time || "";
+      button.dataset.endTime = session.end_time || "";
+      button.addEventListener("click", function (event) {
+        const target = event.currentTarget;
+        openModal({
+          slot_id: target.dataset.slotId,
+          date: target.dataset.date,
+          start_time: target.dataset.startTime,
+          end_time: target.dataset.endTime
+        });
       });
       actions.appendChild(button);
     } else {
@@ -691,11 +777,37 @@
       if (apiError) {
         throw new Error(apiError);
       }
-      const sessions =
+      const sessionsSource =
         json && json.data && Array.isArray(json.data.sessions)
           ? json.data.sessions
-          : [];
-      cachedSessions = sessions
+          : json && json.data && Array.isArray(json.data.slots)
+            ? json.data.slots
+            : [];
+      const normalizedSessions = sessionsSource
+        .map(normalizeSlot)
+        .filter(function (session) {
+          return session;
+        })
+        .map(function (session) {
+          const copy = Object.assign({}, session);
+          const reservedBy =
+            copy.booker_name ||
+            copy.reserved_by ||
+            copy.reservedby ||
+            copy.vendor ||
+            "";
+          if (reservedBy && !copy.booker_name) {
+            copy.booker_name = reservedBy;
+          }
+          if (reservedBy && !copy.reserved_by) {
+            copy.reserved_by = reservedBy;
+          }
+          if (reservedBy && !copy.vendor) {
+            copy.vendor = reservedBy;
+          }
+          return copy;
+        });
+      cachedSessions = normalizedSessions
         .filter(function (session) {
           return session && session.date === selectedDate;
         })
@@ -728,29 +840,45 @@
       return;
     }
 
+    if (modalForm) {
+      modalForm.reset();
+    }
+    resetSubmitButtonState();
+
+    const normalizedSlot = normalizeSlot(session);
+    if (!normalizedSlot || !normalizedSlot.slot_id) {
+      setAlert("Please select a session.", "error");
+      return;
+    }
     setSelectedSession(null);
-    setSelectedSession(session);
+    setSelectedSession(normalizedSlot);
     const selectedSession = window.selectedSession || {};
 
     if (slotIdInput) {
       slotIdInput.value = selectedSession.slot_id || "";
     }
     if (sessionSummary) {
+      const reservedByLabel =
+        (normalizedSlot && normalizedSlot.booker_name) ||
+        (normalizedSlot && normalizedSlot.reserved_by) ||
+        (normalizedSlot && normalizedSlot.reservedby) ||
+        (normalizedSlot && normalizedSlot.vendor) ||
+        "";
       sessionSummary.textContent =
         formatDateLabel(selectedSession.date) +
         " | " +
         formatTimeRange(selectedSession.start_time, selectedSession.end_time) +
         " | " +
         "Training Session" +
-        ((session.reserved_by || session.vendor)
-          ? " | Reserved by " + (session.reserved_by || session.vendor)
+        (reservedByLabel
+          ? " | Reserved by " + reservedByLabel
           : "");
     }
 
-    if (requesterNameInput && user.name && !requesterNameInput.value) {
+    if (requesterNameInput && user.name) {
       requesterNameInput.value = user.name;
     }
-    if (requesterEmailInput && user.email && !requesterEmailInput.value) {
+    if (requesterEmailInput && user.email) {
       requesterEmailInput.value = user.email;
     }
     modal.hidden = false;
@@ -775,15 +903,11 @@
     if (sessionSummary) {
       sessionSummary.textContent = "";
     }
+    resetSubmitButtonState();
   }
 
   function buildBookingPayload() {
-    const selectedSession = window.selectedSession || {};
-    const slotId =
-      (slotIdInput && slotIdInput.value.trim()) ||
-      selectedSession.slot_id ||
-      selectedSession.slotid ||
-      "";
+    const slotId = slotIdInput ? slotIdInput.value.trim() : "";
     const requesterName =
       (requesterNameInput && requesterNameInput.value.trim()) ||
       user.name ||
@@ -827,26 +951,41 @@
     if (!slotId) {
       return;
     }
-    const session = cachedSessions.find(function (item) {
+    const sessionIndex = cachedSessions.findIndex(function (item) {
       return item && item.slot_id === slotId;
     });
-    if (!session) {
+    if (sessionIndex === -1) {
       return;
     }
 
     const reservedBy =
-      requesterName || session.reserved_by || session.vendor || "";
-    session.vendor = reservedBy;
-    session.reserved_by = reservedBy;
-    session.available = false;
-    session.status = "full";
+      requesterName ||
+      cachedSessions[sessionIndex].booker_name ||
+      cachedSessions[sessionIndex].reserved_by ||
+      cachedSessions[sessionIndex].reservedby ||
+      cachedSessions[sessionIndex].vendor ||
+      "";
+    const session = cachedSessions[sessionIndex];
     const capacity = Number(session.capacity);
-    if (!Number.isNaN(capacity) && capacity > 0) {
-      session.booked_count = capacity;
-    } else {
-      session.capacity = session.capacity || 1;
-      session.booked_count = 1;
-    }
+    const bookedCount =
+      !Number.isNaN(capacity) && capacity > 0 ? capacity : 1;
+    const updatedSession = Object.assign({}, session, {
+      booker_name: reservedBy || session.booker_name || "",
+      booked_at: session.booked_at || new Date().toISOString(),
+      booked: true,
+      vendor: reservedBy,
+      reserved_by: reservedBy,
+      reservedby: reservedBy,
+      available: false,
+      status: "full",
+      capacity:
+        !Number.isNaN(capacity) && capacity > 0 ? session.capacity : session.capacity || 1,
+      booked_count: bookedCount
+    });
+
+    cachedSessions = cachedSessions.map(function (item, index) {
+      return index === sessionIndex ? updatedSession : item;
+    });
 
     renderSessions(cachedSessions);
   }
@@ -907,9 +1046,14 @@
         "success",
         agentLink ? { link: agentLink } : null
       );
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = "Booked";
+        submitButton.classList.add("tb-btn--booked");
+        submitButton.classList.remove("tb-btn--loading");
+      }
       setTimeout(function () {
         closeModal();
-        window.selectedDate = null;
         markSessionBooked(payload.slot_id, payload.requester_name);
         loadSessions({ preserveAlert: true });
       }, 2000);
@@ -918,6 +1062,7 @@
       setAlert(message, "error", {
         action: { label: "Retry", onClick: function () { submitBooking(); } }
       });
+      resetSubmitButtonState();
     } finally {
       setBookingLoading(false);
     }
@@ -973,8 +1118,9 @@
       }
     });
   }
-  if (modalForm) {
+  if (modalForm && !modalForm.dataset.bound) {
     modalForm.addEventListener("submit", submitBooking);
+    modalForm.dataset.bound = "1";
   }
 
   loadSessions();
