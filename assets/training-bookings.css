@@ -1,6 +1,6 @@
 .training-bookings {
   padding: 48px 0 64px;
-  background: linear-gradient(180deg, #f6f8fb 0%, #eef2f7 100%);
+  background: linear-gradient(135deg, #f8fbff 0%, #f0f8ff 100%);
 }
 
 .training-bookings .container {
@@ -145,10 +145,42 @@
   }
 }
 
+@keyframes tb-badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+@keyframes tb-modal-slide {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes tb-checkmark {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .tb-card:hover,
 .tb-card:focus-within {
-  transform: translateY(-3px);
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.14);
+  transform: translateY(-6px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
 }
 
 .tb-card--open {
@@ -158,6 +190,10 @@
 .tb-card--full {
   border-left-color: #ef4444;
   background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+}
+
+.slot-card.is-booked {
+  background: linear-gradient(135deg, #f0f8ff 0%, #e8f4ff 100%);
 }
 
 .tb-card--cancelled {
@@ -257,6 +293,7 @@
 .tb-status-badge--open {
   background: #dcfce7;
   color: #166534;
+  animation: tb-badge-pulse 2s ease-in-out infinite;
 }
 
 .tb-status-badge--full {
@@ -357,7 +394,7 @@
   padding: 10px 16px;
   border-radius: 10px;
   font-weight: 600;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .training-bookings .btn.btn-primary {
@@ -367,9 +404,9 @@
   box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
 }
 
-.training-bookings .btn.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 20px rgba(37, 99, 235, 0.25);
+.training-bookings .btn.btn-primary:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(33, 128, 204, 0.12);
 }
 
 .training-bookings .btn.btn-primary:active {
@@ -493,6 +530,7 @@
   width: 100%;
   max-width: 520px;
   box-shadow: 0 20px 60px rgba(15, 23, 42, 0.3);
+  animation: tb-modal-slide 0.25s ease;
 }
 
 .tb-modal-header {
@@ -535,6 +573,25 @@
   gap: 10px;
   margin-top: 16px;
   flex-wrap: wrap;
+}
+
+.tb-booking-confirmation__body {
+  text-align: center;
+}
+
+.tb-booking-confirmation__body::before {
+  content: "\2713";
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  background: #22c55e;
+  color: #fff;
+  font-weight: 700;
+  animation: tb-checkmark 0.2s ease;
 }
 
 .tb-signed-out {
