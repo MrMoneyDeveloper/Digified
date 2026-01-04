@@ -608,9 +608,12 @@
   function buildCard(session, index) {
     const seats = seatInfo(session);
     const status = sessionStatus(session, seats);
+    const isBooked = session.booked === true || status === "full";
 
     const card = document.createElement("article");
     card.className = "tb-card tb-card--" + status;
+    card.classList.add("slot-card");
+    card.classList.add(isBooked ? "is-booked" : "is-open");
     if (typeof index === "number") {
       const delay = Math.min(index * 40, 200);
       card.style.setProperty("--tb-card-delay", `${delay}ms`);
@@ -679,17 +682,8 @@
       "";
     const bookedAt = session.booked_at || session.bookedAt || "";
     const bookedAtLabel = formatBookedAt(bookedAt);
-    const isBooked = status === "full";
-    if (isBooked && bookerName) {
-      card.setAttribute("data-booker-name", bookerName);
-      if (bookedAt) {
-        card.setAttribute("data-booked-at", bookedAt);
-      }
-      card.setAttribute("data-tooltip-title", "Reserved by: " + bookerName);
-      if (bookedAtLabel) {
-        card.setAttribute("data-tooltip-sub", bookedAtLabel);
-      }
-    }
+    card.setAttribute("data-booker-name", bookerName || "");
+    card.setAttribute("data-booked-at", bookedAt || "");
     const reservedRow = createMetaRow("Reserved by", bookerName, {
       allowBlank: true
     });
@@ -767,6 +761,29 @@
     card.appendChild(header);
     card.appendChild(body);
     card.appendChild(actions);
+    if (isBooked && bookerName) {
+      const tooltip = document.createElement("div");
+      tooltip.className = "slot-tooltip";
+
+      const tooltipTitle = document.createElement("div");
+      tooltipTitle.className = "slot-tooltip-title";
+      tooltipTitle.textContent = "Reserved by";
+      tooltip.appendChild(tooltipTitle);
+
+      const tooltipName = document.createElement("div");
+      tooltipName.className = "slot-tooltip-name";
+      tooltipName.textContent = bookerName;
+      tooltip.appendChild(tooltipName);
+
+      if (bookedAtLabel) {
+        const tooltipTime = document.createElement("div");
+        tooltipTime.className = "slot-tooltip-time";
+        tooltipTime.textContent = bookedAtLabel;
+        tooltip.appendChild(tooltipTime);
+      }
+
+      card.appendChild(tooltip);
+    }
     return card;
   }
 

@@ -393,12 +393,11 @@
   box-shadow: none;
 }
 
-.tb-card--full[data-tooltip-title] {
+.slot-card.is-booked {
   cursor: not-allowed;
 }
 
-.tb-card--full[data-tooltip-title]::after {
-  content: attr(data-tooltip-title) "\A" attr(data-tooltip-sub);
+.slot-tooltip {
   position: absolute;
   left: 16px;
   bottom: calc(100% + 12px);
@@ -408,35 +407,34 @@
   border-radius: 10px;
   font-size: 12px;
   line-height: 1.4;
-  white-space: pre-line;
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(6px);
   pointer-events: none;
   transition: opacity 0.2s ease, transform 0.2s ease;
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.25);
   z-index: 5;
+  min-width: 180px;
 }
 
-.tb-card--full[data-tooltip-title]::before {
-  content: "";
-  position: absolute;
-  left: 28px;
-  bottom: calc(100% + 4px);
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid rgba(17, 24, 39, 0.95);
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  z-index: 5;
+.slot-tooltip-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #cbd5f5;
 }
 
-.tb-card--full[data-tooltip-title]:hover::after,
-.tb-card--full[data-tooltip-title]:hover::before,
-.tb-card--full[data-tooltip-title]:focus-within::after,
-.tb-card--full[data-tooltip-title]:focus-within::before {
+.slot-tooltip-name {
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.slot-tooltip-time {
+  margin-top: 4px;
+  color: #cbd5f5;
+}
+
+.slot-card.is-booked:hover .slot-tooltip,
+.slot-card.is-booked:focus-within .slot-tooltip {
   opacity: 1;
   transform: translateY(0);
 }
@@ -551,14 +549,21 @@ body.tb-modal-open {
 }
 
 @media (hover: none) {
-  .tb-card--full[data-tooltip-title]::after,
-  .tb-card--full[data-tooltip-title]::before {
+  .slot-tooltip {
+    position: static;
+    opacity: 1;
     transform: translateY(0);
+    pointer-events: auto;
+    margin-top: 8px;
+    background: #f8fafc;
+    color: #1f2937;
+    border: 1px solid #e2e8f0;
+    box-shadow: none;
   }
 
-  .tb-card--full[data-tooltip-title]:active::after,
-  .tb-card--full[data-tooltip-title]:active::before {
-    opacity: 1;
+  .slot-tooltip-title,
+  .slot-tooltip-time {
+    color: #64748b;
   }
 }
 
@@ -585,8 +590,7 @@ body.tb-modal-open {
   }
 
   .tb-card,
-  .tb-card--full[data-tooltip-title]::after,
-  .tb-card--full[data-tooltip-title]::before {
+  .slot-tooltip {
     transition: none;
   }
 }
