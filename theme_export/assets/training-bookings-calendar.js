@@ -335,7 +335,14 @@
     }
     submitButton.disabled = false;
     submitButton.textContent = "Book now";
-    submitButton.classList.remove("tb-btn--loading", "tb-btn--booked", "tb-btn--error");
+    submitButton.classList.remove(
+      "tb-btn--loading",
+      "tb-btn--booked",
+      "tb-btn--error",
+      "booked",
+      "error",
+      "loading"
+    );
   }
 
   function toIsoDate(date) {
@@ -1065,7 +1072,7 @@
       );
       if (submitButton) {
         submitButton.disabled = true;
-        submitButton.textContent = "Booked";
+        submitButton.textContent = "Booked ✓";
         submitButton.classList.add("tb-btn--booked");
         submitButton.classList.remove("tb-btn--loading");
       }
