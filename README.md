@@ -48,3 +48,19 @@ Validation checklist:
 - Click the "Book Room" nav link and confirm it routes to the same page.
 - Use the default next-30-days range to load sessions and submit a booking.
 
+### Troubleshooting JSONP errors
+
+If you see `ReferenceError: roomJsonpCb_... is not defined`, it usually means the JSONP callback was removed or never loaded:
+- The page did not load `assets/room-bookings-calendar.js` (stale ZIP upload or missing asset).
+- Callback name mismatch: the room booking script uses `roomJsonpCb_*`, while the training booking script uses `calApiJsonpCb_*`. Loading the wrong file for a page will break the callback.
+- The Apps Script response arrived after the timeout (the callback is cleaned up on timeout).
+
+Why changes did not reflect even though the repo changed:
+- The theme ZIP is built by `package-theme.ps1`, which only includes `assets`, `settings`, `templates`, `translations`, `script.js`, `style.css`, `manifest.json`, and `settings_schema.json`. Anything outside those paths is ignored.
+- Apps Script code runs on Google servers; it is not part of the Zendesk theme ZIP.
+
+What to do next:
+- Verify the correct template loads the matching JS file (`assets/room-bookings-calendar.js` for room booking, `assets/training-bookings-calendar.js` for training booking).
+- Rebuild and reupload the ZIP using `powershell -ExecutionPolicy Bypass -File .\\package-theme.ps1`.
+- Confirm `room_booking_api_url` and `room_booking_api_key` are set in theme settings.
+
