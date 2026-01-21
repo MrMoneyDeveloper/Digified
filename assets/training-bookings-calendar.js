@@ -1255,12 +1255,6 @@
     let combinedNotes = rawNotes
       ? "Book Training Room - " + rawNotes
       : "Book Training Room";
-    if (onlineMeeting) {
-      const attendeeNote = attendeeEmails.length
-        ? "Online meeting attendees: " + attendeeEmails.join(", ")
-        : "Online meeting requested.";
-      combinedNotes = combinedNotes + "\n" + attendeeNote;
-    }
     return {
       slot_id: slotId,
       requester_email: requesterEmail,
