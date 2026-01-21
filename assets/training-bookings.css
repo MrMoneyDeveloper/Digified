@@ -192,8 +192,17 @@
   background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
 }
 
+.tb-card--online:not(.tb-card--full):not(.tb-card--cancelled) {
+  border-left-color: #2563eb;
+  background: linear-gradient(135deg, #e8f4ff 0%, #dceeff 100%);
+}
+
 .slot-card.is-booked {
   background: linear-gradient(135deg, #f0f8ff 0%, #e8f4ff 100%);
+}
+
+.slot-card.is-open:not(.tb-card--online) {
+  background: linear-gradient(135deg, #ffffff 0%, #f7f9ff 100%);
 }
 
 .tb-card--cancelled {
@@ -257,6 +266,10 @@
   background: #94a3b8;
 }
 
+.tb-status-dot--online {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35);
+}
+
 .tb-topic {
   margin: 0;
   font-size: 18px;
@@ -304,6 +317,11 @@
 .tb-status-badge--cancelled {
   background: #e2e8f0;
   color: #475569;
+}
+
+.tb-status-badge--online {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .tb-meta {
@@ -451,6 +469,10 @@
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.25);
   z-index: 5;
   min-width: 180px;
+  max-width: 280px;
+  max-height: 160px;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
 }
 
 .slot-tooltip-title {
@@ -468,6 +490,11 @@
 .slot-tooltip-time {
   margin-top: 4px;
   color: #cbd5f5;
+}
+
+.slot-tooltip-item {
+  margin-top: 4px;
+  color: #e2e8f0;
 }
 
 .slot-card.is-booked:hover .slot-tooltip,
@@ -565,6 +592,36 @@
 .tb-form-grid {
   display: grid;
   gap: 12px;
+}
+
+.tb-attendee-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tb-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #4a5568;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.tb-checkbox input {
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+#training-booking-attendees-field {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+#training-booking-attendees-field:not([hidden]) {
+  animation: fadeIn 0.3s ease-out;
 }
 
 .tb-modal-actions {

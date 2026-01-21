@@ -53,6 +53,14 @@
     "training-booking-requester-email"
   );
   const notesInput = document.getElementById("training-booking-notes");
+  const onlineToggle = document.getElementById("training-booking-online");
+  const attendeesField = document.getElementById(
+    "training-booking-attendees-field"
+  );
+  const attendeesWrap = document.getElementById("training-booking-attendees");
+  const addAttendeeButton = document.getElementById(
+    "training-booking-add-attendee"
+  );
   const submitButton = document.getElementById("training-booking-submit");
 
   function getCurrentUser() {
@@ -389,6 +397,127 @@
     );
   }
 
+  function clearAttendeeInputs() {
+    if (!attendeesWrap) {
+      return;
+    }
+    attendeesWrap.innerHTML = "";
+  }
+
+  function addAttendeeInput(value) {
+    if (!attendeesWrap) {
+      return null;
+    }
+    const count = attendeesWrap.querySelectorAll("input").length + 1;
+    const input = document.createElement("input");
+    input.type = "email";
+    input.name = "attendee_emails[]";
+    input.className = "form-control";
+    input.placeholder = "Attendee email";
+    input.autocomplete = "email";
+    input.inputMode = "email";
+    input.setAttribute("aria-label", "Attendee email " + count);
+    if (count === 1) {
+      input.id = "training-booking-attendee-1";
+    }
+    if (value) {
+      input.value = value;
+    }
+    attendeesWrap.appendChild(input);
+    return input;
+  }
+
+  function setAttendeeFieldsVisible(isVisible) {
+    if (!attendeesField) {
+      return;
+    }
+    attendeesField.hidden = !isVisible;
+    if (!isVisible) {
+      clearAttendeeInputs();
+      return;
+    }
+    if (attendeesWrap && attendeesWrap.querySelectorAll("input").length === 0) {
+      addAttendeeInput();
+    }
+  }
+
+  function getAttendeeEmails() {
+    if (!attendeesWrap) {
+      return [];
+    }
+    return Array.from(attendeesWrap.querySelectorAll("input"))
+      .map(function (input) {
+        return String(input.value || "").trim();
+      })
+      .filter(Boolean);
+  }
+
+  function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || ""));
+  }
+
+  function normalizeMeetingType(value) {
+    if (value === true) {
+      return "online";
+    }
+    const raw = String(value || "").trim().toLowerCase();
+    if (!raw) {
+      return "";
+    }
+    if (raw === "online" || raw === "virtual" || raw === "remote") {
+      return "online";
+    }
+    if (
+      raw === "in_person" ||
+      raw === "in-person" ||
+      raw === "in person" ||
+      raw === "onsite"
+    ) {
+      return "in_person";
+    }
+    return raw;
+  }
+
+  function normalizeAttendeeEmails(value) {
+    if (!value) {
+      return [];
+    }
+    if (Array.isArray(value)) {
+      return value
+        .map(function (item) {
+          return String(item || "").trim();
+        })
+        .filter(Boolean);
+    }
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return [];
+      }
+      if (trimmed[0] === "[" && trimmed[trimmed.length - 1] === "]") {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            return parsed
+              .map(function (item) {
+                return String(item || "").trim();
+              })
+              .filter(Boolean);
+          }
+        } catch (error) {
+          // Fall through to delimiter parsing.
+        }
+      }
+      return trimmed
+        .split(/[;,]/)
+        .map(function (item) {
+          return String(item || "").trim();
+        })
+        .filter(Boolean);
+    }
+    return [];
+  }
+
   function toIsoDate(date) {
     const year = date.getUTCFullYear();
     const month = String(date.getUTCMonth() + 1).padStart(2, "0");
@@ -520,6 +649,20 @@
       slot.booker_name || slot.reserved_by || slot.reservedby || slot.vendor || null;
 
     const bookedAt = slot.booked_at || slot.bookedAt || null;
+    const meetingType = normalizeMeetingType(
+      slot.meeting_type ||
+        slot.meetingType ||
+        slot.meeting ||
+        (slot.online_meeting === true ? "online" : "")
+    );
+    const attendeeEmails = normalizeAttendeeEmails(
+      slot.attendee_emails ||
+        slot.attendeeEmails ||
+        slot.attendees ||
+        slot.attendee_email ||
+        slot.attendeeEmail ||
+        ""
+    );
 
     return Object.assign({}, slot, {
       slot_id: slotId,
@@ -528,7 +671,9 @@
       end_time: endTime,
       booked: booked,
       booker_name: bookerName,
-      booked_at: bookedAt
+      booked_at: bookedAt,
+      meeting_type: meetingType,
+      attendee_emails: attendeeEmails
     });
   }
 
@@ -619,11 +764,28 @@
     const seats = seatInfo(session);
     const status = sessionStatus(session, seats);
     const isBooked = session.booked === true || status === "full";
+    const meetingType = normalizeMeetingType(
+      session.meeting_type ||
+        session.meetingType ||
+        session.meeting ||
+        (session.online_meeting === true ? "online" : "")
+    );
+    const attendeeEmails = normalizeAttendeeEmails(
+      session.attendee_emails ||
+        session.attendeeEmails ||
+        session.attendees ||
+        session.attendee_email ||
+        session.attendeeEmail ||
+        ""
+    );
 
     const card = document.createElement("article");
     card.className = "tb-card tb-card--" + status;
     card.classList.add("slot-card");
     card.classList.add(isBooked ? "is-booked" : "is-open");
+    if (meetingType === "online") {
+      card.classList.add("tb-card--online");
+    }
     if (typeof index === "number") {
       const delay = Math.min(index * 40, 200);
       card.style.setProperty("--tb-card-delay", `${delay}ms`);
@@ -637,6 +799,9 @@
 
     const dot = document.createElement("span");
     dot.className = "tb-status-dot tb-status-dot--" + status;
+    if (meetingType === "online") {
+      dot.classList.add("tb-status-dot--online");
+    }
     dot.setAttribute("aria-hidden", "true");
 
     const dateEl = document.createElement("span");
@@ -681,6 +846,12 @@
     statusBadge.className = "tb-status-badge tb-status-badge--" + status;
     statusBadge.textContent = statusLabel(status);
     badges.appendChild(statusBadge);
+    if (meetingType === "online") {
+      const meetingBadge = document.createElement("span");
+      meetingBadge.className = "tb-status-badge tb-status-badge--online";
+      meetingBadge.textContent = "Online";
+      badges.appendChild(meetingBadge);
+    }
 
     const meta = document.createElement("div");
     meta.className = "tb-meta";
@@ -771,25 +942,37 @@
     card.appendChild(header);
     card.appendChild(body);
     card.appendChild(actions);
-    if (isBooked && bookerName) {
+    const hasTooltipInfo =
+      !!bookerName || !!bookedAtLabel || attendeeEmails.length > 0;
+    if (isBooked && hasTooltipInfo) {
       const tooltip = document.createElement("div");
       tooltip.className = "slot-tooltip";
 
-      const tooltipTitle = document.createElement("div");
-      tooltipTitle.className = "slot-tooltip-title";
-      tooltipTitle.textContent = "Reserved by";
-      tooltip.appendChild(tooltipTitle);
+      if (bookerName) {
+        const tooltipTitle = document.createElement("div");
+        tooltipTitle.className = "slot-tooltip-title";
+        tooltipTitle.textContent = "Reserved by";
+        tooltip.appendChild(tooltipTitle);
 
-      const tooltipName = document.createElement("div");
-      tooltipName.className = "slot-tooltip-name";
-      tooltipName.textContent = bookerName;
-      tooltip.appendChild(tooltipName);
+        const tooltipName = document.createElement("div");
+        tooltipName.className = "slot-tooltip-name";
+        tooltipName.textContent = bookerName;
+        tooltip.appendChild(tooltipName);
+      }
 
       if (bookedAtLabel) {
         const tooltipTime = document.createElement("div");
         tooltipTime.className = "slot-tooltip-time";
         tooltipTime.textContent = bookedAtLabel;
         tooltip.appendChild(tooltipTime);
+      }
+
+      if (attendeeEmails.length) {
+        const tooltipAtt = document.createElement("div");
+        tooltipAtt.className = "slot-tooltip-item";
+        tooltipAtt.textContent =
+          "Attendees: " + attendeeEmails.join(", ");
+        tooltip.appendChild(tooltipAtt);
       }
 
       card.appendChild(tooltip);
@@ -1017,6 +1200,10 @@
     if (notesInput) {
       notesInput.value = "";
     }
+    if (onlineToggle) {
+      onlineToggle.checked = false;
+    }
+    setAttendeeFieldsVisible(false);
 
     const currentUser = getCurrentUser();
     if (requesterNameInput) {
@@ -1062,15 +1249,26 @@
     const resolvedUserType = resolveUserType();
     userType = resolvedUserType;
     const rawNotes = notesInput ? notesInput.value.trim() : "";
-    const combinedNotes = rawNotes
+    const onlineMeeting = !!(onlineToggle && onlineToggle.checked);
+    const meetingType = onlineMeeting ? "online" : "in_person";
+    const attendeeEmails = onlineMeeting ? getAttendeeEmails() : [];
+    let combinedNotes = rawNotes
       ? "Book Training Room - " + rawNotes
       : "Book Training Room";
+    if (onlineMeeting) {
+      const attendeeNote = attendeeEmails.length
+        ? "Online meeting attendees: " + attendeeEmails.join(", ")
+        : "Online meeting requested.";
+      combinedNotes = combinedNotes + "\n" + attendeeNote;
+    }
     return {
       slot_id: slotId,
       requester_email: requesterEmail,
       requester_name: requesterName,
       notes: combinedNotes,
-      user_type: resolvedUserType
+      user_type: resolvedUserType,
+      meeting_type: meetingType,
+      attendee_emails: attendeeEmails
     };
   }
 
@@ -1087,10 +1285,24 @@
     if (!payload.user_type) {
       return "User type is not available.";
     }
+    if (payload.meeting_type === "online") {
+      if (
+        !Array.isArray(payload.attendee_emails) ||
+        payload.attendee_emails.length === 0
+      ) {
+        return "Please add at least one attendee email for online meetings.";
+      }
+      const invalidEmail = payload.attendee_emails.find(function (email) {
+        return !isValidEmail(email);
+      });
+      if (invalidEmail) {
+        return "Please enter valid attendee email addresses.";
+      }
+    }
     return "";
   }
 
-  function markSessionBooked(slotId, requesterName) {
+  function markSessionBooked(slotId, requesterName, meetingType, attendeeEmails) {
     if (!slotId) {
       return;
     }
@@ -1101,29 +1313,46 @@
       return;
     }
 
-    const reservedBy =
-      requesterName ||
-      cachedSessions[sessionIndex].booker_name ||
-      cachedSessions[sessionIndex].reserved_by ||
-      cachedSessions[sessionIndex].reservedby ||
-      cachedSessions[sessionIndex].vendor ||
-      "";
     const session = cachedSessions[sessionIndex];
+    const existingBookerName =
+      session.booker_name ||
+      session.reserved_by ||
+      session.reservedby ||
+      session.vendor ||
+      "";
+    const reservedBy = requesterName || existingBookerName || "";
     const capacity = Number(session.capacity);
     const bookedCount =
       !Number.isNaN(capacity) && capacity > 0 ? capacity : 1;
+    const normalizedMeetingType = normalizeMeetingType(
+      meetingType ||
+        session.meeting_type ||
+        session.meetingType ||
+        session.meeting ||
+        (session.online_meeting === true ? "online" : "")
+    );
+    const attendeeSource =
+      Array.isArray(attendeeEmails) && attendeeEmails.length > 0
+        ? attendeeEmails
+        : session.attendee_emails ||
+          session.attendeeEmails ||
+          session.attendees ||
+          "";
+    const normalizedAttendees = normalizeAttendeeEmails(attendeeSource);
     const updatedSession = Object.assign({}, session, {
-      booker_name: reservedBy || session.booker_name || "",
+      booker_name: existingBookerName || reservedBy || "",
       booked_at: session.booked_at || new Date().toISOString(),
       booked: true,
-      vendor: reservedBy,
-      reserved_by: reservedBy,
-      reservedby: reservedBy,
+      vendor: session.vendor || reservedBy,
+      reserved_by: session.reserved_by || reservedBy,
+      reservedby: session.reservedby || reservedBy,
       available: false,
       status: "full",
       capacity:
         !Number.isNaN(capacity) && capacity > 0 ? session.capacity : session.capacity || 1,
-      booked_count: bookedCount
+      booked_count: bookedCount,
+      meeting_type: normalizedMeetingType || session.meeting_type || "",
+      attendee_emails: normalizedAttendees
     });
 
     cachedSessions = cachedSessions.map(function (item, index) {
@@ -1201,6 +1430,10 @@
         requester_email: payload.requester_email,
         user_type: payload.user_type,
         notes: payload.notes,
+        meeting_type: payload.meeting_type,
+        attendee_emails: Array.isArray(payload.attendee_emails)
+          ? payload.attendee_emails.join(",")
+          : payload.attendee_emails,
         dept: ""
       });
       const result = handleBookingResponse(json, payload);
@@ -1210,7 +1443,12 @@
       }
       setTimeout(function () {
         closeBookingModal();
-        markSessionBooked(payload.slot_id, payload.requester_name);
+        markSessionBooked(
+          payload.slot_id,
+          payload.requester_name,
+          payload.meeting_type,
+          payload.attendee_emails
+        );
         loadSessions({ preserveAlert: true });
       }, 2000);
     } catch (error) {
@@ -1281,6 +1519,20 @@
       selectedDate = getSelectedDate();
       window.selectedDate = selectedDate;
       loadSessions();
+    });
+  }
+
+  if (onlineToggle) {
+    onlineToggle.addEventListener("change", function () {
+      setAttendeeFieldsVisible(onlineToggle.checked);
+    });
+  }
+  if (addAttendeeButton) {
+    addAttendeeButton.addEventListener("click", function () {
+      if (!onlineToggle || !onlineToggle.checked) {
+        return;
+      }
+      addAttendeeInput();
     });
   }
 

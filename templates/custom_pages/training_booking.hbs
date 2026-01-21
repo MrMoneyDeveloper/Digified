@@ -894,6 +894,17 @@
                     <label for="training-booking-notes">Notes</label>
                     <textarea class="form-control" id="training-booking-notes" name="notes" rows="3" placeholder="Any questions or special requirements?"></textarea>
                   </div>
+                  <div class="tb-field">
+                    <label class="tb-checkbox" for="training-booking-online">
+                      <input id="training-booking-online" name="online_meeting" type="checkbox" value="1">
+                      <span>Online meeting (not in-person)</span>
+                    </label>
+                  </div>
+                  <div class="tb-field" id="training-booking-attendees-field" hidden>
+                    <label for="training-booking-attendee-1">Attendee emails</label>
+                    <div id="training-booking-attendees" class="tb-attendee-list"></div>
+                    <button class="btn btn-secondary" id="training-booking-add-attendee" type="button">+ Add attendee</button>
+                  </div>
                 </div>
                 <div class="tb-modal-actions">
                   <button class="btn btn-primary" id="training-booking-submit" type="submit">Book now</button>
