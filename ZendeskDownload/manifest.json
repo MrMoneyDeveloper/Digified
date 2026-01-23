@@ -1,0 +1,914 @@
+{
+  "name": "Copenhagen",
+  "author": "Zendesk",
+  "version": "13.0.1",
+  "api_version": 4,
+  "default_locale": "en-us",
+  "settings": [
+    {
+      "label": "colors_group_label",
+      "variables": [
+        {
+          "identifier": "brand_color",
+          "type": "color",
+          "description": "brand_color_description",
+          "label": "brand_color_label",
+          "value": "rgba(37, 102, 107, 1)"
+        },
+        {
+          "identifier": "brand_text_color",
+          "type": "color",
+          "description": "brand_text_color_description",
+          "label": "brand_text_color_label",
+          "value": "rgba(74, 239, 239, 1)"
+        },
+        {
+          "identifier": "text_color",
+          "type": "color",
+          "description": "text_color_description",
+          "label": "text_color_label",
+          "value": "#2F3941"
+        },
+        {
+          "identifier": "link_color",
+          "type": "color",
+          "description": "link_color_description",
+          "label": "link_color_label",
+          "value": "#1F73B7"
+        },
+        {
+          "identifier": "hover_link_color",
+          "type": "color",
+          "description": "hover_link_color_description",
+          "label": "hover_link_color_label",
+          "value": "#0F3554"
+        },
+        {
+          "identifier": "visited_link_color",
+          "type": "color",
+          "description": "visited_link_color_description",
+          "label": "visited_link_color_label",
+          "value": "rgba(136, 225, 239, 1)"
+        },
+        {
+          "identifier": "background_color",
+          "type": "color",
+          "description": "background_color_description",
+          "label": "background_color_label",
+          "value": "#FFFFFF"
+        }
+      ]
+    },
+    {
+      "label": "fonts_group_label",
+      "variables": [
+        {
+          "identifier": "heading_font",
+          "type": "list",
+          "description": "heading_font_description",
+          "label": "heading_font_label",
+          "value": "'Century Gothic', sans-serif",
+          "options": [
+            {
+              "label": "System",
+              "value": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+            },
+            {
+              "label": "Arial",
+              "value": "Arial, 'Helvetica Neue', Helvetica, sans-serif"
+            },
+            {
+              "label": "Arial Black",
+              "value": "'Arial Black', Arial, 'Helvetica Neue', Helvetica, sans-serif"
+            },
+            {
+              "label": "Baskerville",
+              "value": "Baskerville, 'Times New Roman', Times, serif"
+            },
+            {
+              "label": "Century Gothic",
+              "value": "'Century Gothic', sans-serif"
+            },
+            {
+              "label": "Copperplate Light",
+              "value": "'Copperplate Light', 'Copperplate Gothic Light', serif"
+            },
+            {
+              "label": "Courier New",
+              "value": "'Courier New', Courier, monospace"
+            },
+            {
+              "label": "Futura",
+              "value": "Futura, 'Century Gothic', sans-serif"
+            },
+            {
+              "label": "Garamond",
+              "value": "Garamond, 'Hoefler Text', 'Times New Roman', Times, serif"
+            },
+            {
+              "label": "Geneva",
+              "value": "Geneva, 'Lucida Sans', 'Lucida Grande', 'Lucida Sans Unicode', Verdana, sans-serif"
+            },
+            {
+              "label": "Georgia",
+              "value": "Georgia, Palatino, 'Palatino Linotype', Times, 'Times New Roman', serif"
+            },
+            {
+              "label": "Helvetica",
+              "value": "Helvetica, Arial, sans-serif"
+            },
+            {
+              "label": "Helvetica Neue",
+              "value": "'Helvetica Neue', Arial, Helvetica, sans-serif"
+            },
+            {
+              "label": "Impact",
+              "value": "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif"
+            },
+            {
+              "label": "Lucida Grande",
+              "value": "'Lucida Grande', 'Lucida Sans', 'Lucida Sans Unicode', sans-serif"
+            },
+            {
+              "label": "Trebuchet MS",
+              "value": "'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif"
+            }
+          ]
+        },
+        {
+          "identifier": "text_font",
+          "type": "list",
+          "description": "text_font_description",
+          "label": "text_font_label",
+          "value": "'Century Gothic', sans-serif",
+          "options": [
+            {
+              "label": "System",
+              "value": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+            },
+            {
+              "label": "Arial",
+              "value": "Arial, 'Helvetica Neue', Helvetica, sans-serif"
+            },
+            {
+              "label": "Arial Black",
+              "value": "'Arial Black', Arial, 'Helvetica Neue', Helvetica, sans-serif"
+            },
+            {
+              "label": "Baskerville",
+              "value": "Baskerville, 'Times New Roman', Times, serif"
+            },
+            {
+              "label": "Century Gothic",
+              "value": "'Century Gothic', sans-serif"
+            },
+            {
+              "label": "Copperplate Light",
+              "value": "'Copperplate Light', 'Copperplate Gothic Light', serif"
+            },
+            {
+              "label": "Courier New",
+              "value": "'Courier New', Courier, monospace"
+            },
+            {
+              "label": "Futura",
+              "value": "Futura, 'Century Gothic', sans-serif"
+            },
+            {
+              "label": "Garamond",
+              "value": "Garamond, 'Hoefler Text', 'Times New Roman', Times, serif"
+            },
+            {
+              "label": "Geneva",
+              "value": "Geneva, 'Lucida Sans', 'Lucida Grande', 'Lucida Sans Unicode', Verdana, sans-serif"
+            },
+            {
+              "label": "Georgia",
+              "value": "Georgia, Palatino, 'Palatino Linotype', Times, 'Times New Roman', serif"
+            },
+            {
+              "label": "Helvetica",
+              "value": "Helvetica, Arial, sans-serif"
+            },
+            {
+              "label": "Helvetica Neue",
+              "value": "'Helvetica Neue', Arial, Helvetica, sans-serif"
+            },
+            {
+              "label": "Impact",
+              "value": "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif"
+            },
+            {
+              "label": "Lucida Grande",
+              "value": "'Lucida Grande', 'Lucida Sans', 'Lucida Sans Unicode', sans-serif"
+            },
+            {
+              "label": "Trebuchet MS",
+              "value": "'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "User segmentation",
+      "variables": [
+        {
+          "identifier": "internal_org_id",
+          "type": "text",
+          "description": "ID for the internal organization used to segment Help Center content.",
+          "label": "Internal organization ID",
+          "value": "23530444315804"
+        },
+        {
+          "identifier": "tenant_org_id",
+          "type": "text",
+          "description": "ID for the tenant organization used to segment Help Center content.",
+          "label": "Tenant organization ID",
+          "value": "23530712292892"
+        },
+        {
+          "identifier": "internal_tag",
+          "type": "text",
+          "description": "User tag applied to staff/internal users.",
+          "label": "Internal user tag",
+          "value": "segment_internal"
+        },
+        {
+          "identifier": "tenant_tag",
+          "type": "text",
+          "description": "User tag applied to tenant/external users.",
+          "label": "Tenant user tag",
+          "value": "segment_tenant"
+        },
+        {
+          "identifier": "management_tag",
+          "type": "text",
+          "description": "User tag applied to management users.",
+          "label": "Management user tag",
+          "value": "segment_management"
+        },
+        {
+          "identifier": "management_org_id",
+          "type": "text",
+          "description": "Organization ID used to segment management users.",
+          "label": "Management organization ID",
+          "value": ""
+        },
+        {
+          "identifier": "internal_form_id",
+          "type": "text",
+          "description": "Ticket form ID for internal/staff sign-up requests.",
+          "label": "Internal form ID",
+          "value": "23590656709788"
+        },
+        {
+          "identifier": "tenant_form_id",
+          "type": "text",
+          "description": "Ticket form ID for tenant/external sign-up requests.",
+          "label": "Tenant form ID",
+          "value": "23590702845724"
+        },
+        {
+          "identifier": "internal_request_form_id",
+          "type": "text",
+          "description": "Ticket form ID used for internal Support & Requests.",
+          "label": "Internal request form ID",
+          "value": "22989127409436"
+        },
+        {
+          "identifier": "tenant_request_form_id",
+          "type": "text",
+          "description": "Ticket form ID used for tenant Support & Requests.",
+          "label": "Tenant request form ID",
+          "value": "23381214703004"
+        }
+      ]
+    },
+    {
+      "label": "Segment destinations",
+      "variables": [
+        {
+          "identifier": "internal_policies_category_id",
+          "type": "text",
+          "description": "Category ID that hosts internal-only policies.",
+          "label": "Internal policies category ID",
+          "value": "23700078037148"
+        },
+        {
+          "identifier": "tenant_policies_category_id",
+          "type": "text",
+          "description": "Category ID that hosts tenant/external policies.",
+          "label": "Tenant policies category ID",
+          "value": "23700120243740"
+        },
+        {
+          "identifier": "hr_resources_section_id",
+          "type": "text",
+          "description": "Section ID for internal HR resources.",
+          "label": "HR resources section ID",
+          "value": ""
+        },
+        {
+          "identifier": "internal_news_category_id",
+          "type": "text",
+          "description": "Category ID for internal announcements/news.",
+          "label": "Internal news category ID",
+          "value": ""
+        },
+        {
+          "identifier": "tenant_service_form_id",
+          "type": "text",
+          "description": "Ticket form ID for tenant service requests.",
+          "label": "Tenant service form ID",
+          "value": ""
+        },
+        {
+          "identifier": "tenant_news_category_id",
+          "type": "text",
+          "description": "Category ID for tenant-facing updates and announcements.",
+          "label": "Tenant news category ID",
+          "value": ""
+        },
+        {
+          "identifier": "public_policies_category_id",
+          "type": "text",
+          "description": "Category ID for public or generic policies.",
+          "label": "Public policies category ID",
+          "value": "23700129077660"
+        },
+        {
+          "identifier": "generic_form_id",
+          "type": "text",
+          "description": "Ticket form ID for generic support requests.",
+          "label": "Generic support form ID",
+          "value": ""
+        },
+        {
+          "identifier": "category_shared_policies_id",
+          "type": "text",
+          "description": "Category ID for shared building policies.",
+          "label": "Category ID – Shared Building Policies",
+          "value": "23700129077660"
+        },
+        {
+          "identifier": "category_internal_policies_id",
+          "type": "text",
+          "description": "Category ID for internal staff policies.",
+          "label": "Category ID – Internal Policies",
+          "value": "23700078037148"
+        },
+        {
+          "identifier": "category_tenant_policies_id",
+          "type": "text",
+          "description": "Category ID for tenant policies and SLAs.",
+          "label": "Category ID – Tenant Policies",
+          "value": "23700120243740"
+        }
+      ]
+    },
+    {
+      "label": "brand_group_label",
+      "variables": [
+        {
+          "identifier": "show_brand_name",
+          "type": "checkbox",
+          "description": "show_brand_name_description",
+          "label": "show_brand_name_label",
+          "value": true
+        },
+        {
+          "identifier": "favicon",
+          "type": "file",
+          "description": "favicon_description",
+          "label": "favicon_label"
+        },
+        {
+          "identifier": "logo",
+          "type": "file",
+          "description": "logo_description",
+          "label": "logo_label"
+        },
+        {
+          "identifier": "digify_cx_logo",
+          "type": "file",
+          "description": "Main Digify CX logo",
+          "label": "Digify CX logo"
+        },
+        {
+          "identifier": "home_logo_digify_bpo",
+          "type": "file",
+          "description": "Digify BPO brand logo",
+          "label": "Digify BPO logo"
+        },
+        {
+          "identifier": "home_logo_cx_leads",
+          "type": "file",
+          "description": "CX Leads brand logo",
+          "label": "CX Leads logo"
+        },
+        {
+          "identifier": "home_logo_outbound_cx",
+          "type": "file",
+          "description": "Outbound CX brand logo",
+          "label": "Outbound CX logo"
+        },
+        {
+          "identifier": "home_logo_cx_experts",
+          "type": "file",
+          "description": "CX Experts brand logo",
+          "label": "CX Experts logo"
+        }
+      ]
+    },
+    {
+      "label": "search_group_label",
+      "variables": [
+        {
+          "identifier": "instant_search",
+          "type": "checkbox",
+          "description": "instant_search_description",
+          "label": "instant_search_label",
+          "value": true
+        },
+        {
+          "identifier": "scoped_kb_search",
+          "type": "checkbox",
+          "description": "scoped_knowledge_base_search_description",
+          "label": "scoped_knowledge_base_search_label_v2",
+          "value": true
+        },
+        {
+          "identifier": "scoped_community_search",
+          "type": "checkbox",
+          "description": "scoped_community_search_description",
+          "label": "scoped_community_search_label",
+          "value": true
+        }
+      ]
+    },
+    {
+      "label": "home_page_group_label",
+      "variables": [
+        {
+          "identifier": "show_recent_activity",
+          "type": "checkbox",
+          "description": "recent_activity_description",
+          "label": "recent_activity_label",
+          "value": false
+        },
+        {
+          "identifier": "home_hero_image",
+          "type": "file",
+          "description": "Hero background image for homepage",
+          "label": "Home hero image"
+        },
+        {
+          "identifier": "digify_cx_hero_image",
+          "type": "file",
+          "description": "Hero background image for Digify CX internal, tenant, and community pages",
+          "label": "Digify CX hero image"
+        },
+        {
+          "identifier": "digify_cx_building_image",
+          "type": "file",
+          "description": "Building image used on tenant hero and footer",
+          "label": "Digify CX building image"
+        }
+      ]
+    },
+    {
+      "label": "article_page_group_label",
+      "variables": [
+        {
+          "identifier": "show_articles_in_section",
+          "type": "checkbox",
+          "description": "articles_in_section_description",
+          "label": "articles_in_section_label",
+          "value": false
+        },
+        {
+          "identifier": "show_article_author",
+          "type": "checkbox",
+          "description": "article_author_description",
+          "label": "article_author_label",
+          "value": false
+        },
+        {
+          "identifier": "show_article_comments",
+          "type": "checkbox",
+          "description": "article_comments_description",
+          "label": "article_comments_label",
+          "value": false
+        },
+        {
+          "identifier": "show_follow_article",
+          "type": "checkbox",
+          "description": "follow_article_description",
+          "label": "follow_article_label",
+          "value": false
+        },
+        {
+          "identifier": "show_recently_viewed_articles",
+          "type": "checkbox",
+          "description": "recently_viewed_articles_description",
+          "label": "recently_viewed_articles_label",
+          "value": true
+        },
+        {
+          "identifier": "show_related_articles",
+          "type": "checkbox",
+          "description": "related_articles_description",
+          "label": "related_articles_label",
+          "value": false
+        },
+        {
+          "identifier": "show_article_sharing",
+          "type": "checkbox",
+          "description": "article_sharing_description",
+          "label": "article_sharing_label",
+          "value": false
+        }
+      ]
+    },
+    {
+      "label": "section_page_group_label",
+      "variables": [
+        {
+          "identifier": "show_follow_section",
+          "type": "checkbox",
+          "description": "follow_section_description",
+          "label": "follow_section_label",
+          "value": true
+        }
+      ]
+    },
+    {
+      "label": "community_post_group_label",
+      "variables": [
+        {
+          "identifier": "show_follow_post",
+          "type": "checkbox",
+          "description": "follow_post_description",
+          "label": "follow_post_label",
+          "value": true
+        },
+        {
+          "identifier": "show_post_sharing",
+          "type": "checkbox",
+          "description": "post_sharing_description",
+          "label": "post_sharing_label",
+          "value": true
+        }
+      ]
+    },
+    {
+      "label": "community_topic_group_label",
+      "variables": [
+        {
+          "identifier": "show_follow_topic",
+          "type": "checkbox",
+          "description": "follow_topic_description",
+          "label": "follow_topic_label",
+          "value": true
+        }
+      ]
+    },
+    {
+      "label": "request_list_group_label",
+      "variables": [
+        {
+          "identifier": "request_list_beta",
+          "type": "checkbox",
+          "description": "request_list_beta_description",
+          "label": "request_list_beta_label",
+          "value": false
+        }
+      ]
+    },
+    {
+      "label": "CXI hero links",
+      "variables": [
+        {
+          "identifier": "network_issue_form_path",
+          "type": "text",
+          "description": "Path appended after /hc/<locale> for the networking issue CTA button.",
+          "label": "Network issue form path",
+          "value": "/requests/new?ticket_form_id=22989127409436&tf_issue_type=network"
+        },
+        {
+          "identifier": "access_request_form_path",
+          "type": "text",
+          "description": "Path appended after /hc/<locale> for the access request CTA button.",
+          "label": "Access request form path",
+          "value": "/requests/new?ticket_form_id=22989127409436&tf_issue_type=access"
+        },
+        {
+          "identifier": "policies_category_path",
+          "type": "text",
+          "description": "Path appended after /hc/<locale> to reach the policies and SOPs category.",
+          "label": "Policies category path",
+          "value": "/categories"
+        }
+      ]
+    },
+    {
+      "label": "CXI contact details",
+      "variables": [
+        {
+          "identifier": "service_desk_phone_link",
+          "type": "text",
+          "description": "Digits used for the tel: link, e.g. +63253143975.",
+          "label": "Service desk phone (tel format)",
+          "value": "+63253143975"
+        },
+        {
+          "identifier": "service_desk_phone_display",
+          "type": "text",
+          "description": "Formatted phone number shown to users.",
+          "label": "Service desk phone (display)",
+          "value": "+63 (2) 5314 3975"
+        },
+        {
+          "identifier": "service_desk_email",
+          "type": "text",
+          "description": "Primary contact email for the CXI service desk.",
+          "label": "Service desk email",
+          "value": "info@digifybpo.com"
+        },
+        {
+          "identifier": "service_desk_hours",
+          "type": "text",
+          "description": "Standard operating hours displayed in the footer.",
+          "label": "Service desk hours",
+          "value": "Mon-Fri, 7:00-19:00 PHT"
+        }
+      ]
+    },
+    {
+      "label": "External support",
+      "variables": [
+        {
+          "identifier": "external_support_form_url",
+          "type": "text",
+          "description": "Full URL to the external Zendesk form used for vendor escalations.",
+          "label": "External IT support form URL",
+          "value": "https://cxe-internal.zendesk.com/hc/requests/new?ticket_form_id=0000000000000"
+        }
+      ]
+    },
+    {
+      "label": "External support form",
+      "variables": [
+        {
+          "identifier": "external_support_form_id",
+          "type": "text",
+          "description": "Ticket form ID used for external support routing.",
+          "label": "External support form ID",
+          "value": "23381214703004"
+        },
+        {
+          "identifier": "external_support_field_id",
+          "type": "text",
+          "description": "Custom field ID used to distinguish issue types in the external support form.",
+          "label": "External support field ID",
+          "value": ""
+        },
+        {
+          "identifier": "external_support_network_value",
+          "type": "text",
+          "description": "Value passed to the external support field for network-related requests.",
+          "label": "Network issue value",
+          "value": ""
+        },
+        {
+          "identifier": "external_support_access_value",
+          "type": "text",
+          "description": "Value passed to the external support field for access-related requests.",
+          "label": "Access request value",
+          "value": ""
+        },
+        {
+          "identifier": "issue_type_field_id",
+          "type": "text",
+          "description": "Custom field ID used for the issue type selector in the external support form.",
+          "label": "Issue type field ID",
+          "value": ""
+        },
+        {
+          "identifier": "network_issue_value",
+          "type": "text",
+          "description": "Value passed to the issue type field for network-related requests.",
+          "label": "Network issue value",
+          "value": "cxi_it_network"
+        },
+        {
+          "identifier": "access_request_value",
+          "type": "text",
+          "description": "Value passed to the issue type field for access-related requests.",
+          "label": "Access request value",
+          "value": "cxi_it_access"
+        }
+      ]
+    },
+    {
+      "label": "Request form display",
+      "variables": [
+        {
+          "identifier": "show_form_selector",
+          "type": "checkbox",
+          "description": "Displays the ticket form dropdown when multiple public forms are available.",
+          "label": "Show ticket form selector",
+          "value": false
+        }
+      ]
+    },
+    {
+      "label": "Digify quick links",
+      "variables": [
+        {
+          "identifier": "policies_root_url",
+          "type": "text",
+          "description": "Destination used for Policies navigation and CTAs.",
+          "label": "Policies root URL",
+          "value": "/hc/en-us/sections/23441547733404-Policies"
+        },
+        {
+          "identifier": "kb_roadmap_url",
+          "type": "text",
+          "description": "Optional link for the Knowledge Base (coming soon) card.",
+          "label": "Knowledge base roadmap URL",
+          "value": ""
+        },
+        {
+          "identifier": "policies_url",
+          "type": "text",
+          "description": "Optional link to a consolidated policies page.",
+          "label": "Policies page URL",
+          "value": "/hc/en-us/sections/23441547733404-Policies"
+        }
+      ]
+    },
+    {
+      "label": "Card icons",
+      "variables": [
+        {
+          "identifier": "network_card_icon_url",
+          "type": "text",
+          "description": "Icon displayed on the Network & Access card.",
+          "label": "Network card icon URL",
+          "value": ""
+        },
+        {
+          "identifier": "policies_card_icon_url",
+          "type": "text",
+          "description": "Icon displayed on the Policies & SOPs card.",
+          "label": "Policies card icon URL",
+          "value": ""
+        },
+        {
+          "identifier": "request_form_icon_url",
+          "type": "text",
+          "description": "Icon displayed on the submit request intro.",
+          "label": "Request form icon URL",
+          "value": ""
+        },
+        {
+          "identifier": "drug_policy_icon_url",
+          "type": "text",
+          "description": "Icon for the Drug and Alcohol policy card.",
+          "label": "Drug policy icon URL",
+          "value": ""
+        },
+        {
+          "identifier": "clean_desk_policy_icon_url",
+          "type": "text",
+          "description": "Icon for the Clean Desk policy card.",
+          "label": "Clean desk policy icon URL",
+          "value": ""
+        },
+        {
+          "identifier": "locker_policy_icon_url",
+          "type": "text",
+          "description": "Icon for the Locker policy card.",
+          "label": "Locker policy icon URL",
+          "value": ""
+        },
+        {
+          "identifier": "pci_policy_icon_url",
+          "type": "text",
+          "description": "Icon for the PCI Compliance policy card.",
+          "label": "PCI policy icon URL",
+          "value": ""
+        },
+        {
+          "identifier": "smoking_policy_icon_url",
+          "type": "text",
+          "description": "Icon for the Smoking policy card.",
+          "label": "Smoking policy icon URL",
+          "value": ""
+        },
+        {
+          "identifier": "harassment_policy_icon_url",
+          "type": "text",
+          "description": "Icon for the Sexual Harassment policy card.",
+          "label": "Harassment policy icon URL",
+          "value": ""
+        },
+        {
+          "identifier": "icon_placeholder",
+          "type": "file",
+          "description": "Fallback icon shown when no specific card icon is configured.",
+          "label": "Default icon placeholder"
+        }
+      ]
+    },
+    {
+      "label": "Workplace policy articles",
+      "variables": [
+        {
+          "identifier": "drug_policy_url",
+          "type": "text",
+          "description": "Full URL for the Drug and Alcohol policy article.",
+          "label": "Drug and Alcohol policy URL",
+          "value": "/hc/en-us/articles/23441597674652-Drug-and-Alcohol-Policy"
+        },
+        {
+          "identifier": "clean_desk_policy_url",
+          "type": "text",
+          "description": "Full URL for the Clean Desk policy article.",
+          "label": "Clean Desk policy URL",
+          "value": "/hc/en-us/articles/23441604000284-Clean-Desk-Policy"
+        },
+        {
+          "identifier": "locker_policy_url",
+          "type": "text",
+          "description": "Full URL for the Locker policy article.",
+          "label": "Locker policy URL",
+          "value": "/hc/en-us/articles/INSERT_ID_HERE-Locker-Policy"
+        },
+        {
+          "identifier": "pci_policy_url",
+          "type": "text",
+          "description": "Full URL for the PCI compliance policy article.",
+          "label": "PCI policy URL",
+          "value": "/hc/en-us/articles/23441658995356-PCI-Compliance-Policy"
+        },
+        {
+          "identifier": "smoking_policy_url",
+          "type": "text",
+          "description": "Full URL for the Smoking policy article.",
+          "label": "Smoking policy URL",
+          "value": "/hc/en-us/articles/23441672237980-Smoking-Policy"
+        },
+        {
+          "identifier": "harassment_policy_url",
+          "type": "text",
+          "description": "Full URL for the Sexual harassment policy article.",
+          "label": "Sexual harassment policy URL",
+          "value": "/hc/en-us/articles/23441684280348-Sexual-Harassment-Policy"
+        }
+      ]
+    },
+    {
+      "label": "Room booking",
+      "variables": [
+        {
+          "identifier": "room_booking_api_url",
+          "type": "text",
+          "description": "URL for the room booking Apps Script.",
+          "label": "Room booking API URL",
+          "value": "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec"
+        },
+        {
+          "identifier": "room_booking_api_key",
+          "type": "text",
+          "description": "API key for the room booking Apps Script.",
+          "label": "Room booking API key",
+          "value": ""
+        },
+        {
+          "identifier": "room_booking_api_mode",
+          "type": "text",
+          "description": "Set to jsonp or fetch. Defaults to jsonp.",
+          "label": "Room booking API mode",
+          "value": "jsonp"
+        },
+        {
+          "identifier": "room_booking_iframe_url",
+          "type": "text",
+          "description": "Optional URL for the embedded booking UI.",
+          "label": "Room booking iframe URL",
+          "value": ""
+        },
+        {
+          "identifier": "room_booking_internal_tag",
+          "type": "text",
+          "description": "Optional user tag required for internal users to see booking links.",
+          "label": "Room booking internal tag",
+          "value": ""
+        }
+      ]
+    }
+  ]
+}

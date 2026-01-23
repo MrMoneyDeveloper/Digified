@@ -1,0 +1,491 @@
+/* Room Booking Styles */
+:root {
+  --rb-bg: #f8f9fa;
+  --rb-surface: #ffffff;
+  --rb-text: #333333;
+  --rb-muted: #666666;
+  --rb-border: #dee2e6;
+  --rb-primary: #0066cc;
+  --rb-primary-dark: #0052a3;
+  --rb-success: #d4edda;
+  --rb-success-border: #c3e6cb;
+  --rb-success-text: #155724;
+  --rb-danger: #f8d7da;
+  --rb-danger-border: #f5c6cb;
+  --rb-danger-text: #721c24;
+  --rb-booked-label: #dc3545;
+  --rb-secondary: #6c757d;
+  --rb-secondary-dark: #5a6268;
+  --rb-secondary-border: #545b62;
+  --rb-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  --rb-spinner-track: rgba(0, 0, 0, 0.1);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes badgePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+@keyframes statusDot {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInAlert {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes checkmark {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.room-bookings {
+  padding: 3rem 0;
+  min-height: 60vh;
+}
+
+.rb-hero {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.rb-hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--rb-text);
+}
+
+.rb-intro {
+  font-size: 1.125rem;
+  color: var(--rb-muted);
+}
+
+/* Filters */
+.rb-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--rb-bg);
+  border-radius: 8px;
+}
+
+.rb-field {
+  flex: 1;
+}
+
+.rb-field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--rb-text);
+}
+
+.rb-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Alert */
+.rb-alert {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  animation: slideInAlert 0.25s ease both;
+}
+
+.rb-alert--success {
+  background: var(--rb-success);
+  border-color: var(--rb-success-border);
+  color: var(--rb-success-text);
+}
+
+.rb-alert--error {
+  background: var(--rb-danger);
+  border-color: var(--rb-danger-border);
+  color: var(--rb-danger-text);
+}
+
+/* Loading Spinner */
+.rb-loading {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.125rem;
+  color: var(--rb-muted);
+}
+
+.rb-spinner {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid var(--rb-spinner-track);
+  border-top-color: var(--rb-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 0.75rem;
+}
+
+/* Timeline Calendar */
+.rb-timeline-calendar {
+  margin: 2rem 0;
+  background: var(--rb-surface);
+  border: 1px solid var(--rb-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.rb-timeline-header {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.rb-timeline-header h3 {
+  font-size: 1.5rem;
+  color: var(--rb-text);
+  margin: 0;
+}
+
+/* Timeline Grid - Hourly Blocks */
+.rb-timeline-grid {
+  display: grid;
+  grid-template-columns: 80px repeat(auto-fit, minmax(60px, 1fr));
+  gap: 2px;
+  background: #e9ecef;
+  border: 1px solid var(--rb-border);
+  overflow-x: auto;
+}
+
+.rb-time-label {
+  background: var(--rb-bg);
+  padding: 1rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #495057;
+  text-align: center;
+  border-right: 1px solid var(--rb-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rb-time-slot {
+  background: #e7f5e7;
+  padding: 1.5rem 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+}
+
+.rb-time-slot.rb-available {
+  background: var(--rb-success);
+  border: 2px solid var(--rb-success-border);
+}
+
+.rb-time-slot.rb-available:hover {
+  background: #b8e7c1;
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.rb-time-slot.rb-booked {
+  background: var(--rb-danger);
+  border: 2px solid var(--rb-danger-border);
+  cursor: default;
+  color: var(--rb-danger-text);
+}
+
+.rb-time-slot.rb-booked::after {
+  content: "BOOKED";
+  display: block;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--rb-booked-label);
+  margin-top: 0.25rem;
+}
+
+/* Hover tooltip for booked slots */
+.rb-time-slot[data-booker]:hover::before {
+  content: attr(data-booker);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  margin-bottom: 0.5rem;
+}
+
+/* Legend */
+.rb-legend {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rb-border);
+}
+
+.rb-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #495057;
+}
+
+.rb-legend-color {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 2px solid var(--rb-border);
+}
+
+.rb-legend-color.rb-available {
+  background: var(--rb-success);
+  border-color: var(--rb-success-border);
+}
+
+.rb-legend-color.rb-booked {
+  background: var(--rb-danger);
+  border-color: var(--rb-danger-border);
+}
+
+/* Modal */
+.rb-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease both;
+}
+
+.rb-modal-dialog {
+  background: var(--rb-surface);
+  border-radius: 8px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--rb-shadow);
+  animation: slideDown 0.2s ease both;
+}
+
+.rb-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.rb-modal-title {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--rb-text);
+}
+
+.rb-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--rb-muted);
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.rb-modal-close:hover {
+  background: var(--rb-bg);
+  color: var(--rb-text);
+}
+
+.rb-modal-body {
+  padding: 1.5rem;
+}
+
+.rb-session-summary {
+  background: var(--rb-bg);
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9375rem;
+  color: #495057;
+}
+
+.rb-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.rb-full-width {
+  grid-column: 1 / -1;
+}
+
+.rb-modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+/* Button Styles */
+.btn {
+  padding: 0.625rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  font-size: 0.9375rem;
+}
+
+.btn-primary {
+  background: var(--rb-primary);
+  color: white;
+  border-color: var(--rb-primary);
+}
+
+.btn-primary:hover {
+  background: var(--rb-primary-dark);
+  border-color: var(--rb-primary-dark);
+}
+
+.btn-primary:disabled {
+  background: var(--rb-secondary);
+  border-color: var(--rb-secondary);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* BOOKED button state */
+.btn-primary.rb-booked-state {
+  background: var(--rb-booked-label);
+  border-color: var(--rb-booked-label);
+  cursor: default;
+  pointer-events: none;
+}
+
+.btn-secondary {
+  background: var(--rb-secondary);
+  color: white;
+  border-color: var(--rb-secondary);
+}
+
+.btn-secondary:hover {
+  background: var(--rb-secondary-dark);
+  border-color: var(--rb-secondary-border);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .rb-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rb-actions {
+    flex-direction: column;
+  }
+
+  .rb-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rb-timeline-grid {
+    font-size: 0.75rem;
+  }
+
+  .rb-legend {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

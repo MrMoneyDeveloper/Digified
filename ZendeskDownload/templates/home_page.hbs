@@ -1,0 +1,242 @@
+<h1 class="visibility-hidden">{{ help_center.name }}</h1>
+
+<main id="main-content">
+  <div class="digify-landing digify-landing--anon">
+    {{#if signed_in}}
+      <!-- HERO: Signed in but NO segment tag (pending approval) -->
+      <section class="hc-unknown-user pending-approval-hero">
+        <div class="container">
+          <div class="hero-content">
+            <span class="hero-label">DIGIFY CX ACCESS HUB</span>
+            <h1>Access Pending</h1>
+            <p class="hero-subtitle">
+              We see you haven't completed the sign-up process yet. Please select one of the options below to request access. 
+              You will gain full access to support forms and resources once your request is approved.
+            </p>
+            <p class="hero-note">
+              In the meantime, you can browse our <a href="/hc/{{help_center.locale}}/sections/23700658599580">shared building policies</a>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CARDS: Sign-up options for untagged users -->
+      <section class="hc-unknown-user signup-options-section">
+        <div class="container">
+          <h2 class="section-title">Choose your access type</h2>
+          
+          <div class="landing-cards-grid two-column">
+            
+            <!-- Internal Staff Sign-Up -->
+            <article class="landing-card landing-card--staff">
+              <div class="landing-card__icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+              <div class="landing-card__content">
+                <h3>Internal Staff Access</h3>
+                <p>For Digify CX employees. Access HR, IT, Facilities support, and internal policies.</p>
+                <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=23590656709788" 
+                   class="btn btn-primary">
+                  Request staff access
+                </a>
+              </div>
+            </article>
+
+            <!-- Tenant Sign-Up -->
+            <article class="landing-card landing-card--tenant">
+              <div class="landing-card__icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="9" y1="3" x2="9" y2="21"></line>
+                </svg>
+              </div>
+              <div class="landing-card__content">
+                <h3>Tenant Access</h3>
+                <p>For building tenants. Request maintenance, report issues, and access tenant-specific policies.</p>
+                <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=23590702845724" 
+                   class="btn btn-secondary">
+                  Request tenant access
+                </a>
+              </div>
+            </article>
+            
+          </div>
+        </div>
+      </section>
+    {{else}}
+      <section class="digify-hero">
+        <div class="digify-hero__background">
+          <img src="{{settings.home_hero_image}}" alt="Digify CX hero" class="digify-hero__image" data-digify-check="home-hero">
+        </div>
+        <div class="digify-hero__overlay"></div>
+        <div class="digify-hero__content container">
+          <p class="digify-hero__eyebrow">Digify CX Access Hub</p>
+          <h1>One Group. One Stack. Every CX Touch Point.</h1>
+          <p class="digify-hero__copy">
+            Digify CX unites Digify BPO, CX Leads, CX Experts, and Outbound CX under one customer and tenant experience platform.
+          </p>
+          <p class="digify-hero__copy">Sign in for internal tools or browse public knowledge to get help fast.</p>
+        </div>
+      </section>
+
+      <section class="digify-brand-strip">
+        <div class="container">
+          <h2 class="digify-brand-strip__title">Our CX Group</h2>
+          <div class="digify-brand-carousel">
+            <div class="digify-brand-carousel__track">
+              <img src="{{settings.home_logo_digify_bpo}}" alt="Digify BPO" class="digify-brand-carousel__logo" data-digify-check="home-brand-digify-bpo">
+              <img src="{{settings.home_logo_cx_leads}}" alt="CX Leads" class="digify-brand-carousel__logo" data-digify-check="home-brand-leads">
+              <img src="{{settings.home_logo_outbound_cx}}" alt="Outbound CX" class="digify-brand-carousel__logo" data-digify-check="home-brand-outbound">
+              <img src="{{settings.home_logo_cx_experts}}" alt="CX Experts" class="digify-brand-carousel__logo" data-digify-check="home-brand-experts">
+              <img src="{{settings.home_logo_digify_bpo}}" alt="Digify BPO" class="digify-brand-carousel__logo">
+              <img src="{{settings.home_logo_cx_leads}}" alt="CX Leads" class="digify-brand-carousel__logo">
+              <img src="{{settings.home_logo_outbound_cx}}" alt="Outbound CX" class="digify-brand-carousel__logo">
+              <img src="{{settings.home_logo_cx_experts}}" alt="CX Experts" class="digify-brand-carousel__logo">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="digify-cards container digify-cards--anon">
+        <!-- Card 1: Staff Sign Up -->
+        <article class="digify-card digify-card--primary">
+          <h3>Digify CX team members</h3>
+          <p>Join our internal team. Sign up to access HR, IT, and Facilities support.</p>
+          <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=23590656709788" class="btn btn-primary">Sign up as staff</a>
+        </article>
+        
+        <!-- Card 2: Tenant Sign Up -->
+        <article class="digify-card">
+          <h3>Tenants &amp; partners</h3>
+          <p>Request maintenance, report an incident, or review building policies.</p>
+          <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=23590702845724" class="btn btn-secondary">Sign up as tenant</a>
+        </article>
+      </section>
+
+      {{#if categories}}
+        <section class="digify-category-section container">
+          <div class="digify-category-grid">
+            {{#each categories}}
+              <article class="digify-category-card">
+                <h3><a href="{{url}}">{{name}}</a></h3>
+                {{#if description}}
+                  <p>{{description}}</p>
+                {{/if}}
+              </article>
+            {{/each}}
+          </div>
+        </section>
+      {{/if}}
+    {{/if}}
+  </div>
+
+  <div class="digify-landing digify-landing--internal">
+    <section class="digify-hero">
+      <div class="digify-hero__background">
+        <img src="{{settings.home_hero_image}}" alt="Digify CX hero" class="digify-hero__image">
+      </div>
+      <div class="digify-hero__overlay"></div>
+      <div class="digify-hero__content container">
+        <p class="digify-hero__eyebrow">Digify CX Access Hub</p>
+        <h1>Welcome back, Digify CX team</h1>
+        <p class="digify-hero__copy">Access internal support, policies, and shared resources.</p>
+      </div>
+    </section>
+
+    <!-- Signed-In Staff Cards -->
+    {{#if signed_in}}
+      <section class="hc-internal-user staff-landing-section">
+        <div class="container">
+          <h2 class="landing-section-title">Welcome back</h2>
+
+          <div class="landing-cards-grid">
+            <!-- Card 1: Internal support -->
+            <article class="landing-card landing-card--primary">
+              <div class="landing-card__content">
+                <h3>Request internal support</h3>
+                <p>Contact HR, IT, or Facilities for internal staff matters.</p>
+                <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436" class="btn btn-primary">
+                  Submit a request
+                </a>
+              </div>
+            </article>
+
+            <!-- Card 2: Shared policies -->
+            <article class="landing-card landing-card--secondary">
+              <div class="landing-card__content">
+                <h3>Shared building policies</h3>
+                <p>Review general building policies and guidelines.</p>
+                <a href="/hc/{{help_center.locale}}/sections/23700658599580" class="btn btn-secondary">
+                  View shared policies
+                </a>
+              </div>
+            </article>
+
+            <!-- Card 3: Internal policies -->
+            <article class="landing-card landing-card--accent">
+              <div class="landing-card__content">
+                <h3>Internal staff policies</h3>
+                <p>Access HR policies, IT guidelines, and staff resources.</p>
+                <a href="/hc/{{help_center.locale}}/categories/23700078037148" class="btn btn-accent">
+                  View internal policies
+                </a>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+    {{/if}}
+  </div>
+
+  <div class="digify-landing digify-landing--tenant">
+    <section class="digify-hero">
+      <div class="digify-hero__background">
+        <img src="{{settings.digify_cx_building_image}}" alt="Digify CX building" class="digify-hero__image">
+      </div>
+      <div class="digify-hero__overlay"></div>
+      <div class="digify-hero__content container">
+        <h1>Welcome, DigifyCX tenant</h1>
+        <p class="digify-hero__copy">Access tenant support, policies, and building resources.</p>
+      </div>
+    </section>
+
+    <!-- Signed-In Tenant Section -->
+    {{#if signed_in}}
+      <section class="hc-tenant-user tenant-landing-section">
+        <div class="container">
+          <h2 class="landing-section-title">Welcome back</h2>
+          <div class="landing-cards-grid">
+            
+            <article class="landing-card landing-card--primary">
+              <div class="landing-card__content">
+                <h3>Request tenant support</h3>
+                <p>Report network issues, request maintenance, or contact facilities.</p>
+                <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=23381214703004" class="btn btn-primary">Submit a request</a>
+              </div>
+            </article>
+
+            <article class="landing-card landing-card--secondary">
+              <div class="landing-card__content">
+                <h3>Shared building policies</h3>
+                <p>Review general building policies and guidelines.</p>
+                <a href="/hc/{{help_center.locale}}/sections/23700658599580-Policies" class="btn btn-secondary">View shared policies</a>
+              </div>
+            </article>
+
+            <article class="landing-card landing-card--accent">
+              <div class="landing-card__content">
+                <h3>Tenant-specific policies</h3>
+                <p>Access tenant SLAs, building rules, and facilities information.</p>
+                <a href="/hc/{{help_center.locale}}/categories/23700120243740" class="btn btn-accent">View tenant policies</a>
+              </div>
+            </article>
+
+          </div>
+        </div>
+      </section>
+    {{/if}}
+  </div>
+</main>
