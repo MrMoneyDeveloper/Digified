@@ -2,8 +2,8 @@
   "use strict";
 
   // Booking API config helper.
-  // Reads config from window.ROOM_BOOKING_CFG first, then falls back.
-  // Falls back to the temporary values below if runtime config is missing.
+  // Prioritizes per-page dataset + theme settings, then runtime window config.
+  // Falls back to the temporary values below if everything else is missing.
   // NOTE: Remove these fallback values before any public release.
   const FALLBACK_BOOKING_CONFIG = {
     baseUrl:
@@ -18,12 +18,70 @@
     };
   }
 
-  function getConfig() {
-    const runtime = normalizeConfig(window.ROOM_BOOKING_CFG || {});
+  function getConfig(root) {
+    const settings =
+      (window.HelpCenter && window.HelpCenter.themeSettings) || {};
+    const rootData = root && root.dataset ? root.dataset : {};
+    const runtimeTraining = normalizeConfig(window.TRAINING_BOOKING_CFG || {});
+    const runtimeRoom = normalizeConfig(window.ROOM_BOOKING_CFG || {});
+    const runtime =
+      (runtimeTraining.baseUrl || runtimeTraining.apiKey)
+        ? runtimeTraining
+        : runtimeRoom;
+    const runtimeIsTraining =
+      !!(runtimeTraining.baseUrl || runtimeTraining.apiKey);
     const fallback = FALLBACK_BOOKING_CONFIG || { baseUrl: "", apiKey: "" };
+
+    const rootBaseUrl =
+      rootData.trainingBaseUrl ||
+      rootData.roomBaseUrl ||
+      "";
+    const rootApiKey =
+      rootData.trainingApiKey ||
+      rootData.roomApiKey ||
+      "";
+
+    const settingsBaseUrl =
+      settings.training_api_url ||
+      settings.room_booking_api_url ||
+      settings.room_booking_api_base_url ||
+      "";
+    const settingsApiKey =
+      settings.training_api_key ||
+      settings.room_booking_api_key ||
+      "";
+
+    const runtimeBaseUrl = runtime.baseUrl || "";
+    const runtimeApiKey = runtime.apiKey || "";
+
+    const useRuntimeBaseUrl =
+      runtimeBaseUrl &&
+      (!runtimeIsTraining ||
+        runtimeBaseUrl === fallback.baseUrl ||
+        !fallback.baseUrl);
+    const useRuntimeApiKey =
+      runtimeApiKey &&
+      (!runtimeIsTraining ||
+        runtimeApiKey === fallback.apiKey ||
+        !fallback.apiKey);
+
+    const baseUrl =
+      rootBaseUrl ||
+      settingsBaseUrl ||
+      (useRuntimeBaseUrl ? runtimeBaseUrl : "") ||
+      fallback.baseUrl ||
+      "";
+
+    const apiKey =
+      rootApiKey ||
+      settingsApiKey ||
+      (useRuntimeApiKey ? runtimeApiKey : "") ||
+      fallback.apiKey ||
+      "";
+
     return {
-      baseUrl: runtime.baseUrl || fallback.baseUrl || "",
-      apiKey: runtime.apiKey || fallback.apiKey || ""
+      baseUrl: String(baseUrl || fallback.baseUrl || "").trim(),
+      apiKey: String(apiKey || fallback.apiKey || "").trim()
     };
   }
 
