@@ -57,11 +57,13 @@ Segmented home pages:
 - Create a Zendesk Guide custom page with slug `home_internal` using `templates/custom_pages/home_internal.hbs`.
 - Create a Zendesk Guide custom page with slug `home_tenant` using `templates/custom_pages/home_tenant.hbs`.
 - `templates/home_page.hbs` redirects signed-in segmented users to these pages.
+- Legacy `/hc/{locale}/room_booking` requests are redirected to `/hc/{locale}/p/room_booking` in `script.js`.
 
 Validation checklist:
 - Visit `https://cxe-internal.zendesk.com/hc/en-us/p/room_booking` and confirm the template loads.
 - Click the "Book Room" nav link and confirm it routes to the same page.
 - Use the default next-30-days range to load sessions and submit a booking.
+- Check page source for `ROOM_BOOKING_VERSION: 2026-02-10`.
 
 ### Troubleshooting JSONP errors
 

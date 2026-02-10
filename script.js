@@ -143,6 +143,17 @@
 
   initSegments();
 
+  (function enforceRoomBookingPath() {
+    const match = (window.location.pathname || "").match(/^\/hc\/([^/]+)\/room_booking\/?$/);
+    if (!match) {
+      return;
+    }
+
+    const locale = match[1];
+    const target = "/hc/" + locale + "/p/room_booking" + window.location.search + window.location.hash;
+    window.location.replace(target);
+  })();
+
   // Key map
   const ENTER = 13;
   const ESCAPE = 27;

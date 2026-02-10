@@ -7,6 +7,12 @@
     return;
   }
 
+  const root = document.getElementById("room-booking-root");
+  // Signed-out fallback view has no booking root; avoid initializing the booking app.
+  if (!root) {
+    return;
+  }
+
   // Get logger
   const logger = window.RoomBookingLogger || console;
 
@@ -105,6 +111,7 @@
 
   let cachedSlots = [];
   let activeSlot = null;
+  let lastFocusedElement = null;
 
   // Business hours (8 AM to 6 PM)
   const BUSINESS_START = 8;
@@ -449,6 +456,7 @@
   function openBookingModal(slot) {
     if (!modal || !modalForm) return;
 
+    lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     activeSlot = slot;
 
     if (bookSubmit) {
@@ -493,13 +501,23 @@
     }
 
     modal.hidden = false;
+    modal.removeAttribute("inert");
     modal.setAttribute("aria-hidden", "false");
+    window.requestAnimationFrame(() => {
+      if (modalClose) {
+        modalClose.focus();
+      }
+    });
   }
 
   // Close booking modal
   function closeModal() {
     if (!modal) return;
+    if (modal.contains(document.activeElement)) {
+      document.activeElement.blur();
+    }
     modal.hidden = true;
+    modal.setAttribute("inert", "");
     modal.setAttribute("aria-hidden", "true");
     if (notesInput) notesInput.value = "";
     if (bookSubmit) {
@@ -507,6 +525,10 @@
       bookSubmit.textContent = "Book Now";
       bookSubmit.classList.remove("rb-booked-state");
     }
+    if (lastFocusedElement && document.contains(lastFocusedElement)) {
+      lastFocusedElement.focus();
+    }
+    lastFocusedElement = null;
   }
 
   // Submit booking
@@ -636,6 +658,18 @@
     });
   }
   if (modalForm) modalForm.addEventListener("submit", submitBooking);
+  if (modal) {
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+  }
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && modal && !modal.hidden) {
+      closeModal();
+    }
+  });
 
   // Load on page load
   logger.info("Room booking page load complete", {

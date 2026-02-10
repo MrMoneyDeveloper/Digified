@@ -15,6 +15,7 @@
 - Zendesk auto-renders `templates/home_page.hbs` for `/hc/{locale}`.
 - `templates/custom_pages/home_internal.hbs` and `templates/custom_pages/home_tenant.hbs` require Zendesk custom pages with slugs `home_internal` and `home_tenant`.
 - `templates/home_page.hbs` can redirect segmented users to those slugs after `window.DigifiedSegments` is resolved.
+- `script.js` normalizes legacy `/hc/{locale}/room_booking` URLs to `/hc/{locale}/p/room_booking`.
 
 ## GitHub Pull Checklist
 
