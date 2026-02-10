@@ -113,6 +113,7 @@
   const modalClose = document.getElementById("room-booking-modal-close");
   const modalCancel = document.getElementById("room-booking-modal-cancel");
   const sessionSummary = document.getElementById("room-booking-session-summary");
+  const submitStateEl = document.getElementById("room-booking-submit-state");
   const slotIdInput = document.getElementById("room-booking-slot-id");
   const requesterNameInput = document.getElementById("room-booking-requester-name");
   const requesterEmailInput = document.getElementById("room-booking-requester-email");
@@ -126,6 +127,7 @@
   let cachedSlots = [];
   let activeSlot = null;
   let lastFocusedElement = null;
+  let bookingInProgress = false;
 
   // Business hours (8 AM to 8 PM)
   const BUSINESS_START = 8;
@@ -145,6 +147,34 @@
     alertEl.textContent = "";
     alertEl.hidden = true;
     alertEl.className = "rb-alert";
+  }
+
+  function setSubmitState(type, message) {
+    if (!submitStateEl) return;
+    if (!message) {
+      submitStateEl.textContent = "";
+      submitStateEl.className = "rb-submit-state";
+      submitStateEl.hidden = true;
+      return;
+    }
+    submitStateEl.textContent = message;
+    submitStateEl.className = "rb-submit-state";
+    if (type) submitStateEl.classList.add("rb-submit-state--" + type);
+    submitStateEl.hidden = false;
+  }
+
+  function setBookingUiLocked(isLocked) {
+    bookingInProgress = !!isLocked;
+    if (bookSubmit) {
+      bookSubmit.disabled = !!isLocked;
+      if (isLocked) {
+        bookSubmit.classList.add("rb-submit-pending");
+      } else {
+        bookSubmit.classList.remove("rb-submit-pending");
+      }
+    }
+    if (modalCancel) modalCancel.disabled = !!isLocked;
+    if (modalClose) modalClose.disabled = !!isLocked;
   }
 
   function clearAttendeeInputs() {
@@ -194,6 +224,59 @@
 
   function isValidEmail(value) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+  }
+
+  function timeToLabel(timeHHMM) {
+    const raw = String(timeHHMM || "").trim();
+    if (!/^\d{2}:\d{2}$/.test(raw)) return raw || "--";
+    const parts = raw.split(":");
+    const hh = Number(parts[0]);
+    const mm = parts[1];
+    const period = hh >= 12 ? "PM" : "AM";
+    const hr12 = ((hh + 11) % 12) + 1;
+    return `${hr12}:${mm} ${period}`;
+  }
+
+  function buildSlotIdForDateTime(dateStr, startTime) {
+    const safeDate = String(dateStr || "").trim();
+    const safeTime = String(startTime || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(safeDate) || !/^\d{2}:\d{2}$/.test(safeTime)) {
+      return "";
+    }
+    return `SLOT_${safeDate}_${safeTime.replace(":", "")}`.toUpperCase();
+  }
+
+  function upsertCachedBookedSlot(slotId, requesterName) {
+    const normalizedSlotId = String(slotId || "").trim().toUpperCase();
+    if (!normalizedSlotId) return;
+
+    let found = false;
+    cachedSlots = (cachedSlots || []).map((slot) => {
+      const currentId = String(slot.slot_id || "").trim().toUpperCase();
+      if (currentId !== normalizedSlotId) return slot;
+      found = true;
+      return Object.assign({}, slot, {
+        booked: true,
+        booker_name: requesterName || slot.booker_name || "Unknown"
+      });
+    });
+
+    if (found) return;
+
+    const parsed = normalizedSlotId.match(/^SLOT_(\d{4}-\d{2}-\d{2})_(\d{2})(\d{2})$/);
+    if (!parsed) return;
+    const date = parsed[1];
+    const start = `${parsed[2]}:${parsed[3]}`;
+    const endHour = String((Number(parsed[2]) + 1) % 24).padStart(2, "0");
+    const end = `${endHour}:${parsed[3]}`;
+    cachedSlots.push({
+      slot_id: normalizedSlotId,
+      date: date,
+      start_time: start,
+      end_time: end,
+      booked: true,
+      booker_name: requesterName || "Unknown"
+    });
   }
 
   // Set default date to today
@@ -433,12 +516,12 @@
     return slots;
   }
 
-  // Render visual timeline calendar
+  // Render slot cards
   function renderTimelineCalendar(roomSlots) {
     if (!timelineGrid || !dateDisplay) return;
 
-    const selectedDate = dateInput.value;
-    const dateObj = new Date(selectedDate + "T00:00:00");
+    const selectedDate = dateInput && dateInput.value ? dateInput.value : "";
+    const dateObj = selectedDate ? new Date(selectedDate + "T00:00:00") : new Date();
     const dateStr = dateObj.toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
@@ -448,61 +531,86 @@
 
     dateDisplay.textContent = `Room Availability - ${dateStr}`;
 
-    // Generate time slots
     const timeSlots = generateTimeSlots();
     timelineGrid.innerHTML = "";
 
-    // Create grid structure
-    timeSlots.forEach((slot) => {
-      // Time label column
-      const timeLabel = document.createElement("div");
-      timeLabel.className = "rb-time-label";
-      timeLabel.textContent = slot.startTime;
-      timelineGrid.appendChild(timeLabel);
-
-      // Find booking for this hour
-      const booking = roomSlots.find((b) => {
-        const bookingHour = parseInt(b.start_time.split(":")[0], 10);
+    timeSlots.forEach((slot, index) => {
+      const booking = (roomSlots || []).find((b) => {
+        const bookingHour = parseInt(String(b.start_time || "00:00").split(":")[0], 10);
         return bookingHour === slot.hour;
       });
 
-      // Create time slot cell
-      const slotCell = document.createElement("div");
-      slotCell.className = "rb-time-slot";
+      const slotId = booking && booking.slot_id
+        ? String(booking.slot_id).trim()
+        : buildSlotIdForDateTime(selectedDate, slot.startTime);
+      const isBooked = !!(booking && booking.booked);
+      const bookerName = booking && booking.booker_name ? String(booking.booker_name).trim() : "";
+      const bookedByLabel = bookerName ? `Booked by: ${bookerName}` : "Booked by: Unknown";
 
-      const timeRangeLabel = `${slot.startTime} - ${slot.endTime}`;
-      const timeRangeEl = document.createElement("span");
-      timeRangeEl.textContent = timeRangeLabel;
+      const card = document.createElement("article");
+      card.className = "rb-slot-card";
+      card.style.setProperty("--rb-slot-index", String(index));
+      card.setAttribute("data-slot-id", slotId);
+      card.setAttribute("data-start-time", slot.startTime);
+      card.setAttribute("data-end-time", slot.endTime);
 
-      if (booking && booking.booked) {
-        slotCell.classList.add("rb-booked");
-        const bookerName = String(booking.booker_name || "").trim() || "Unknown";
-        const bookedByLabel = `Booked by: ${bookerName}`;
-        const bookerEl = document.createElement("small");
-        bookerEl.className = "rb-booker-name";
-        bookerEl.textContent = bookedByLabel;
+      const status = document.createElement("span");
+      status.className = "rb-slot-card__status";
+      status.textContent = isBooked ? "Booked" : "Available";
+      card.appendChild(status);
 
-        slotCell.setAttribute("data-booker", bookedByLabel);
-        slotCell.appendChild(timeRangeEl);
-        slotCell.appendChild(bookerEl);
+      const time = document.createElement("h4");
+      time.className = "rb-slot-card__time";
+      time.textContent = `${timeToLabel(slot.startTime)} - ${timeToLabel(slot.endTime)}`;
+      card.appendChild(time);
+
+      const meta = document.createElement("p");
+      meta.className = "rb-slot-card__meta";
+      meta.textContent = isBooked
+        ? "This room slot is currently unavailable."
+        : "Tap to book this room slot.";
+      card.appendChild(meta);
+
+      const booker = document.createElement("p");
+      booker.className = "rb-slot-card__booker";
+      if (isBooked) {
+        booker.textContent = bookedByLabel;
       } else {
-        slotCell.classList.add("rb-available");
-        slotCell.appendChild(timeRangeEl);
-        slotCell.setAttribute("data-slot-id", booking ? booking.slot_id : `slot_${slot.hour}`);
-        slotCell.setAttribute("data-start-time", slot.startTime);
-        slotCell.setAttribute("data-end-time", slot.endTime);
+        booker.textContent = "Open";
+      }
+      card.appendChild(booker);
 
-        slotCell.addEventListener("click", () => {
+      if (isBooked) {
+        card.classList.add("rb-slot-card--booked");
+        card.setAttribute("data-booker", bookedByLabel);
+        card.setAttribute("aria-label", `${time.textContent}. ${bookedByLabel}`);
+      } else {
+        card.classList.add("rb-slot-card--available");
+        card.setAttribute("role", "button");
+        card.setAttribute("tabindex", "0");
+        card.setAttribute("aria-label", `Book slot ${time.textContent}`);
+        card.addEventListener("click", () => {
           openBookingModal({
-            slot_id: booking ? booking.slot_id : `slot_${slot.hour}`,
+            slot_id: slotId,
             date: selectedDate,
             start_time: slot.startTime,
             end_time: slot.endTime
           });
         });
+        card.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openBookingModal({
+              slot_id: slotId,
+              date: selectedDate,
+              start_time: slot.startTime,
+              end_time: slot.endTime
+            });
+          }
+        });
       }
 
-      timelineGrid.appendChild(slotCell);
+      timelineGrid.appendChild(card);
     });
 
     timelineCalendar.hidden = false;
@@ -532,12 +640,9 @@
 
     lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     activeSlot = slot;
-
-    if (bookSubmit) {
-      bookSubmit.disabled = false;
-      bookSubmit.textContent = "Book Now";
-      bookSubmit.classList.remove("rb-booked-state");
-    }
+    setBookingUiLocked(false);
+    setSubmitState("", "");
+    if (bookSubmit) bookSubmit.textContent = "Confirm Booking";
 
     const currentUser = getCurrentUser();
     console.log("[RoomBooking] Opening modal, user:", currentUser);
@@ -574,7 +679,7 @@
     if (sessionSummary) {
       sessionSummary.innerHTML = `
         <strong>Date:</strong> ${slot.date}<br>
-        <strong>Time:</strong> ${slot.start_time} - ${slot.end_time}
+        <strong>Time:</strong> ${timeToLabel(slot.start_time)} - ${timeToLabel(slot.end_time)}
       `;
     }
 
@@ -591,6 +696,7 @@
   // Close booking modal
   function closeModal() {
     if (!modal) return;
+    if (bookingInProgress) return;
     if (modal.contains(document.activeElement)) {
       document.activeElement.blur();
     }
@@ -600,9 +706,10 @@
     if (notesInput) notesInput.value = "";
     if (hybridToggle) hybridToggle.checked = false;
     setAttendeeFieldsVisible(false);
+    setBookingUiLocked(false);
+    setSubmitState("", "");
     if (bookSubmit) {
-      bookSubmit.disabled = false;
-      bookSubmit.textContent = "Book Now";
+      bookSubmit.textContent = "Confirm Booking";
       bookSubmit.classList.remove("rb-booked-state");
     }
     if (lastFocusedElement && document.contains(lastFocusedElement)) {
@@ -662,10 +769,9 @@
       }
     }
 
-    if (bookSubmit) {
-      bookSubmit.disabled = true;
-      bookSubmit.textContent = "Booking...";
-    }
+    setBookingUiLocked(true);
+    setSubmitState("pending", "Confirming your booking...");
+    if (bookSubmit) bookSubmit.textContent = "Confirming...";
 
     try {
       logger.info("Sending booking request to API", {
@@ -704,6 +810,10 @@
           }
         }
         setAlert(successMessage, meet && meet.status === "failed" ? "error" : "success");
+        setSubmitState(
+          meet && meet.status === "failed" ? "error" : "success",
+          successMessage
+        );
 
         // Change button to red "BOOKED" state
         if (bookSubmit) {
@@ -711,10 +821,13 @@
           bookSubmit.textContent = "BOOKED";
         }
 
+        upsertCachedBookedSlot(payload.slot_id, payload.requester_name || "Unknown");
+        renderTimelineCalendar(cachedSlots);
+
         setTimeout(() => {
+          setBookingUiLocked(false);
           closeModal();
-          loadAndRenderCalendar(); // Refresh calendar
-        }, 2000);
+        }, 1800);
       } else {
         const errorMsg = json.message || "Booking failed.";
         logger.error("Booking request returned false", {
@@ -730,12 +843,11 @@
         payload: payload
       });
 
-      setAlert(error.message || "Booking failed. Please try again.", "error");
-
-      if (bookSubmit) {
-        bookSubmit.disabled = false;
-        bookSubmit.textContent = "Book Now";
-      }
+      const failMsg = error.message || "Booking failed. Please try again.";
+      setAlert(failMsg, "error");
+      setSubmitState("error", failMsg);
+      setBookingUiLocked(false);
+      if (bookSubmit) bookSubmit.textContent = "Confirm Booking";
     }
   }
 

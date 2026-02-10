@@ -1,4 +1,4 @@
-<!-- ROOM_BOOKING_VERSION: 2026-02-10-06 -->
+<!-- ROOM_BOOKING_VERSION: 2026-02-10-07 -->
 <link rel="stylesheet" href="{{asset 'room-bookings.css'}}">
 <script>
   window.ROOM_BOOKING_CFG = {
@@ -61,10 +61,10 @@
 
 <section class="room-bookings">
   <div class="container">
-    <p class="rb-build-tag" data-room-booking-build="2026-02-10-06">Room booking UI build 2026-02-10-06</p>
+    <p class="rb-build-tag" data-room-booking-build="2026-02-10-07">Room booking UI build 2026-02-10-07</p>
     <div class="rb-hero">
       <h1>Book Meeting Room</h1>
-      <p class="rb-intro">Select a date to view available meeting room slots. Click on time blocks to book.</p>
+      <p class="rb-intro">Select a date to view availability. Each time slot is shown as a card with live status.</p>
     </div>
 
     {{#if signed_in}}
@@ -95,7 +95,7 @@
           <span>Loading room availability...</span>
         </div>
 
-        <!-- NEW: Visual Timeline Calendar -->
+        <!-- Card-style slot board -->
         <div id="room-timeline-calendar" class="rb-timeline-calendar" hidden>
           <div class="rb-timeline-header">
             <h3 id="rb-selected-date-display">Select a date above</h3>
@@ -105,7 +105,7 @@
           </div>
           <div class="rb-legend">
             <span class="rb-legend-item"><span class="rb-legend-color rb-available"></span> Available</span>
-            <span class="rb-legend-item"><span class="rb-legend-color rb-booked"></span> Booked</span>
+            <span class="rb-legend-item"><span class="rb-legend-color rb-booked"></span> Booked (hover to see who booked)</span>
           </div>
         </div>
 
@@ -118,6 +118,7 @@
             </div>
             <div class="rb-modal-body">
               <div id="room-booking-session-summary" class="rb-session-summary"></div>
+              <div id="room-booking-submit-state" class="rb-submit-state" role="status" aria-live="polite" hidden></div>
               <form id="room-booking-form" class="rb-form">
                 <input id="room-booking-slot-id" type="hidden">
                 <div class="rb-form-grid">
