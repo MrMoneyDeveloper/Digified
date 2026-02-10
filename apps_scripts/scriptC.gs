@@ -612,3 +612,58 @@ function failC_(code, message, details, eventId, calendarId) {
     error_details: details ? String(details) : ""
   };
 }
+
+/**
+ * One-time manual authorization helper for Script C.
+ *
+ * Run this in the Apps Script editor as the script owner.
+ * It validates Calendar write access by creating + deleting a short-lived event.
+ * It also probes the Advanced Calendar service if enabled.
+ */
+function authorizeScriptC_() {
+  var resolvedCalendarId = resolveCalendarIdC_("");
+  var cal = CalendarApp.getCalendarById(resolvedCalendarId) || CalendarApp.getDefaultCalendar();
+  if (!cal) {
+    throw new Error(
+      "Calendar not accessible. Set Script Property MEET_CALENDAR_ID (or TRAINING_CALENDAR_ID) to a valid calendar ID."
+    );
+  }
+
+  var start = new Date(Date.now() + 5 * 60 * 1000);
+  var end = new Date(start.getTime() + 30 * 60 * 1000);
+  var title = "[Script C Auth Test] " + new Date().toISOString();
+
+  var tempEvent = cal.createEvent(title, start, end, {
+    description: "Temporary event created by authorizeScriptC_() for permission validation."
+  });
+
+  var deleted = false;
+  try {
+    tempEvent.deleteEvent();
+    deleted = true;
+  } catch (ignoreDelete) {}
+
+  var advancedCalendarReady = false;
+  var advancedCalendarError = "";
+  try {
+    if (typeof Calendar !== "undefined" && Calendar.Events && Calendar.Events.list) {
+      Calendar.Events.list(cal.getId(), {
+        maxResults: 1,
+        timeMin: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        singleEvents: true
+      });
+      advancedCalendarReady = true;
+    }
+  } catch (err) {
+    advancedCalendarError = String(err || "");
+  }
+
+  return {
+    ok: true,
+    calendar_id: cal.getId(),
+    temp_event_id: tempEvent.getId(),
+    temp_event_deleted: deleted,
+    advanced_calendar_ready: advancedCalendarReady,
+    advanced_calendar_error: advancedCalendarError
+  };
+}
