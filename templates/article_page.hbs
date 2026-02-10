@@ -1,10 +1,12 @@
 <div class="container-divider"></div>
-<div class="container">
-  <article id="main-content" class="article">
-    <header class="article-header">
-      <h1 class="article-title">{{article.title}}</h1>
-    </header>
-    <div class="article-content">
+<div class="container digify-article-page">
+  <header class="digify-article-hero">
+    <div class="digify-article-breadcrumbs">{{breadcrumbs}}</div>
+    <h1 class="article-title">{{article.title}}</h1>
+  </header>
+
+  <article id="main-content" class="article digify-article-card">
+    <div class="article-content digify-article-content">
       {{article.body}}
     </div>
   </article>
