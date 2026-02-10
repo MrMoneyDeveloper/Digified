@@ -146,7 +146,9 @@ function createMeetForBooking_C_(params) {
     created_at: createRes.created_at || new Date().toISOString(),
     calendar_id: calendarId,
     guests: guests,
-    message: createRes.message || "Meet link created."
+    message: createRes.message || "Meet link created.",
+    error_code: String(createRes.error_code || "").trim(),
+    error_details: String(createRes.error_details || "").trim()
   };
 }
 
@@ -232,6 +234,7 @@ function createViaAdvancedCalendar_(calendarId, payload) {
       sendUpdates: "all"
     });
     var meetAccess = enforceOpenMeetAccessIfPossible_(created);
+    var meetAccessWarn = normalizeMeetAccessWarningC_(meetAccess);
 
     return {
       ok: true,
@@ -241,7 +244,9 @@ function createViaAdvancedCalendar_(calendarId, payload) {
       guests: payload.guests || [],
       created_at: new Date().toISOString(),
       message: buildCreateMessageC_("Meet event created (Advanced Calendar API).", meetAccess),
-      meet_access: meetAccess
+      meet_access: meetAccess,
+      error_code: meetAccessWarn.error_code,
+      error_details: meetAccessWarn.error_details
     };
   } catch (err) {
     return failC_("ADVANCED_CALENDAR_CREATE_FAILED", "Calendar API event creation failed.", String(err), "", calendarId);
@@ -274,6 +279,7 @@ function createViaCalendarAppFallback_(calendarId, payload) {
       id: event.getId(),
       hangoutLink: meetLink
     });
+    var meetAccessWarn = normalizeMeetAccessWarningC_(meetAccess);
 
     return {
       ok: true,
@@ -285,7 +291,9 @@ function createViaCalendarAppFallback_(calendarId, payload) {
       message: meetLink
         ? buildCreateMessageC_("Meet event created (CalendarApp fallback).", meetAccess)
         : "Event created but Meet link missing in fallback mode.",
-      meet_access: meetAccess
+      meet_access: meetAccess,
+      error_code: meetAccessWarn.error_code,
+      error_details: meetAccessWarn.error_details
     };
   } catch (err) {
     return failC_("CALENDARAPP_CREATE_FAILED", "CalendarApp event creation failed.", String(err), "", calendarId);
@@ -633,6 +641,20 @@ function buildCreateMessageC_(baseMessage, meetAccess) {
   return msg + " Meet access update warning.";
 }
 
+function normalizeMeetAccessWarningC_(meetAccess) {
+  if (!meetAccess || !meetAccess.attempted || meetAccess.ok) {
+    return {
+      error_code: "",
+      error_details: ""
+    };
+  }
+
+  return {
+    error_code: String(meetAccess.error_code || "MEET_ACCESS_NOT_OPEN").trim(),
+    error_details: String(meetAccess.error_details || "Meet access could not be set to Open.").trim()
+  };
+}
+
 function enforceOpenMeetAccessIfPossible_(eventObj) {
   var meetLink = extractMeetLinkFromEventC_(eventObj);
   var meetCode = extractMeetingCodeFromMeetLinkC_(meetLink);
@@ -675,12 +697,18 @@ function enforceOpenMeetAccessIfPossible_(eventObj) {
     }
 
     var patchResp = UrlFetchApp.fetch(
-      "https://meet.googleapis.com/v2/" + spaceName + "?updateMask=config.accessType",
+      "https://meet.googleapis.com/v2/" + spaceName + "?updateMask=config.accessType,config.entryPointAccess,config.moderation",
       {
         method: "patch",
         headers: headers,
         contentType: "application/json",
-        payload: JSON.stringify({ config: { accessType: "OPEN" } }),
+        payload: JSON.stringify({
+          config: {
+            accessType: "OPEN",
+            entryPointAccess: "ALL",
+            moderation: "OFF"
+          }
+        }),
         muteHttpExceptions: true
       }
     );
@@ -701,7 +729,10 @@ function enforceOpenMeetAccessIfPossible_(eventObj) {
       attempted: true,
       ok: true,
       meeting_code: meetCode,
-      space_name: spaceName
+      space_name: spaceName,
+      access_type: "OPEN",
+      entry_point_access: "ALL",
+      moderation: "OFF"
     };
   } catch (err) {
     return {
@@ -710,6 +741,58 @@ function enforceOpenMeetAccessIfPossible_(eventObj) {
       error_code: "MEET_SPACE_PATCH_EXCEPTION",
       error_details: shortForLogC_(String(err || ""), 260),
       meeting_code: meetCode
+    };
+  }
+}
+
+function diagnoseMeetAccessByLinkC_(meetLink) {
+  var code = extractMeetingCodeFromMeetLinkC_(meetLink);
+  if (!code) {
+    return {
+      ok: false,
+      error_code: "INVALID_MEET_LINK",
+      error_details: "Could not extract meeting code from link.",
+      meeting_code: ""
+    };
+  }
+
+  try {
+    var resp = UrlFetchApp.fetch("https://meet.googleapis.com/v2/spaces/" + encodeURIComponent(code), {
+      method: "get",
+      headers: {
+        Authorization: "Bearer " + ScriptApp.getOAuthToken()
+      },
+      muteHttpExceptions: true
+    });
+
+    var statusCode = Number(resp.getResponseCode() || 0);
+    var body = String(resp.getContentText() || "");
+    if (statusCode < 200 || statusCode >= 300) {
+      return {
+        ok: false,
+        error_code: "MEET_SPACE_LOOKUP_FAILED",
+        error_details: "HTTP " + statusCode + " " + shortForLogC_(body, 240),
+        meeting_code: code
+      };
+    }
+
+    var space = JSON.parse(body || "{}");
+    var cfg = space && space.config ? space.config : {};
+    return {
+      ok: true,
+      meeting_code: code,
+      space_name: String(space.name || "").trim(),
+      access_type: String(cfg.accessType || "").trim(),
+      entry_point_access: String(cfg.entryPointAccess || "").trim(),
+      moderation: String(cfg.moderation || "").trim(),
+      raw_config: cfg
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error_code: "MEET_SPACE_LOOKUP_EXCEPTION",
+      error_details: shortForLogC_(String(err || ""), 260),
+      meeting_code: code
     };
   }
 }
@@ -904,4 +987,16 @@ function getScriptCSetupStatus() {
 
 function authorizeScriptC() {
   return authorizeScriptC_();
+}
+
+function diagnoseMeetAccessByLink() {
+  return {
+    ok: false,
+    error_code: "MISSING_LINK",
+    error_details: "Run diagnoseMeetAccessByLinkInput(link) and pass a meet.google.com link."
+  };
+}
+
+function diagnoseMeetAccessByLinkInput(link) {
+  return diagnoseMeetAccessByLinkC_(link);
 }

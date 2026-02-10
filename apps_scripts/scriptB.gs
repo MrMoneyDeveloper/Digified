@@ -696,7 +696,10 @@ function createZendeskTicket_B_(creds, booking, slotString, runId, rowNum) {
       meetDetailsBlock =
         `Google Meet Link: ${booking.meetLink}\n` +
         `Remote participants (Calendar invites): ${attendeeLine}\n` +
-        `Requester access: requester is included on Calendar guests and also receives this link in Zendesk.\n`;
+        `Requester access: requester is included on Calendar guests and also receives this link in Zendesk.\n` +
+        (booking.meetErrorCode
+          ? `Meet Access Warning: ${booking.meetErrorCode}${booking.meetErrorDetails ? " - " + truncate_B_(booking.meetErrorDetails, 300) : ""}\n`
+          : "");
     } else if (meetStatus === "failed") {
       meetDetailsBlock =
         `Meet generation failed.\n` +
