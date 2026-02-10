@@ -1,7 +1,7 @@
 {
   "name": "Digified",
   "author": "Zendesk",
-  "version": "13.0.6",
+  "version": "13.0.7",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [

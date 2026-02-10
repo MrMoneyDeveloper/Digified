@@ -7,14 +7,24 @@
     return;
   }
 
+  // Get logger
+  const logger = window.RoomBookingLogger || console;
+  const buildTag = document.querySelector("[data-room-booking-build]");
+
   const root = document.getElementById("room-booking-root");
   // Signed-out fallback view has no booking root; avoid initializing the booking app.
   if (!root) {
+    logger.info("Room booking app init skipped", {
+      reason: "room-booking-root not found",
+      buildTag: buildTag ? buildTag.getAttribute("data-room-booking-build") : "missing"
+    });
     return;
   }
 
-  // Get logger
-  const logger = window.RoomBookingLogger || console;
+  logger.info("Room booking template detected", {
+    buildTag: buildTag ? buildTag.getAttribute("data-room-booking-build") : "missing",
+    rootVersion: root.getAttribute("data-room-booking-version") || "missing"
+  });
 
   function getCurrentUser() {
     if (typeof HelpCenter !== "undefined" && HelpCenter.user) {

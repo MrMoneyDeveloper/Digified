@@ -1,7 +1,9 @@
-<div class="container">
-  <div class="request-breadcrumbs">{{breadcrumbs}}</div>
-
-  <h1 class="request-title">{{request.subject}}</h1>
+<div class="container digify-request-page">
+  <header class="digify-request-hero">
+    <div class="request-breadcrumbs">{{breadcrumbs}}</div>
+    <h1 class="request-title">{{request.subject}}</h1>
+    <p class="digify-request-hero__meta">Ticket #{{request.id}}</p>
+  </header>
 
   <div id="main-content" class="request-container">
     <section class="request-main">
