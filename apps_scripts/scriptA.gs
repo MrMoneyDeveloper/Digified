@@ -387,7 +387,7 @@ function handleBook_(body, requestId) {
     ? body.attendee_emails
     : (body.attendee_email !== undefined ? body.attendee_email : "");
   const attendeeParse = parseAttendeeEmails_(attendeeRaw);
-  const attendeeEmails = attendeeParse.valid;
+  const attendeeEmails = attendeeParse.valid.slice();
   const meetingType = normalizeMeetingType_(body.meeting_type !== undefined ? body.meeting_type : body.online_meeting, attendeeEmails);
   const attendeeCsv = attendeeEmails.join(",");
 

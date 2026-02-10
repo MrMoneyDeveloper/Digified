@@ -695,7 +695,8 @@ function createZendeskTicket_B_(creds, booking, slotString, runId, rowNum) {
     if (meetStatus === "ok" && booking.meetLink) {
       meetDetailsBlock =
         `Google Meet Link: ${booking.meetLink}\n` +
-        `Remote participants: ${attendeeLine}\n`;
+        `Remote participants (Calendar invites): ${attendeeLine}\n` +
+        `Requester access: requester is included on Calendar guests and also receives this link in Zendesk.\n`;
     } else if (meetStatus === "failed") {
       meetDetailsBlock =
         `Meet generation failed.\n` +
