@@ -1,24 +1,14 @@
 /************************************************************
- * Script A — Training Booking API (Google Apps Script Web App)
+ * Script A - Room Booking API (Google Apps Script Web App)
  * ----------------------------------------------------------
  * CLEAN: 2025-12-31
  *
- * ✅ Dynamic sessions (Mon–Fri, 08:00–00:00 midnight, 60min)
- * ✅ JSONP supported for ALL GET endpoints (sessions/days/health/book/get_api_key)
- * ✅ Booking supports GET (JSONP) to avoid Zendesk HC CORS restrictions
- * ✅ POST supported (book/cancel) for same-origin / server-to-server
- * ✅ API key auth required for everything except init + get_api_key
- * ✅ SESSIONS sheet is OPTIONAL overrides (cancel slot / change fields / capacity / manual reserve)
- *
- * UI alignment:
- * ✅ "vendor" field is repurposed as "Reserved By" for back-compat:
- *    - If slot booked → vendor returns latest requester_name/email
- *    - If not booked → vendor returns override vendor (manual reserve) OR blank
- *
- * What Script A DOES NOT DO:
- * ❌ No Zendesk tickets
- * ❌ No pipeline
- * ❌ No triggers
+ * - Dynamic sessions (Mon-Fri, 08:00-20:00, 60min)
+ * - JSONP support for GET endpoints (sessions/days/health/book/get_api_key)
+ * - Booking via GET (JSONP) for Zendesk Help Centre CORS-safe calls
+ * - POST support for same-origin or server-to-server calls
+ * - API key auth required except init + get_api_key
+ * - Optional SESSIONS sheet overrides (capacity/cancel/manual reserve)
  ************************************************************/
 
 const CFG = {
@@ -43,7 +33,7 @@ const CFG = {
     ENABLED: true,
     WEEKDAYS: [1, 2, 3, 4, 5], // ISO 1=Mon ... 7=Sun
     START_HHMM: "08:00",
-    END_HHMM: "00:00", // midnight wrap-around end-of-day
+    END_HHMM: "20:00",
     SLOT_MINUTES: 60,
 
     DEFAULT_RESERVED_BY: "", // vendor (reserved by) override default
@@ -95,6 +85,9 @@ function doGet(e) {
             notes: params.notes,
             dept: params.dept,
             user_type: params.user_type,
+            meeting_type: params.meeting_type,
+            attendee_emails: params.attendee_emails,
+            online_meeting: params.online_meeting,
           },
           requestId
         );
@@ -201,6 +194,14 @@ function handleInit_(requestId, params) {
     "dept",
     "booked_at",
     "debug_json",
+    "meeting_type",      // in_person_only / in_person_plus_online
+    "attendee_emails",   // comma-separated remote participant emails
+    "meet_link",
+    "meet_event_id",
+    "meet_status",       // pending / ok / failed (blank for in_person_only)
+    "meet_error_code",
+    "meet_error_details",
+    "meet_created_at",
   ]);
 
   ensureSheetWithHeader_(ss, CFG.SHEETS.SETTINGS, ["key", "value", "updated_at"]);
@@ -238,7 +239,7 @@ function handleInit_(requestId, params) {
         working_hours: `${CFG.RULES.START_HHMM}-${CFG.RULES.END_HHMM}`,
         slot_minutes: CFG.RULES.SLOT_MINUTES,
         example_slot_id: buildSlotId_("2026-01-15", "08:00"),
-        note: "END_HHMM=00:00 means midnight (wrap-around end-of-day).",
+        note: "Slots are generated hourly between START_HHMM and END_HHMM.",
       },
       next_steps: [
         "1) Test sessions: ?action=sessions&from=2026-01-01&to=2026-01-31&api_key=YOUR_KEY",
@@ -368,21 +369,41 @@ function handleDays_(params, requestId) {
 
 /**
  * ===== BOOKING =====
- * POST { action:"book", slot_id, requester_email, requester_name, notes, dept, user_type }
+ * POST { action:"book", slot_id, requester_email, requester_name, notes, dept, user_type, meeting_type, attendee_emails }
  * GET  ?action=book&slot_id=...&requester_email=...&api_key=...&callback=cb
  */
 function handleBook_(body, requestId) {
+  body = body || {};
+
   const slotId = (body.slot_id || "").trim();
   const requesterEmail = (body.requester_email || "").trim().toLowerCase();
   const requesterName = (body.requester_name || "").trim();
   const notes = (body.notes || "").toString().trim();
   const dept = (body.dept || "").toString().trim();
   const userType = (body.user_type || "").toString().trim();
+  const attendees = 1; // forced for physical room capacity
 
-  const attendees = 1; // forced
+  const attendeeRaw = body.attendee_emails !== undefined
+    ? body.attendee_emails
+    : (body.attendee_email !== undefined ? body.attendee_email : "");
+  const attendeeParse = parseAttendeeEmails_(attendeeRaw);
+  const attendeeEmails = attendeeParse.valid;
+  const meetingType = normalizeMeetingType_(body.meeting_type !== undefined ? body.meeting_type : body.online_meeting, attendeeEmails);
+  const attendeeCsv = attendeeEmails.join(",");
 
   if (!slotId) return fail_(requestId, "MISSING_SLOT_ID", "slot_id is required", 400);
   if (!requesterEmail) return fail_(requestId, "MISSING_EMAIL", "requester_email is required", 400);
+
+  if (meetingType === "in_person_plus_online") {
+    if (attendeeParse.invalid.length) {
+      return fail_(requestId, "FAIL_INVALID_ATTENDEE_EMAIL", "One or more attendee emails are invalid.", 400, {
+        invalid_attendees: attendeeParse.invalid,
+      });
+    }
+    if (attendeeEmails.length === 0) {
+      return fail_(requestId, "FAIL_MISSING_ATTENDEE_EMAIL", "Provide at least one remote attendee email for in-person + online bookings.", 400);
+    }
+  }
 
   // Validate slot against rules
   const parsed = parseSlotId_(slotId);
@@ -399,6 +420,9 @@ function handleBook_(body, requestId) {
       dept,
       booked_at: new Date().toISOString(),
       debug_json: JSON.stringify({ reason: "slot not allowed by rules", parsed, user_type: userType }),
+      meeting_type: meetingType,
+      attendee_emails: attendeeCsv,
+      meet_status: "",
     }));
     return fail_(requestId, "FAIL_SLOT_NOT_ALLOWED", "This slot is not within allowed working hours.", 400);
   }
@@ -427,6 +451,9 @@ function handleBook_(body, requestId) {
         dept,
         booked_at: new Date().toISOString(),
         debug_json: JSON.stringify({ reason: "could not build session", user_type: userType }),
+        meeting_type: meetingType,
+        attendee_emails: attendeeCsv,
+        meet_status: "",
       }));
       return fail_(requestId, "FAIL_INVALID_SLOT", "Slot not found: " + slotId, 404);
     }
@@ -445,6 +472,9 @@ function handleBook_(body, requestId) {
         dept,
         booked_at: new Date().toISOString(),
         debug_json: JSON.stringify({ reason: "session cancelled", user_type: userType }),
+        meeting_type: meetingType,
+        attendee_emails: attendeeCsv,
+        meet_status: "",
       }));
       return fail_(requestId, "FAIL_CANCELLED", "This session is cancelled", 409);
     }
@@ -463,6 +493,9 @@ function handleBook_(body, requestId) {
         dept,
         booked_at: new Date().toISOString(),
         debug_json: JSON.stringify({ reason: "duplicate booking by same user", user_type: userType }),
+        meeting_type: meetingType,
+        attendee_emails: attendeeCsv,
+        meet_status: "",
       }));
       return fail_(requestId, "FAIL_ALREADY_BOOKED", "You already booked this slot", 409);
     }
@@ -483,12 +516,15 @@ function handleBook_(body, requestId) {
         dept,
         booked_at: new Date().toISOString(),
         debug_json: JSON.stringify({ capacity, bookedCount, user_type: userType }),
+        meeting_type: meetingType,
+        attendee_emails: attendeeCsv,
+        meet_status: "",
       }));
       return fail_(requestId, "FAIL_SLOT_FULL", "This slot is already full", 409, { capacity, bookedCount });
     }
 
     // Commit booking
-    writeBooking_(ss, buildBookingRow_({
+    const bookingRowNum = writeBooking_(ss, buildBookingRow_({
       booking_id: bookingId,
       slot_id: slotId,
       booking_status: "booked",
@@ -500,7 +536,43 @@ function handleBook_(body, requestId) {
       dept: dept || session.dept || "",
       booked_at: new Date().toISOString(),
       debug_json: JSON.stringify({ session, user_type: userType }),
+      meeting_type: meetingType,
+      attendee_emails: attendeeCsv,
+      meet_status: meetingType === "in_person_plus_online" ? "pending" : "",
     }));
+
+    let meetResult = {
+      required: meetingType === "in_person_plus_online",
+      status: meetingType === "in_person_plus_online" ? "pending" : "skipped",
+      meet_link: "",
+      event_id: "",
+      error_code: "",
+      error_details: "",
+      message: meetingType === "in_person_plus_online"
+        ? "Meet creation pending."
+        : "In-person-only booking; Meet skipped.",
+      created_at: "",
+    };
+
+    if (meetingType === "in_person_plus_online") {
+      meetResult = createMeetForBooking_({
+        booking_id: bookingId,
+        slot_id: slotId,
+        requester_email: requesterEmail,
+        requester_name: requesterName,
+        attendee_emails: attendeeEmails,
+        slot_minutes: CFG.RULES.SLOT_MINUTES,
+      });
+
+      patchBookingMeetFieldsByRow_(ss, bookingRowNum, {
+        meet_link: meetResult.meet_link,
+        meet_event_id: meetResult.event_id,
+        meet_status: meetResult.status,
+        meet_error_code: meetResult.error_code,
+        meet_error_details: meetResult.error_details,
+        meet_created_at: meetResult.created_at,
+      });
+    }
 
     return ok_(
       requestId,
@@ -509,8 +581,20 @@ function handleBook_(body, requestId) {
         slot_id: slotId,
         session: sessionToPublic_(session),
         attendees_forced: 1,
+        meeting_type: meetingType,
+        attendee_emails: attendeeEmails,
+        meet: {
+          status: meetResult.status,
+          meet_link: meetResult.meet_link,
+          meet_event_id: meetResult.event_id,
+          error_code: meetResult.error_code,
+          error_details: meetResult.error_details,
+          message: meetResult.message,
+        },
       },
-      "Booked successfully"
+      meetResult.status === "failed"
+        ? "Booked successfully, but online meeting link generation failed."
+        : "Booked successfully"
     );
 
   } catch (err) {
@@ -526,6 +610,11 @@ function handleBook_(body, requestId) {
       dept,
       booked_at: new Date().toISOString(),
       debug_json: JSON.stringify({ error: String(err), stack: err && err.stack ? err.stack : "", user_type: userType }),
+      meeting_type: meetingType,
+      attendee_emails: attendeeCsv,
+      meet_status: meetingType === "in_person_plus_online" ? "failed" : "",
+      meet_error_code: meetingType === "in_person_plus_online" ? "FAIL_SYSTEM_ERROR" : "",
+      meet_error_details: meetingType === "in_person_plus_online" ? String(err) : "",
     }));
     return errorPayload_(requestId, "FAIL_SYSTEM_ERROR", err);
 
@@ -623,6 +712,14 @@ function ensureBookingSheet_(ss) {
     "dept",
     "booked_at",
     "debug_json",
+    "meeting_type",
+    "attendee_emails",
+    "meet_link",
+    "meet_event_id",
+    "meet_status",
+    "meet_error_code",
+    "meet_error_details",
+    "meet_created_at",
   ]);
 }
 
@@ -745,6 +842,14 @@ function buildBookingRow_(b) {
     dept: b.dept || "",
     booked_at: b.booked_at || "",
     debug_json: b.debug_json || "",
+    meeting_type: b.meeting_type || "in_person_only",
+    attendee_emails: b.attendee_emails || "",
+    meet_link: b.meet_link || "",
+    meet_event_id: b.meet_event_id || "",
+    meet_status: b.meet_status || "",
+    meet_error_code: b.meet_error_code || "",
+    meet_error_details: b.meet_error_details || "",
+    meet_created_at: b.meet_created_at || "",
   };
 }
 
@@ -764,7 +869,193 @@ function writeBooking_(ss, booking) {
     booking.dept || "",
     booking.booked_at || "",
     booking.debug_json || "",
+    booking.meeting_type || "in_person_only",
+    booking.attendee_emails || "",
+    booking.meet_link || "",
+    booking.meet_event_id || "",
+    booking.meet_status || "",
+    booking.meet_error_code || "",
+    booking.meet_error_details || "",
+    booking.meet_created_at || "",
   ]);
+
+  return sh.getLastRow();
+}
+
+function normalizeMeetingType_(rawType, attendeeEmails) {
+  const s = lower_(rawType);
+  const hasAttendees = Array.isArray(attendeeEmails) && attendeeEmails.length > 0;
+
+  if (
+    s === "online" ||
+    s === "hybrid" ||
+    s === "in_person_plus_online" ||
+    s === "in_person_and_online" ||
+    s === "in-person-plus-online" ||
+    s === "inperson_plus_online" ||
+    s === "1" ||
+    s === "true" ||
+    s === "yes" ||
+    s === "on"
+  ) {
+    return "in_person_plus_online";
+  }
+
+  if (
+    s === "in_person_only" ||
+    s === "in_person" ||
+    s === "in-person" ||
+    s === "inperson" ||
+    s === "0" ||
+    s === "false" ||
+    s === "no" ||
+    s === "off"
+  ) {
+    return "in_person_only";
+  }
+
+  return hasAttendees ? "in_person_plus_online" : "in_person_only";
+}
+
+function parseAttendeeEmails_(raw) {
+  const tokens = [];
+
+  if (Array.isArray(raw)) {
+    raw.forEach(v => tokens.push(String(v || "").trim()));
+  } else if (raw !== undefined && raw !== null) {
+    const s = String(raw || "").trim();
+    if (s) {
+      let parsedArray = null;
+      if (s.startsWith("[") && s.endsWith("]")) {
+        try {
+          const parsed = JSON.parse(s);
+          if (Array.isArray(parsed)) parsedArray = parsed;
+        } catch (ignore) {}
+      }
+
+      if (parsedArray) {
+        parsedArray.forEach(v => tokens.push(String(v || "").trim()));
+      } else {
+        s.split(/[,\n;]+/).forEach(v => tokens.push(String(v || "").trim()));
+      }
+    }
+  }
+
+  const seen = {};
+  const valid = [];
+  const invalid = [];
+
+  tokens.forEach(t => {
+    const email = lower_(t);
+    if (!email) return;
+    if (seen[email]) return;
+    seen[email] = true;
+    if (isValidEmail_(email)) valid.push(email);
+    else invalid.push(email);
+  });
+
+  return { valid, invalid };
+}
+
+function isValidEmail_(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+}
+
+function createMeetForBooking_(params) {
+  const out = {
+    required: true,
+    status: "failed",
+    meet_link: "",
+    event_id: "",
+    error_code: "",
+    error_details: "",
+    message: "",
+    created_at: "",
+  };
+
+  const hasScriptC =
+    typeof createMeetForBooking_C_ === "function" ||
+    typeof createOnlineMeeting === "function";
+
+  if (!hasScriptC) {
+    out.error_code = "SCRIPT_C_NOT_AVAILABLE";
+    out.error_details = "createMeetForBooking_C_(params) / createOnlineMeeting(params) are not defined in this Apps Script project.";
+    out.message = "Meet link generator not available.";
+    return out;
+  }
+
+  try {
+    const payload = {
+      booking_id: params.booking_id,
+      slot_id: params.slot_id,
+      meeting_type: "in_person_plus_online",
+      requester_name: params.requester_name,
+      requester_email: params.requester_email,
+      attendee_emails: params.attendee_emails || [],
+      slot_minutes: params.slot_minutes || CFG.RULES.SLOT_MINUTES,
+    };
+
+    const res = (typeof createMeetForBooking_C_ === "function"
+      ? createMeetForBooking_C_(payload)
+      : createOnlineMeeting(payload)) || {};
+
+    out.meet_link = String(res.meet_link || "").trim();
+    out.event_id = String(res.event_id || "").trim();
+    out.error_code = String(res.error_code || "").trim();
+    out.error_details = String(res.error_details || "").trim();
+    out.message = String(res.message || "").trim();
+    out.created_at = String(res.created_at || "").trim();
+    const status = String(res.status || "").trim().toLowerCase();
+
+    const looksOk = res.ok === true && (status === "ok" || (!!out.meet_link && status !== "failed"));
+    if (looksOk) {
+      out.status = "ok";
+      if (!out.created_at) out.created_at = new Date().toISOString();
+      if (!out.message) out.message = "Meet link created.";
+      return out;
+    }
+
+    if (res.ok === true && status === "pending") {
+      out.status = "pending";
+      if (!out.message) out.message = "Meet link is still processing.";
+      return out;
+    }
+
+    if (!out.error_code) out.error_code = "MEET_CREATE_FAILED";
+    if (!out.error_details) out.error_details = JSON.stringify(res || {});
+    if (!out.message) out.message = "Meet link could not be created.";
+    out.status = "failed";
+    return out;
+  } catch (err) {
+    out.status = "failed";
+    out.error_code = "MEET_CREATE_EXCEPTION";
+    out.error_details = err && err.stack ? err.stack : String(err);
+    out.message = "Meet link generation threw an exception.";
+    return out;
+  }
+}
+
+function patchBookingMeetFieldsByRow_(ss, rowNum, patch) {
+  if (!rowNum || rowNum < 2) return;
+
+  const sh = ss.getSheetByName(CFG.SHEETS.BOOKINGS);
+  if (!sh) return;
+
+  const header = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  const idx = indexMap_(header);
+
+  setCellIfByIdx_(sh, rowNum, idx.meet_link, patch.meet_link);
+  setCellIfByIdx_(sh, rowNum, idx.meet_event_id, patch.meet_event_id);
+  setCellIfByIdx_(sh, rowNum, idx.meet_status, patch.meet_status);
+  setCellIfByIdx_(sh, rowNum, idx.meet_error_code, patch.meet_error_code);
+  setCellIfByIdx_(sh, rowNum, idx.meet_error_details, patch.meet_error_details);
+  setCellIfByIdx_(sh, rowNum, idx.meet_created_at, patch.meet_created_at);
+}
+
+function setCellIfByIdx_(sheet, rowNum, colIdx, value) {
+  if (colIdx === undefined || colIdx === null || colIdx < 0) return;
+  if (value === undefined) return;
+  sheet.getRange(rowNum, colIdx + 1).setValue(value);
 }
 
 function markBookingCancelled_(ss, bookingId) {
@@ -850,7 +1141,7 @@ function getLatestBookerNameForSlot_(ss, slotId) {
 
 /**
  * ===== DYNAMIC SLOT ENGINE =====
- * Supports wrap-around ranges (08:00 → 00:00 midnight)
+ * Supports configured ranges and wrap-around if END_HHMM <= START_HHMM.
  */
 function generateSlots_(fromDateStr, toDateStr) {
   if (!CFG.RULES.ENABLED) return [];
@@ -1136,5 +1427,14 @@ function indexMap_(header) {
     dept: m.dept ?? 8,
     booked_at: m.booked_at ?? 9,
     debug_json: m.debug_json ?? 10,
+    meeting_type: m.meeting_type ?? 11,
+    attendee_emails: m.attendee_emails ?? 12,
+    meet_link: m.meet_link ?? 13,
+    meet_event_id: m.meet_event_id ?? 14,
+    meet_status: m.meet_status ?? 15,
+    meet_error_code: m.meet_error_code ?? 16,
+    meet_error_details: m.meet_error_details ?? 17,
+    meet_created_at: m.meet_created_at ?? 18,
   };
 }
+

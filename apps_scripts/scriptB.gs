@@ -1,20 +1,11 @@
 /************************************************************
- * Script B — Zendesk Ticket Pipeline (Google Apps Script)
- * ----------------------------------------------------------
+ * Script B - Room Booking Zendesk Ticket Pipeline (Apps Script)
+ * --------------------------------------------------------------
  * UPDATED: 2026-01-09
  *
- * FIXES ADDED (your current issue):
- * ✅ Do NOT treat JSON in zendesk_ticket_id as “has_ticket_id”
- * ✅ Auto-repair: move that JSON into debug_json, clear zendesk_ticket_id
- * ✅ Auto-backfill: if zendesk_ticket_url has /tickets/123, write zendesk_ticket_id=123
- * ✅ Enforce REQUIRED tag: "training-room-booking" on every created ticket (so your View catches it)
- * ✅ Script Properties now OVERRIDE hardcoded creds (so you can switch subdomain to match your View)
- * ✅ Fixed processOneBooking() typo bug
- *
- * NOTE (important):
- * Your View screenshot is on **cxsupporthub.zendesk.com**.
- * If your tickets are being created on **cxe-internal.zendesk.com**, they will never show in that View.
- * Set Script Property `ZD_SUBDOMAIN=cxsupporthub` (or change HARDCODED_SUBDOMAIN) to align.
+ * - Creates Zendesk tickets from BOOKINGS rows
+ * - Enforces required tag: training-room-booking
+ * - Includes retry, logging, repair, and trigger tooling
  ************************************************************/
 
 /* =========================
@@ -36,12 +27,12 @@ const CFG_B = {
     MAX_RETRIES: 3,
     RETRY_WAIT_MS_BASE: 1500,
 
-    // ✅ NEW: auto-fix your sheet when columns got polluted
+    //  NEW: auto-fix your sheet when columns got polluted
     AUTO_REPAIR_MISPLACED_JSON_IN_TICKET_ID: true,
     AUTO_BACKFILL_TICKET_ID_FROM_URL: true,
   },
 
-  // ✅ NEW: tag enforcement for your Zendesk View
+  //  NEW: tag enforcement for your Zendesk View
   TAGS: {
     REQUIRED: ["training-room-booking"],
     DEFAULT: ["api-integration", "automated"],
@@ -85,13 +76,13 @@ const CFG_B = {
 
 function setupScriptB() {
   Logger.log("=== SCRIPT B SETUP ===");
-  Logger.log("\n1️⃣ Set Script A spreadsheet ID in THIS Script (Script B):");
-  Logger.log("   Project Settings → Script Properties");
+  Logger.log("\n1 Set Script A spreadsheet ID in THIS Script (Script B):");
+  Logger.log("   Project Settings  Script Properties");
   Logger.log("   Name:  TRAINING_SHEET_ID");
   Logger.log("   Value: [Script A spreadsheet ID]");
-  Logger.log("\n2️⃣ (Optional but recommended) Zendesk properties (override hardcoded):");
+  Logger.log("\n2 (Optional but recommended) Zendesk properties (override hardcoded):");
   Logger.log("   ZD_SUBDOMAIN, ZD_EMAIL, ZD_TOKEN, ZD_TRAINING_FORM_ID, etc.");
-  Logger.log("\n3️⃣ Run: testSheetLocation()");
+  Logger.log("\n3 Run: testSheetLocation()");
 }
 
 function testSheetLocation() {
@@ -101,23 +92,23 @@ function testSheetLocation() {
 
   Logger.log("=== SHEET LOCATION DIAGNOSTIC ===");
   Logger.log("run_id: " + runId);
-  Logger.log("Script property TRAINING_SHEET_ID: " + (sheetIdProp || "❌ NOT SET"));
+  Logger.log("Script property TRAINING_SHEET_ID: " + (sheetIdProp || " NOT SET"));
 
   if (!sheetIdProp) {
-    Logger.log("\n❌ CRITICAL: TRAINING_SHEET_ID is not configured!");
-    Logger.log("🔧 FIX: Run setupScriptB()");
+    Logger.log("\n CRITICAL: TRAINING_SHEET_ID is not configured!");
+    Logger.log(" FIX: Run setupScriptB()");
     return { error: "TRAINING_SHEET_ID_NOT_SET", action: "Run setupScriptB()", run_id: runId };
   }
 
   try {
     const ss = SpreadsheetApp.openById(sheetIdProp);
-    Logger.log("✅ Spreadsheet accessible: " + ss.getName());
+    Logger.log(" Spreadsheet accessible: " + ss.getName());
     Logger.log("   ID: " + ss.getId());
     Logger.log("   URL: " + ss.getUrl());
 
     const bookingsSheet = ss.getSheetByName(CFG_B.SHEETS.BOOKINGS);
     if (!bookingsSheet) {
-      Logger.log("\n❌ BOOKINGS sheet NOT found in that spreadsheet!");
+      Logger.log("\n BOOKINGS sheet NOT found in that spreadsheet!");
       Logger.log("Available sheets:");
       ss.getSheets().forEach(sh => Logger.log("  - " + sh.getName()));
       return {
@@ -127,7 +118,7 @@ function testSheetLocation() {
       };
     }
 
-    Logger.log("✅ BOOKINGS sheet found");
+    Logger.log(" BOOKINGS sheet found");
     Logger.log("   Rows: " + bookingsSheet.getLastRow());
     Logger.log("   Columns: " + bookingsSheet.getLastColumn());
 
@@ -151,7 +142,7 @@ function testSheetLocation() {
     return { success: true, spreadsheet: ss.getName(), rows: bookingsSheet.getLastRow(), columns: bookingsSheet.getLastColumn(), run_id: runId };
 
   } catch (e) {
-    Logger.log("\n❌ Cannot access spreadsheet: " + e.toString());
+    Logger.log("\n Cannot access spreadsheet: " + e.toString());
     return { error: "CANNOT_ACCESS_SPREADSHEET", details: e.toString(), run_id: runId };
   }
 }
@@ -195,7 +186,7 @@ function initZendeskPipeline() {
     "alert_ticket_url",
   ]);
 
-  logInfo_B_("✅ Init complete (columns ensured).", { run_id: runId, spreadsheet: ss.getName() });
+  logInfo_B_(" Init complete (columns ensured).", { run_id: runId, spreadsheet: ss.getName() });
   Logger.log("Initialization complete. Check LOGS sheet for details.");
   return { ok: true, run_id: runId };
 }
@@ -207,7 +198,7 @@ function createZendeskTrigger() {
   const exists = triggers.some(t => t.getHandlerFunction && t.getHandlerFunction() === fnName);
 
   if (exists) {
-    logInfo_B_("⚠️ Trigger already exists", { run_id: runId, fn: fnName });
+    logInfo_B_(" Trigger already exists", { run_id: runId, fn: fnName });
     Logger.log("Trigger already exists: " + fnName);
     return { ok: true, exists: true, run_id: runId };
   }
@@ -217,7 +208,7 @@ function createZendeskTrigger() {
     .everyMinutes(5)
     .create();
 
-  logInfo_B_("✅ Trigger created", { run_id: runId, fn: fnName, interval: "5 minutes" });
+  logInfo_B_(" Trigger created", { run_id: runId, fn: fnName, interval: "5 minutes" });
   Logger.log("Trigger created: " + fnName + " (every 5 minutes)");
   return { ok: true, created: true, run_id: runId };
 }
@@ -228,7 +219,7 @@ function processPendingBookingsTrigger() {
 
 
 /* =========================
- * ✅ NEW: ONE-CLICK REPAIR (fix your “JSON in zendesk_ticket_id” problem)
+ *  NEW: ONE-CLICK REPAIR (fix your JSON in zendesk_ticket_id problem)
  * ========================= */
 function repairBookingsZendeskColumns(opts) {
   const runId = makeRunId_B_();
@@ -245,7 +236,7 @@ function repairBookingsZendeskColumns(opts) {
 
   const missingRequired = listMissingRequiredCols_B_(idx);
   if (missingRequired.length) {
-    logError_B_("❌ Missing required columns (repair aborted)", { run_id: runId, missing: missingRequired });
+    logError_B_(" Missing required columns (repair aborted)", { run_id: runId, missing: missingRequired });
     return { error: "MISSING_REQUIRED_COLUMNS", missing: missingRequired, run_id: runId };
   }
 
@@ -283,7 +274,7 @@ function repairBookingsZendeskColumns(opts) {
   }
 
   const result = { ok: true, run_id: runId, moved_json_to_debug: movedJson, backfilled_ticket_ids: backfilledId, dryRun };
-  logInfo_B_("🧹 Repair complete", result);
+  logInfo_B_(" Repair complete", result);
   Logger.log(JSON.stringify(result, null, 2));
   return result;
 }
@@ -302,12 +293,12 @@ function processPendingBookings(opts) {
     ss = getSS_B_();
     sh = ss.getSheetByName(CFG_B.SHEETS.BOOKINGS);
   } catch (e) {
-    logError_B_("❌ CRITICAL: Cannot open spreadsheet", { run_id: runId, error: String(e), stack: e && e.stack ? e.stack : "" });
+    logError_B_(" CRITICAL: Cannot open spreadsheet", { run_id: runId, error: String(e), stack: e && e.stack ? e.stack : "" });
     throw e;
   }
 
   if (!sh) {
-    logError_B_("❌ CRITICAL: BOOKINGS sheet not found", {
+    logError_B_(" CRITICAL: BOOKINGS sheet not found", {
       run_id: runId,
       spreadsheet: ss ? ss.getName() : "(unknown)",
       spreadsheet_id: ss ? ss.getId() : "(unknown)"
@@ -330,7 +321,7 @@ function processPendingBookings(opts) {
 
   const values = sh.getDataRange().getValues();
   if (values.length < 2) {
-    logInfo_B_("📭 No bookings to process", { run_id: runId, total_rows: values.length });
+    logInfo_B_(" No bookings to process", { run_id: runId, total_rows: values.length });
     return { run_id: runId, processed: 0, attempted: 0, created: 0, failed: 0, skipped: 0, took_ms: Date.now() - startedAt };
   }
 
@@ -339,7 +330,7 @@ function processPendingBookings(opts) {
 
   const missingRequired = listMissingRequiredCols_B_(idx);
   if (missingRequired.length) {
-    logError_B_("❌ Missing required columns (mapping invalid)", {
+    logError_B_(" Missing required columns (mapping invalid)", {
       run_id: runId,
       missing: missingRequired,
       headers: headerRaw
@@ -348,7 +339,7 @@ function processPendingBookings(opts) {
   }
 
   if (CFG_B.DEBUG_MODE) {
-    logInfo_B_("📊 Sheet scan starting", {
+    logInfo_B_(" Sheet scan starting", {
       run_id: runId,
       spreadsheet: ss.getName(),
       total_rows: values.length - 1,
@@ -360,7 +351,7 @@ function processPendingBookings(opts) {
 
   const creds = getZendeskCreds_B_();
   if (!creds.subdomain || !creds.email || !creds.token) {
-    logWarn_B_("⚠️ Zendesk creds missing (skipping run).", {
+    logWarn_B_(" Zendesk creds missing (skipping run).", {
       run_id: runId,
       hasSubdomain: !!creds.subdomain,
       hasEmail: !!creds.email,
@@ -397,11 +388,11 @@ function processPendingBookings(opts) {
       const zdUrlRaw = String(safeCell_B_(row, idx.zendesk_ticket_url) || "").trim();
       const rawTicketCell = String(safeCell_B_(row, idx.zendesk_ticket_id) || "").trim();
 
-      // ✅ NEW: normalize ticket id (digits only), detect JSON pollution
+      //  NEW: normalize ticket id (digits only), detect JSON pollution
       const norm = normalizeZendeskTicketId_B_(rawTicketCell);
       let zdTicketId = norm.ticket_id;
 
-      // ✅ NEW: if JSON got written into zendesk_ticket_id, move it to debug_json + clear ticket_id
+      //  NEW: if JSON got written into zendesk_ticket_id, move it to debug_json + clear ticket_id
       if (CFG_B.PIPELINE.AUTO_REPAIR_MISPLACED_JSON_IN_TICKET_ID && norm.is_json) {
         const currentDebug = String(safeCell_B_(row, idx.debug_json) || "").trim();
 
@@ -414,7 +405,7 @@ function processPendingBookings(opts) {
         zdTicketId = ""; // allow processing
       }
 
-      // ✅ NEW: if URL exists, backfill ticket id (prevents “created but id blank”)
+      //  NEW: if URL exists, backfill ticket id (prevents created but id blank)
       if (CFG_B.PIPELINE.AUTO_BACKFILL_TICKET_ID_FROM_URL && !zdTicketId && zdUrlRaw) {
         const derived = extractTicketIdFromUrl_B_(zdUrlRaw);
         if (derived) {
@@ -437,7 +428,7 @@ function processPendingBookings(opts) {
         // created is authoritative: avoid duplicates
         skipReason = "already_created";
       } else if (zdTicketId) {
-        // ✅ ONLY skip when ticket id is a REAL numeric Zendesk ticket id
+        //  ONLY skip when ticket id is a REAL numeric Zendesk ticket id
         skipReason = "has_ticket_id";
       } else if (zdStatus === "failed") {
         skipReason = "status_failed";
@@ -464,12 +455,18 @@ function processPendingBookings(opts) {
         notes: String(safeCell_B_(row, idx.notes) || "").trim(),
         dept: String(safeCell_B_(row, idx.dept) || "").trim(),
         bookedAt: String(safeCell_B_(row, idx.booked_at) || "").trim(),
+        meetingType: normalizeMeetingTypeLabel_B_(safeCell_B_(row, idx.meeting_type)),
+        attendeeEmails: parseAttendeeEmails_B_(safeCell_B_(row, idx.attendee_emails)),
+        meetLink: String(safeCell_B_(row, idx.meet_link) || "").trim(),
+        meetStatus: normalizeMeetStatus_B_(safeCell_B_(row, idx.meet_status), String(safeCell_B_(row, idx.meet_link) || "").trim()),
+        meetErrorCode: String(safeCell_B_(row, idx.meet_error_code) || "").trim(),
+        meetErrorDetails: String(safeCell_B_(row, idx.meet_error_details) || "").trim(),
       };
 
       const parsed = parseSlotId_B_(slotId);
       const slotString = parsed ? `${parsed.date} ${parsed.start_time}` : slotId;
 
-      logInfo_B_("📋 Processing booking", {
+      logInfo_B_(" Processing booking", {
         run_id: runId,
         row: r + 1,
         booking_id: bookingId,
@@ -492,7 +489,7 @@ function processPendingBookings(opts) {
           zendesk_attempted_at: attemptedAt,
         });
 
-        logInfo_B_("✅ Ticket created successfully", {
+        logInfo_B_(" Ticket created successfully", {
           run_id: runId,
           booking_id: bookingId,
           ticket_id: primary.ticket_id,
@@ -513,7 +510,7 @@ function processPendingBookings(opts) {
         zendesk_attempted_at: attemptedAt,
       });
 
-      logError_B_("❌ Primary ticket creation failed", {
+      logError_B_(" Primary ticket creation failed", {
         run_id: runId,
         row: r + 1,
         booking_id: bookingId,
@@ -539,7 +536,7 @@ function processPendingBookings(opts) {
           alert_ticket_url: alert.ticket_url,
         });
 
-        logInfo_B_("🚨 URGENT alert ticket created", {
+        logInfo_B_(" URGENT alert ticket created", {
           run_id: runId,
           booking_id: bookingId,
           alert_ticket_id: alert.ticket_id,
@@ -551,7 +548,7 @@ function processPendingBookings(opts) {
 
     } catch (rowErr) {
       out.failed++;
-      logError_B_("💥 Row processing exception", {
+      logError_B_(" Row processing exception", {
         run_id: runId,
         row: r + 1,
         error: String(rowErr),
@@ -567,19 +564,19 @@ function processPendingBookings(opts) {
     took_ms: Date.now() - startedAt
   };
 
-  logInfo_B_("🏁 Pipeline run complete", summary);
+  logInfo_B_(" Pipeline run complete", summary);
   Logger.log(JSON.stringify(summary, null, 2));
   return summary;
 }
 
 
 /* =========================
- * ZENDESK CREDS (✅ Properties override hardcoded)
+ * ZENDESK CREDS ( Properties override hardcoded)
  * ========================= */
 function getZendeskCreds_B_() {
   const p = PropertiesService.getScriptProperties();
 
-  // ✅ Properties FIRST, then fall back to hardcoded defaults
+  //  Properties FIRST, then fall back to hardcoded defaults
   const subdomain = (p.getProperty(CFG_B.ZENDESK.SUBDOMAIN_PROP) || "").trim() || (CFG_B.ZENDESK.HARDCODED_SUBDOMAIN || "").trim();
   const email = (p.getProperty(CFG_B.ZENDESK.EMAIL_PROP) || "").trim() || (CFG_B.ZENDESK.HARDCODED_EMAIL || "").trim();
   const token = (p.getProperty(CFG_B.ZENDESK.TOKEN_PROP) || "").trim() || (CFG_B.ZENDESK.HARDCODED_TOKEN || "").trim();
@@ -627,7 +624,7 @@ function createZendeskTicketWithRetry_B_(creds, booking, slotString, runId, rowN
     if (!shouldRetry) break;
 
     const waitMs = computeBackoffMs_B_(attempts, res && res.retry_after_seconds ? res.retry_after_seconds : 0);
-    logWarn_B_("⏳ Zendesk retry backoff", {
+    logWarn_B_(" Zendesk retry backoff", {
       run_id: runId,
       row: rowNum,
       booking_id: booking.bookingId,
@@ -660,17 +657,56 @@ function createZendeskTicket_B_(creds, booking, slotString, runId, rowNum) {
 
   const requesterEmail = (booking.requesterEmail || creds.email || "").trim();
   const requesterName = (booking.requesterName || requesterEmail || "Training Booker").trim();
+  const subject = `Training Room Booking - ${slotString}`;
 
-  const subject = `Training Room Booking — ${slotString}`;
-
-  // ✅ Enforced tags for your View
   const deptTag = booking.dept ? ("dept-" + slugifyTag_B_(booking.dept)) : "";
+  const attendeeLine =
+    booking.attendeeEmails && booking.attendeeEmails.length
+      ? booking.attendeeEmails.join(", ")
+      : "None";
+  const meetStatus = normalizeMeetStatus_B_(booking.meetStatus, booking.meetLink);
+  const meetingModeLabel =
+    booking.meetingType === "in_person_plus_online"
+      ? "In-person + Remote (Meet)"
+      : "In-person only";
+
+  const meetingTags = [];
+  if (booking.meetingType === "in_person_plus_online") {
+    meetingTags.push("meeting-hybrid");
+    if (meetStatus === "failed") {
+      meetingTags.push("meet-failed");
+    } else if (meetStatus !== "ok") {
+      meetingTags.push("meet-pending");
+    }
+  } else {
+    meetingTags.push("meeting-in-person-only");
+  }
+
   const tags = uniqueTags_B_(
     []
       .concat(CFG_B.TAGS.REQUIRED)
       .concat(CFG_B.TAGS.DEFAULT)
       .concat(deptTag ? [deptTag] : [])
+      .concat(meetingTags)
   );
+
+  let meetDetailsBlock = "";
+  if (booking.meetingType === "in_person_plus_online") {
+    if (meetStatus === "ok" && booking.meetLink) {
+      meetDetailsBlock =
+        `Google Meet Link: ${booking.meetLink}\n` +
+        `Remote participants: ${attendeeLine}\n`;
+    } else if (meetStatus === "failed") {
+      meetDetailsBlock =
+        `Meet generation failed.\n` +
+        (booking.meetErrorCode ? `Meet Error Code: ${booking.meetErrorCode}\n` : "") +
+        (booking.meetErrorDetails ? `Meet Error Details: ${truncate_B_(booking.meetErrorDetails, 800)}\n` : "");
+    } else {
+      meetDetailsBlock =
+        `Meet link is still processing (check later).\n` +
+        `Remote participants: ${attendeeLine}\n`;
+    }
+  }
 
   const ticket = {
     subject,
@@ -686,12 +722,14 @@ function createZendeskTicket_B_(creds, booking, slotString, runId, rowNum) {
         `Session: ${slotString}\n` +
         `Requester: ${requesterName} (${requesterEmail})\n` +
         `Department: ${booking.dept || "All"}\n` +
+        `Meeting Mode: ${meetingModeLabel}\n` +
+        meetDetailsBlock +
         `Booked At: ${booking.bookedAt || ""}\n\n` +
         (booking.notes ? `Notes:\n${booking.notes}\n\n` : "") +
         `---\n` +
         `This ticket was auto-created via Training Room Booking API`,
     },
-    tags,              // ✅ This is what your View filters on
+    tags,
     status: "open",
     custom_fields: [
       { id: CFG_B.ZENDESK.CUSTOM_FIELD_BOOKING_ID, value: booking.bookingId }
@@ -705,7 +743,7 @@ function createZendeskTicket_B_(creds, booking, slotString, runId, rowNum) {
   const auth = Utilities.base64Encode(`${creds.email}/token:${creds.token}`);
 
   if (CFG_B.DEBUG_MODE) {
-    logInfo_B_("🔧 Creating Zendesk ticket", {
+    logInfo_B_("Creating Zendesk ticket", {
       run_id: runId,
       row: rowNum,
       booking_id: booking.bookingId,
@@ -729,11 +767,10 @@ function createZendeskTicket_B_(creds, booking, slotString, runId, rowNum) {
     const res = UrlFetchApp.fetch(url, options);
     const httpCode = res.getResponseCode();
     const text = res.getContentText() || "{}";
-
     const retryAfter = getRetryAfterSeconds_B_(res);
 
     if (CFG_B.DEBUG_MODE) {
-      logInfo_B_("📡 Zendesk API response", {
+      logInfo_B_("Zendesk API response", {
         run_id: runId,
         row: rowNum,
         booking_id: booking.bookingId,
@@ -765,7 +802,7 @@ function createZendeskTicket_B_(creds, booking, slotString, runId, rowNum) {
     };
 
   } catch (err) {
-    logError_B_("💥 Zendesk API exception", {
+    logError_B_("Zendesk API exception", {
       run_id: runId,
       row: rowNum,
       booking_id: booking.bookingId,
@@ -795,9 +832,9 @@ function createUrgentAlertTicket_B_(creds, context, runId, rowNum) {
   }
 
   const requesterEmail = (creds.alertRequesterEmail || creds.email || "").trim();
-  const subject = `🚨 URGENT: Training booking failed - ${context.booking_id}`;
+  const subject = `URGENT: Training booking failed - ${context.booking_id}`;
 
-  // ✅ Keep the same REQUIRED tag so your View can also catch alerts if you want
+  //  Keep the same REQUIRED tag so your View can also catch alerts if you want
   const tags = uniqueTags_B_(
     []
       .concat(CFG_B.TAGS.REQUIRED)
@@ -809,7 +846,7 @@ function createUrgentAlertTicket_B_(creds, context, runId, rowNum) {
     requester: { email: requesterEmail, name: "Training Booking Monitor" },
     comment: {
       body:
-        `⚠️ URGENT: Training Room Booking Ticket Creation Failed\n` +
+        `URGENT: Training Room Booking Ticket Creation Failed\n` +
         `=========================================================\n\n` +
         `A training room booking could not be processed automatically.\n` +
         `IMMEDIATE ACTION REQUIRED: Please create a manual ticket.\n\n` +
@@ -867,7 +904,7 @@ function createUrgentAlertTicket_B_(creds, context, runId, rowNum) {
     return { created: false, error: `ZENDESK_API_${httpCode}`, details: text, http_code: httpCode };
 
   } catch (err) {
-    logError_B_("💥 Alert ticket exception", {
+    logError_B_(" Alert ticket exception", {
       run_id: runId,
       row: rowNum,
       booking_id: context.booking_id,
@@ -897,7 +934,7 @@ function testZendeskTicket() {
     bookedAt: new Date().toISOString()
   };
 
-  logInfo_B_("🧪 Creating test Zendesk ticket", {
+  logInfo_B_(" Creating test Zendesk ticket", {
     run_id: runId,
     booking_id: testBooking.bookingId,
     requester: testBooking.requesterEmail
@@ -995,6 +1032,14 @@ function indexMap_B_(header) {
     dept: m["dept"] !== undefined ? m["dept"] : -1,
     booked_at: m["booked_at"] !== undefined ? m["booked_at"] : -1,
     debug_json: m["debug_json"] !== undefined ? m["debug_json"] : -1,
+    meeting_type: m["meeting_type"] !== undefined ? m["meeting_type"] : -1,
+    attendee_emails: m["attendee_emails"] !== undefined ? m["attendee_emails"] : -1,
+    meet_link: m["meet_link"] !== undefined ? m["meet_link"] : -1,
+    meet_event_id: m["meet_event_id"] !== undefined ? m["meet_event_id"] : -1,
+    meet_status: m["meet_status"] !== undefined ? m["meet_status"] : -1,
+    meet_error_code: m["meet_error_code"] !== undefined ? m["meet_error_code"] : -1,
+    meet_error_details: m["meet_error_details"] !== undefined ? m["meet_error_details"] : -1,
+    meet_created_at: m["meet_created_at"] !== undefined ? m["meet_created_at"] : -1,
 
     zendesk_status: m["zendesk_status"] !== undefined ? m["zendesk_status"] : -1,
     zendesk_ticket_id: m["zendesk_ticket_id"] !== undefined ? m["zendesk_ticket_id"] : -1,
@@ -1043,7 +1088,59 @@ function parseSlotId_B_(slotId) {
   return { date, start_time };
 }
 
-// ✅ NEW: ticket-id helpers
+//  NEW: ticket-id helpers
+function normalizeMeetingTypeLabel_B_(raw) {
+  const s = lower_B_(raw);
+  if (
+    s === "in_person_plus_online" ||
+    s === "in_person_and_online" ||
+    s === "hybrid" ||
+    s === "online"
+  ) {
+    return "in_person_plus_online";
+  }
+  return "in_person_only";
+}
+
+function normalizeMeetStatus_B_(raw, meetLink) {
+  const s = lower_B_(raw);
+  if (s === "ok" || s === "failed" || s === "pending") return s;
+  if (s === "created") return "ok"; // legacy compatibility
+  if (s === "error") return "failed";
+  if (meetLink) return "ok";
+  return "";
+}
+
+function parseAttendeeEmails_B_(raw) {
+  if (Array.isArray(raw)) {
+    return raw
+      .map(v => String(v || "").trim().toLowerCase())
+      .filter(Boolean);
+  }
+
+  const s = String(raw || "").trim();
+  if (!s) return [];
+
+  let src = null;
+  if (s.startsWith("[") && s.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(s);
+      if (Array.isArray(parsed)) src = parsed;
+    } catch (ignore) {}
+  }
+  if (!src) src = s.split(/[,\n;]+/);
+
+  const seen = {};
+  const out = [];
+  src.forEach(v => {
+    const email = String(v || "").trim().toLowerCase();
+    if (!email || seen[email]) return;
+    seen[email] = true;
+    out.push(email);
+  });
+  return out;
+}
+
 function isValidTicketId_B_(v) {
   const s = String(v || "").trim();
   return /^\d+$/.test(s);
@@ -1071,7 +1168,7 @@ function extractTicketIdFromUrl_B_(url) {
   return m && m[1] ? m[1] : "";
 }
 
-// ✅ NEW: tag utilities
+//  NEW: tag utilities
 function slugifyTag_B_(s) {
   return String(s || "")
     .trim()
@@ -1130,7 +1227,7 @@ function lower_B_(v) { return String(v || "").trim().toLowerCase(); }
 function truncate_B_(s, maxLen) {
   s = String(s || "");
   if (!maxLen || s.length <= maxLen) return s;
-  return s.slice(0, maxLen) + "…";
+  return s.slice(0, maxLen) + "...";
 }
 
 function makeRunId_B_() {
@@ -1139,7 +1236,7 @@ function makeRunId_B_() {
 
 
 /* =========================
- * OPTIONAL: Process single booking by ID (✅ fixed)
+ * OPTIONAL: Process single booking by ID ( fixed)
  * ========================= */
 function processOneBooking(bookingId) {
   const runId = makeRunId_B_();
@@ -1169,7 +1266,7 @@ function processOneBooking(bookingId) {
 
   const missingRequired = listMissingRequiredCols_B_(idx);
   if (missingRequired.length) {
-    logError_B_("❌ Missing required columns (cannot processOneBooking)", { run_id: runId, missing: missingRequired });
+    logError_B_(" Missing required columns (cannot processOneBooking)", { run_id: runId, missing: missingRequired });
     return { error: "MISSING_REQUIRED_COLUMNS", missing: missingRequired, run_id: runId };
   }
 
@@ -1186,6 +1283,12 @@ function processOneBooking(bookingId) {
         notes: String(safeCell_B_(row, idx.notes)).trim(),
         dept: String(safeCell_B_(row, idx.dept)).trim(),
         bookedAt: String(safeCell_B_(row, idx.booked_at)).trim(),
+        meetingType: normalizeMeetingTypeLabel_B_(safeCell_B_(row, idx.meeting_type)),
+        attendeeEmails: parseAttendeeEmails_B_(safeCell_B_(row, idx.attendee_emails)),
+        meetLink: String(safeCell_B_(row, idx.meet_link) || "").trim(),
+        meetStatus: normalizeMeetStatus_B_(safeCell_B_(row, idx.meet_status), String(safeCell_B_(row, idx.meet_link) || "").trim()),
+        meetErrorCode: String(safeCell_B_(row, idx.meet_error_code) || "").trim(),
+        meetErrorDetails: String(safeCell_B_(row, idx.meet_error_details) || "").trim(),
       };
 
       const parsed = parseSlotId_B_(booking.slotId);
@@ -1219,3 +1322,4 @@ function processOneBooking(bookingId) {
 
   return { error: "NOT_FOUND", run_id: runId };
 }
+

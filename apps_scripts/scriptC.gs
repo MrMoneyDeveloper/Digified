@@ -1,147 +1,168 @@
 /**
- * Script C — Online Meeting Link Generator (Improved)
- * ---------------------------------------------------
- * Goals:
- * ✅ Only runs for meeting_type="online"
- * ✅ Idempotent (prevents duplicate events) when booking_id is provided
- * ✅ Uses Advanced Calendar API for reliable Google Meet generation
- * ✅ Falls back to CalendarApp best-effort if Advanced API is not enabled
+ * Script C - Meet Link Generator for Room Bookings
  *
- * Recommended Script Properties:
- * - TRAINING_CALENDAR_ID (optional): calendar ID to create events on
- * - TRAINING_DEFAULT_TZ  (optional): e.g. "Africa/Johannesburg"
+ * Public entrypoint:
+ *   createMeetForBooking_C_(params)
  *
- * Expected params:
- * {
- *   booking_id:      "book_xxx_123",            // strongly recommended for idempotency
- *   slot_id:         "SLOT_YYYY-MM-DD_HHMM",
- *   meeting_type:    "online" | "in_person",
- *   requester_name:  "John Doe",
- *   requester_email: "john@example.com",
- *   attendee_emails: ["a@x.com", "b@y.com"],
- *   slot_minutes:    60
- * }
- *
- * Returns:
- * {
- *   ok: boolean,
- *   created: boolean,
- *   meet_link: string,
- *   event_id: string,
- *   calendar_id: string,
- *   guests: string[],
- *   message: string,
- *   error_code?: string,
- *   error_details?: string
- * }
+ * Backward-compatible wrapper:
+ *   createOnlineMeeting(params)
  */
-function createOnlineMeeting(params) {
+
+function createMeetForBooking_C_(params) {
   params = params || {};
 
-  var meetingType = lowerTrim_(params.meeting_type);
-  if (meetingType !== "online") {
+  var meetingType = normalizeMeetingTypeC_(params.meeting_type);
+  var attendeeParse = parseAttendeeEmailsC_(params.attendee_emails);
+  var requesterEmail = normalizeEmail_(params.requester_email);
+  var requesterName = String(params.requester_name || "").trim() || requesterEmail;
+  var timezone = String(params.timezone || params.time_zone || getTzC_()).trim() || getTzC_();
+  var calendarId = resolveCalendarIdC_(params.calendar_id);
+  var bookingId = String(params.booking_id || "").trim();
+  var slotId = String(params.slot_id || "").trim();
+
+  if (meetingType !== "in_person_plus_online") {
     return {
-      ok: false,
-      created: false,
+      ok: true,
+      status: "skipped",
       meet_link: "",
       event_id: "",
-      calendar_id: "",
+      created_at: "",
+      calendar_id: calendarId,
       guests: [],
-      message: "Not an online booking; no meeting created."
+      message: "Meeting type is in-person only; Meet creation skipped."
     };
   }
 
-  var slotId = String(params.slot_id || "").trim();
-  var parsed = parseSlotId_C(slotId);
-  if (!parsed) {
-    return failC_("INVALID_SLOT_ID", "Invalid slot_id format. Expected SLOT_YYYY-MM-DD_HHMM");
-  }
-
-  // Duration
-  var slotMinutes = toPositiveInt_(params.slot_minutes, 60);
-  if (slotMinutes <= 0) slotMinutes = 60;
-
-  // Timezone
-  var tz = getTzC_();
-
-  // Build start/end RFC3339-like payloads using timeZone field (Calendar API)
-  var start = {
-    date: parsed.date,
-    time: parsed.start_time
-  };
-  var end = addMinutesToDateTime_(start.date, start.time, slotMinutes);
-
-  // Guests list: requester + attendees (validated + deduped)
-  var requesterEmail = normalizeEmail_(params.requester_email);
   if (!requesterEmail) {
-    return failC_("MISSING_REQUESTER_EMAIL", "requester_email is required for online meetings.");
+    return failC_("MISSING_REQUESTER_EMAIL", "requester_email is required for hybrid bookings.", "", "", calendarId);
   }
 
-  var requesterName = String(params.requester_name || "").trim() || requesterEmail;
+  if (attendeeParse.invalid.length) {
+    return failC_(
+      "INVALID_ATTENDEE_EMAIL",
+      "One or more attendee_emails are invalid.",
+      attendeeParse.invalid.join(", "),
+      "",
+      calendarId
+    );
+  }
 
-  var rawAttendees = Array.isArray(params.attendee_emails) ? params.attendee_emails : [];
-  var guests = buildGuestList_(requesterEmail, rawAttendees);
+  if (!attendeeParse.valid.length) {
+    return failC_(
+      "MISSING_REMOTE_ATTENDEES",
+      "Hybrid booking requires at least one remote attendee email.",
+      "",
+      "",
+      calendarId
+    );
+  }
 
-  // Calendar target
-  var calendarId = getCalendarIdC_();
+  var slotWindow = resolveSlotWindowC_(params, timezone);
+  if (!slotWindow.ok) {
+    return failC_(slotWindow.error_code, slotWindow.error_details || "Slot window resolution failed.", "", "", calendarId);
+  }
 
-  // Idempotency: strongly recommended to pass booking_id
-  var bookingId = String(params.booking_id || "").trim();
-  var idKey = bookingId ? bookingId : ("slot:" + slotId + "|req:" + requesterEmail);
+  var guests = buildGuestList_(requesterEmail, attendeeParse.valid);
+  var idKey = bookingId
+    ? ("booking:" + bookingId)
+    : ("slot:" + slotWindow.slot_key + "|req:" + requesterEmail);
 
-  // 1) If booking_id exists, try to find an existing event first (Advanced API path)
-  //    This prevents duplicate events if Script A retries.
-  var existing = null;
   if (bookingId) {
-    existing = findExistingEventByBookingId_(calendarId, bookingId);
+    var existing = findExistingEventByBookingId_(calendarId, bookingId);
     if (existing && existing.meet_link) {
       return {
         ok: true,
-        created: false,
+        status: "ok",
         meet_link: existing.meet_link,
         event_id: existing.event_id,
+        created_at: existing.created_at || "",
         calendar_id: calendarId,
         guests: guests,
-        message: "Existing online meeting found (idempotent)."
+        message: "Existing Meet event reused (idempotent)."
       };
     }
     if (existing && existing.event_id && !existing.meet_link) {
-      // Found event but no meet link present
-      return {
-        ok: true,
-        created: false,
-        meet_link: "",
-        event_id: existing.event_id,
-        calendar_id: calendarId,
-        guests: guests,
-        message: "Existing event found, but meet link missing."
-      };
+      return failC_(
+        "EXISTING_EVENT_WITHOUT_MEET_LINK",
+        "An existing event was found but no Meet link is present.",
+        "event_id=" + existing.event_id,
+        existing.event_id,
+        calendarId
+      );
     }
   }
 
-  // 2) Create the event (prefer Advanced Calendar API for reliable Meet)
-  var title = "Online Training Session — " + slotId;
+  var title = "Training Room Booking - " + (slotId || slotWindow.slot_key);
   var description =
-    "Online booking for slot " + slotId + "\n" +
-    "Booking ID: " + (bookingId || "(not provided)") + "\n" +
-    "Booked by: " + requesterName + " <" + requesterEmail + ">\n" +
-    (rawAttendees.length ? ("Attendees: " + guests.join(", ") + "\n") : "") +
+    "Hybrid room booking\n" +
+    "Booking ID: " + (bookingId || "(none)") + "\n" +
+    "Requester: " + requesterName + " <" + requesterEmail + ">\n" +
+    "Remote attendees: " + attendeeParse.valid.join(", ") + "\n" +
     "Generated by Script C.";
 
   var createRes = createEventWithMeet_(calendarId, {
     title: title,
     description: description,
-    start_date: start.date,
-    start_time: start.time,
-    end_date: end.date,
-    end_time: end.time,
-    time_zone: tz,
+    start_date: slotWindow.start_date,
+    start_time: slotWindow.start_time,
+    end_date: slotWindow.end_date,
+    end_time: slotWindow.end_time,
+    time_zone: timezone,
     guests: guests,
     booking_id: bookingId,
+    slot_id: slotId || slotWindow.slot_key,
     id_key: idKey
   });
 
-  return createRes;
+  if (!createRes || createRes.ok !== true) {
+    return failC_(
+      (createRes && createRes.error_code) || "MEET_CREATE_FAILED",
+      (createRes && createRes.message) || "Meet creation failed.",
+      createRes && createRes.error_details ? createRes.error_details : "",
+      "",
+      calendarId
+    );
+  }
+
+  var meetLink = extractMeetLinkC_(createRes);
+  var eventId = String(createRes.event_id || "").trim();
+  if (!meetLink) {
+    return failC_(
+      "MEET_LINK_MISSING",
+      "Calendar event created but no Meet link was returned.",
+      createRes.message || "",
+      eventId,
+      calendarId
+    );
+  }
+
+  return {
+    ok: true,
+    status: "ok",
+    meet_link: meetLink,
+    event_id: eventId,
+    created_at: createRes.created_at || new Date().toISOString(),
+    calendar_id: calendarId,
+    guests: guests,
+    message: createRes.message || "Meet link created."
+  };
+}
+
+function createOnlineMeeting(params) {
+  var res = createMeetForBooking_C_(params);
+  return {
+    ok: res.ok === true,
+    created: res.ok === true && res.status === "ok",
+    status: res.status || (res.ok ? "ok" : "failed"),
+    meet_link: String(res.meet_link || "").trim(),
+    event_id: String(res.event_id || "").trim(),
+    created_at: String(res.created_at || "").trim(),
+    calendar_id: String(res.calendar_id || resolveCalendarIdC_()).trim(),
+    guests: Array.isArray(res.guests) ? res.guests : [],
+    message: String(res.message || "").trim(),
+    error_code: String(res.error_code || "").trim(),
+    error_details: String(res.error_details || "").trim()
+  };
 }
 
 /**
@@ -161,22 +182,19 @@ function parseSlotId_C(slotId) {
  * ========================= */
 
 function createEventWithMeet_(calendarId, payload) {
-  // Try Advanced Calendar API first (best / reliable)
   try {
     if (typeof Calendar !== "undefined" && Calendar.Events && Calendar.Events.insert) {
       return createViaAdvancedCalendar_(calendarId, payload);
     }
   } catch (e1) {
-    // continue to fallback
+    // Continue to fallback.
   }
 
-  // Fallback: CalendarApp (best-effort)
   return createViaCalendarAppFallback_(calendarId, payload);
 }
 
 function createViaAdvancedCalendar_(calendarId, payload) {
   var requestId = stableRequestId_(payload.id_key);
-
   var attendees = (payload.guests || []).map(function (email) {
     return { email: email };
   });
@@ -195,7 +213,7 @@ function createViaAdvancedCalendar_(calendarId, payload) {
     attendees: attendees,
     extendedProperties: {
       private: payload.booking_id
-        ? { booking_id: payload.booking_id, slot_id: payload.title.split(" — ").pop() }
+        ? { booking_id: payload.booking_id, slot_id: payload.slot_id || "" }
         : { id_key: payload.id_key }
     },
     conferenceData: {
@@ -212,36 +230,23 @@ function createViaAdvancedCalendar_(calendarId, payload) {
       sendUpdates: "all"
     });
 
-    var meetLink = "";
-    if (created && created.hangoutLink) meetLink = created.hangoutLink;
-
-    // Some tenants also provide entryPoints
-    if (!meetLink && created && created.conferenceData && created.conferenceData.entryPoints) {
-      var ep = created.conferenceData.entryPoints.find(function (x) { return x.entryPointType === "video"; });
-      if (ep && ep.uri) meetLink = ep.uri;
-    }
-
     return {
       ok: true,
-      created: true,
-      meet_link: meetLink || "",
-      event_id: (created && created.id) ? String(created.id) : "",
+      meet_link: extractMeetLinkFromEventC_(created),
+      event_id: created && created.id ? String(created.id) : "",
       calendar_id: calendarId,
       guests: payload.guests || [],
-      message: meetLink ? "Online meeting created successfully (Advanced Calendar API)." :
-        "Event created, but Meet link missing (check Calendar API permissions)."
+      created_at: new Date().toISOString(),
+      message: "Meet event created (Advanced Calendar API)."
     };
   } catch (err) {
-    return failC_("ADVANCED_CALENDAR_CREATE_FAILED", "Calendar API event creation failed.", String(err));
+    return failC_("ADVANCED_CALENDAR_CREATE_FAILED", "Calendar API event creation failed.", String(err), "", calendarId);
   }
 }
 
 function createViaCalendarAppFallback_(calendarId, payload) {
-  // Note: CalendarApp cannot reliably create Meet links in all environments.
-  // This is best-effort only.
   try {
     var cal = CalendarApp.getCalendarById(calendarId) || CalendarApp.getDefaultCalendar();
-
     var startDate = new Date(payload.start_date + "T" + payload.start_time + ":00");
     var endDate = new Date(payload.end_date + "T" + payload.end_time + ":00");
 
@@ -254,24 +259,27 @@ function createViaCalendarAppFallback_(calendarId, payload) {
     var meetLink = "";
     try {
       var conf = event.addConference("hangoutsMeet");
-      var eps = conf && conf.getEntryPoints ? conf.getEntryPoints() : [];
-      if (eps && eps.length) meetLink = eps[0].getUri() || "";
-    } catch (e2) {
-      // ignore; event exists but meet link may not
+      var entryPoints = conf && conf.getEntryPoints ? conf.getEntryPoints() : [];
+      if (entryPoints && entryPoints.length) {
+        meetLink = String(entryPoints[0].getUri() || "").trim();
+      }
+    } catch (ignore) {
+      // Event was created. Some tenants cannot attach Meet via CalendarApp.
     }
 
     return {
       ok: true,
-      created: true,
-      meet_link: meetLink || "",
+      meet_link: meetLink,
       event_id: event.getId(),
       calendar_id: calendarId,
       guests: payload.guests || [],
-      message: meetLink ? "Online meeting created (CalendarApp fallback)." :
-        "Event created, but Meet link could not be generated (enable Advanced Calendar API for reliability)."
+      created_at: new Date().toISOString(),
+      message: meetLink
+        ? "Meet event created (CalendarApp fallback)."
+        : "Event created but Meet link missing in fallback mode."
     };
   } catch (err) {
-    return failC_("CALENDARAPP_CREATE_FAILED", "CalendarApp event creation failed.", String(err));
+    return failC_("CALENDARAPP_CREATE_FAILED", "CalendarApp event creation failed.", String(err), "", calendarId);
   }
 }
 
@@ -280,34 +288,50 @@ function createViaCalendarAppFallback_(calendarId, payload) {
  * ========================= */
 
 function findExistingEventByBookingId_(calendarId, bookingId) {
+  var windowStart = new Date(new Date().getTime() - 14 * 24 * 60 * 60 * 1000);
+  var windowEnd = new Date(new Date().getTime() + 90 * 24 * 60 * 60 * 1000);
+
   try {
-    if (!(typeof Calendar !== "undefined" && Calendar.Events && Calendar.Events.list)) return null;
+    if (typeof Calendar !== "undefined" && Calendar.Events && Calendar.Events.list) {
+      var resp = Calendar.Events.list(calendarId, {
+        privateExtendedProperty: "booking_id=" + bookingId,
+        timeMin: windowStart.toISOString(),
+        timeMax: windowEnd.toISOString(),
+        singleEvents: true,
+        maxResults: 10,
+        orderBy: "startTime"
+      });
 
-    // Search within a safe window: booking slots are near-term, but keep it broad.
-    var now = new Date();
-    var timeMin = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
-    var timeMax = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
-
-    var resp = Calendar.Events.list(calendarId, {
-      privateExtendedProperty: "booking_id=" + bookingId,
-      timeMin: timeMin,
-      timeMax: timeMax,
-      singleEvents: true,
-      maxResults: 5
-    });
-
-    var items = (resp && resp.items) ? resp.items : [];
-    if (!items.length) return null;
-
-    var ev = items[0];
-    var meetLink = ev.hangoutLink || "";
-    if (!meetLink && ev.conferenceData && ev.conferenceData.entryPoints) {
-      var ep = ev.conferenceData.entryPoints.find(function (x) { return x.entryPointType === "video"; });
-      if (ep && ep.uri) meetLink = ep.uri;
+      var items = resp && resp.items ? resp.items : [];
+      if (items.length) {
+        var ev = items[0];
+        return {
+          event_id: String(ev.id || ""),
+          meet_link: extractMeetLinkFromEventC_(ev),
+          created_at: String(ev.created || "")
+        };
+      }
     }
+  } catch (ignore) {
+    // Fall through to CalendarApp fallback lookup.
+  }
 
-    return { event_id: String(ev.id || ""), meet_link: meetLink || "" };
-  } catch (e) {
+  try {
+    var cal = CalendarApp.getCalendarById(calendarId) || CalendarApp.getDefaultCalendar();
+    var searchTerm = "Booking ID: " + bookingId;
+    var events = cal.getEvents(windowStart, windowEnd, { search: searchTerm }) || [];
+    if (!events.length) return null;
+    var event = events[0];
+    var createdAt = "";
+    try {
+      if (event.getDateCreated) createdAt = event.getDateCreated().toISOString();
+    } catch (ignoreCreated) {}
+    return {
+      event_id: event.getId ? String(event.getId() || "") : "",
+      meet_link: extractMeetLinkFromCalendarAppEventC_(event),
+      created_at: createdAt
+    };
+  } catch (ignore2) {
     return null;
   }
 }
@@ -316,18 +340,27 @@ function findExistingEventByBookingId_(calendarId, bookingId) {
  * Helpers
  * ========================= */
 
-function getCalendarIdC_() {
+function resolveCalendarIdC_(calendarIdParam) {
+  var explicit = String(calendarIdParam || "").trim();
+  if (explicit) return explicit;
+
   var props = PropertiesService.getScriptProperties();
-  var id = String(props.getProperty("TRAINING_CALENDAR_ID") || "").trim();
-  if (id) return id;
-  // default calendar ID (Advanced API needs an ID, "primary" works)
-  return "primary";
+  var fromProps = String(
+    props.getProperty("MEET_CALENDAR_ID") ||
+    props.getProperty("TRAINING_CALENDAR_ID") ||
+    ""
+  ).trim();
+  return fromProps || "primary";
+}
+
+function getCalendarIdC_() {
+  return resolveCalendarIdC_("");
 }
 
 function getTzC_() {
   var props = PropertiesService.getScriptProperties();
   var tz = String(props.getProperty("TRAINING_DEFAULT_TZ") || "").trim();
-  return tz || (Session.getScriptTimeZone() || "Africa/Johannesburg");
+  return tz || Session.getScriptTimeZone() || "Africa/Johannesburg";
 }
 
 function buildGuestList_(requesterEmail, attendeeEmails) {
@@ -336,8 +369,7 @@ function buildGuestList_(requesterEmail, attendeeEmails) {
 
   function add(email) {
     email = normalizeEmail_(email);
-    if (!email) return;
-    if (seen[email]) return;
+    if (!email || seen[email]) return;
     seen[email] = true;
     out.push(email);
   }
@@ -345,24 +377,20 @@ function buildGuestList_(requesterEmail, attendeeEmails) {
   add(requesterEmail);
   (attendeeEmails || []).forEach(add);
 
-  // Hard cap to avoid accidental spam
   if (out.length > 50) out = out.slice(0, 50);
-
   return out;
 }
 
 function normalizeEmail_(v) {
   var s = String(v || "").trim().toLowerCase();
   if (!s) return "";
-  // simple pattern; enough for client/server sanity
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) return "";
   return s;
 }
 
 function addMinutesToDateTime_(dateStr, timeStr, minutesToAdd) {
-  // Build a date in local environment; Johannesburg has no DST so it’s stable.
-  var parts = dateStr.split("-");
-  var t = timeStr.split(":");
+  var parts = String(dateStr || "").split("-");
+  var t = String(timeStr || "").split(":");
   var y = parseInt(parts[0], 10);
   var m = parseInt(parts[1], 10) - 1;
   var d = parseInt(parts[2], 10);
@@ -382,12 +410,11 @@ function addMinutesToDateTime_(dateStr, timeStr, minutesToAdd) {
 }
 
 function stableRequestId_(idKey) {
-  // requestId must be <= 64 chars; keep stable so conference creation is idempotent.
   var base = String(idKey || "").trim();
   if (!base) base = Utilities.getUuid();
   base = base.replace(/[^a-zA-Z0-9_-]/g, "_");
-  if (base.length > 48) base = base.slice(0, 48);
-  return "meet_" + base + "_" + String(Date.now()).slice(-8);
+  if (base.length > 59) base = base.slice(0, 59);
+  return "meet_" + base;
 }
 
 function lowerTrim_(v) {
@@ -400,13 +427,185 @@ function toPositiveInt_(v, fallback) {
   return n;
 }
 
-function failC_(code, message, details) {
+function normalizeMeetingTypeC_(rawType) {
+  var s = lowerTrim_(rawType);
+  if (
+    s === "in_person_plus_online" ||
+    s === "in_person_and_online" ||
+    s === "in-person-plus-online" ||
+    s === "inperson_plus_online" ||
+    s === "hybrid" ||
+    s === "online" ||
+    s === "1" ||
+    s === "true" ||
+    s === "yes" ||
+    s === "on"
+  ) {
+    return "in_person_plus_online";
+  }
+  return "in_person_only";
+}
+
+function resolveMeetingModeC_(rawType, hasRemoteAttendees) {
+  var normalized = normalizeMeetingTypeC_(rawType);
+  return {
+    raw: lowerTrim_(rawType),
+    requires_meet: normalized === "in_person_plus_online" || !!hasRemoteAttendees
+  };
+}
+
+function parseAttendeeListC_(raw) {
+  var tokens = [];
+
+  function pushToken(v) {
+    var s = String(v || "").trim();
+    if (!s) return;
+    tokens.push(s);
+  }
+
+  if (Array.isArray(raw)) {
+    raw.forEach(pushToken);
+    return tokens;
+  }
+
+  var s = String(raw || "").trim();
+  if (!s) return [];
+
+  if (s.startsWith("[") && s.endsWith("]")) {
+    try {
+      var parsed = JSON.parse(s);
+      if (Array.isArray(parsed)) {
+        parsed.forEach(pushToken);
+        return tokens;
+      }
+    } catch (ignore) {
+      // Fall through to delimited parsing.
+    }
+  }
+
+  s.split(/[,;\n]+/).forEach(pushToken);
+  return tokens;
+}
+
+function parseAttendeeEmailsC_(raw) {
+  var src = parseAttendeeListC_(raw);
+  var seen = {};
+  var valid = [];
+  var invalid = [];
+
+  src.forEach(function (v) {
+    var email = String(v || "").trim().toLowerCase();
+    if (!email || seen[email]) return;
+    seen[email] = true;
+    if (normalizeEmail_(email)) valid.push(email);
+    else invalid.push(email);
+  });
+
+  return { valid: valid, invalid: invalid };
+}
+
+function resolveSlotWindowC_(params, timezone) {
+  var slotId = String(params.slot_id || "").trim();
+  var slotMinutes = toPositiveInt_(params.slot_minutes, 60);
+  if (slotMinutes <= 0) slotMinutes = 60;
+
+  var startIsoRaw = String(params.start_iso || "").trim();
+  var endIsoRaw = String(params.end_iso || "").trim();
+  if (startIsoRaw && endIsoRaw) {
+    var startDate = new Date(startIsoRaw);
+    var endDate = new Date(endIsoRaw);
+    if (isFinite(startDate.getTime()) && isFinite(endDate.getTime()) && endDate.getTime() > startDate.getTime()) {
+      return {
+        ok: true,
+        start_date: formatDateByTzC_(startDate, timezone, "yyyy-MM-dd"),
+        start_time: formatDateByTzC_(startDate, timezone, "HH:mm"),
+        end_date: formatDateByTzC_(endDate, timezone, "yyyy-MM-dd"),
+        end_time: formatDateByTzC_(endDate, timezone, "HH:mm"),
+        slot_key: slotId || (startIsoRaw + "|" + endIsoRaw)
+      };
+    }
+    return {
+      ok: false,
+      error_code: "INVALID_START_END_ISO",
+      error_details: "start_iso/end_iso are invalid or end_iso <= start_iso"
+    };
+  }
+
+  var parsed = parseSlotId_C(slotId);
+  if (!parsed) {
+    return {
+      ok: false,
+      error_code: "INVALID_SLOT_ID",
+      error_details: "slot_id must match SLOT_YYYY-MM-DD_HHMM when start_iso/end_iso are not supplied."
+    };
+  }
+
+  var end = addMinutesToDateTime_(parsed.date, parsed.start_time, slotMinutes);
+  return {
+    ok: true,
+    start_date: parsed.date,
+    start_time: parsed.start_time,
+    end_date: end.date,
+    end_time: end.time,
+    slot_key: slotId
+  };
+}
+
+function formatDateByTzC_(dateObj, timezone, pattern) {
+  return Utilities.formatDate(dateObj, timezone || getTzC_(), pattern);
+}
+
+function extractMeetLinkFromEventC_(eventObj) {
+  if (!eventObj) return "";
+  var link = String(eventObj.hangoutLink || "").trim();
+  if (link) return link;
+
+  if (eventObj.conferenceData && eventObj.conferenceData.entryPoints) {
+    for (var i = 0; i < eventObj.conferenceData.entryPoints.length; i++) {
+      var ep = eventObj.conferenceData.entryPoints[i];
+      if (ep && ep.entryPointType === "video" && ep.uri) {
+        return String(ep.uri).trim();
+      }
+    }
+  }
+
+  return "";
+}
+
+function extractMeetLinkFromCalendarAppEventC_(eventObj) {
+  if (!eventObj) return "";
+  try {
+    if (eventObj.getConferenceData) {
+      var conferenceData = eventObj.getConferenceData();
+      if (conferenceData && conferenceData.getEntryPoints) {
+        var entryPoints = conferenceData.getEntryPoints() || [];
+        for (var i = 0; i < entryPoints.length; i++) {
+          var point = entryPoints[i];
+          if (point && point.getEntryPointType && point.getEntryPointType() === "video" && point.getUri) {
+            return String(point.getUri() || "").trim();
+          }
+        }
+      }
+    }
+  } catch (ignore) {}
+  return "";
+}
+
+function extractMeetLinkC_(resultObj) {
+  if (!resultObj) return "";
+  var direct = String(resultObj.meet_link || "").trim();
+  if (direct) return direct;
+  return extractMeetLinkFromEventC_(resultObj);
+}
+
+function failC_(code, message, details, eventId, calendarId) {
   return {
     ok: false,
-    created: false,
+    status: "failed",
     meet_link: "",
-    event_id: "",
-    calendar_id: getCalendarIdC_(),
+    event_id: String(eventId || "").trim(),
+    created_at: "",
+    calendar_id: String(calendarId || resolveCalendarIdC_("")).trim(),
     guests: [],
     message: message || "Error",
     error_code: code || "ERROR",

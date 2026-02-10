@@ -1,4 +1,4 @@
-<!-- ROOM_BOOKING_VERSION: 2026-02-10-05 -->
+<!-- ROOM_BOOKING_VERSION: 2026-02-10-06 -->
 <link rel="stylesheet" href="{{asset 'room-bookings.css'}}">
 <script>
   window.ROOM_BOOKING_CFG = {
@@ -61,7 +61,7 @@
 
 <section class="room-bookings">
   <div class="container">
-    <p class="rb-build-tag" data-room-booking-build="2026-02-10-05">Room booking UI build 2026-02-10-05</p>
+    <p class="rb-build-tag" data-room-booking-build="2026-02-10-06">Room booking UI build 2026-02-10-06</p>
     <div class="rb-hero">
       <h1>Book Meeting Room</h1>
       <p class="rb-intro">Select a date to view available meeting room slots. Click on time blocks to book.</p>
@@ -132,6 +132,17 @@
                   <div class="rb-field rb-full-width">
                     <label for="room-booking-notes">Additional Notes</label>
                     <textarea class="form-control" id="room-booking-notes" name="notes" rows="3" placeholder="Any special requirements?"></textarea>
+                  </div>
+                  <div class="rb-field rb-full-width">
+                    <label class="rb-checkbox" for="room-booking-hybrid">
+                      <input id="room-booking-hybrid" name="room_booking_hybrid" type="checkbox" value="1">
+                      <span>Include remote participants (create Google Meet link)</span>
+                    </label>
+                  </div>
+                  <div class="rb-field rb-full-width" id="room-booking-attendees-field" hidden>
+                    <label for="room-booking-attendee-1">Remote participant emails</label>
+                    <div id="room-booking-attendees" class="rb-attendee-list"></div>
+                    <button class="btn btn-secondary" id="room-booking-add-attendee" type="button">+ Add attendee</button>
                   </div>
                 </div>
                 <div class="rb-modal-actions">

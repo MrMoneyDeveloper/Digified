@@ -1,6 +1,44 @@
 (function () {
   'use strict';
 
+  (function setupGlobalPageLoader() {
+    var minimumVisibleMs = 3000;
+    var startedAt = Date.now();
+    var pageLoaded = document.readyState === "complete";
+
+    function hideLoaderWhenAllowed() {
+      if (!pageLoaded) {
+        return;
+      }
+
+      var elapsed = Date.now() - startedAt;
+      var remaining = Math.max(0, minimumVisibleMs - elapsed);
+
+      window.setTimeout(function () {
+        var loader = document.getElementById("digify-global-loader");
+        if (!loader) {
+          return;
+        }
+
+        loader.classList.add("digify-global-loader--hidden");
+        window.setTimeout(function () {
+          if (loader && loader.parentNode) {
+            loader.parentNode.removeChild(loader);
+          }
+        }, 350);
+      }, remaining);
+    }
+
+    if (pageLoaded) {
+      hideLoaderWhenAllowed();
+    } else {
+      window.addEventListener("load", function () {
+        pageLoaded = true;
+        hideLoaderWhenAllowed();
+      }, { once: true });
+    }
+  })();
+
   const themeSettings =
     (window.HelpCenter && window.HelpCenter.themeSettings) || {};
 

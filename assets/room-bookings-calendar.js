@@ -117,15 +117,19 @@
   const requesterNameInput = document.getElementById("room-booking-requester-name");
   const requesterEmailInput = document.getElementById("room-booking-requester-email");
   const notesInput = document.getElementById("room-booking-notes");
+  const hybridToggle = document.getElementById("room-booking-hybrid");
+  const attendeesField = document.getElementById("room-booking-attendees-field");
+  const attendeesWrap = document.getElementById("room-booking-attendees");
+  const addAttendeeButton = document.getElementById("room-booking-add-attendee");
   const bookSubmit = document.getElementById("room-booking-submit");
 
   let cachedSlots = [];
   let activeSlot = null;
   let lastFocusedElement = null;
 
-  // Business hours (8 AM to 6 PM)
+  // Business hours (8 AM to 8 PM)
   const BUSINESS_START = 8;
-  const BUSINESS_END = 18;
+  const BUSINESS_END = 20;
 
   // Alert functions
   function setAlert(message, type) {
@@ -141,6 +145,55 @@
     alertEl.textContent = "";
     alertEl.hidden = true;
     alertEl.className = "rb-alert";
+  }
+
+  function clearAttendeeInputs() {
+    if (!attendeesWrap) return;
+    attendeesWrap.innerHTML = "";
+  }
+
+  function addAttendeeInput(value) {
+    if (!attendeesWrap) return;
+    const count = attendeesWrap.querySelectorAll("input").length + 1;
+    const input = document.createElement("input");
+    input.type = "email";
+    input.name = "attendee_emails[]";
+    input.className = "form-control";
+    input.placeholder = "participant@example.com";
+    input.autocomplete = "email";
+    input.inputMode = "email";
+    if (count === 1) input.id = "room-booking-attendee-1";
+    if (value) input.value = value;
+    attendeesWrap.appendChild(input);
+  }
+
+  function setAttendeeFieldsVisible(isVisible) {
+    if (!attendeesField) return;
+    attendeesField.hidden = !isVisible;
+    if (!isVisible) {
+      clearAttendeeInputs();
+      return;
+    }
+    if (attendeesWrap && attendeesWrap.querySelectorAll("input").length === 0) {
+      addAttendeeInput("");
+    }
+  }
+
+  function getAttendeeEmails() {
+    if (!attendeesWrap) return [];
+    const seen = {};
+    const out = [];
+    Array.from(attendeesWrap.querySelectorAll("input")).forEach((input) => {
+      const email = String(input.value || "").trim().toLowerCase();
+      if (!email || seen[email]) return;
+      seen[email] = true;
+      out.push(email);
+    });
+    return out;
+  }
+
+  function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
   }
 
   // Set default date to today
@@ -417,13 +470,24 @@
       const slotCell = document.createElement("div");
       slotCell.className = "rb-time-slot";
 
+      const timeRangeLabel = `${slot.startTime} - ${slot.endTime}`;
+      const timeRangeEl = document.createElement("span");
+      timeRangeEl.textContent = timeRangeLabel;
+
       if (booking && booking.booked) {
         slotCell.classList.add("rb-booked");
-        slotCell.setAttribute("data-booker", `Booked by: ${booking.booker_name || "Unknown"}`);
-        slotCell.innerHTML = `<span>${slot.startTime} - ${slot.endTime}</span>`;
+        const bookerName = String(booking.booker_name || "").trim() || "Unknown";
+        const bookedByLabel = `Booked by: ${bookerName}`;
+        const bookerEl = document.createElement("small");
+        bookerEl.className = "rb-booker-name";
+        bookerEl.textContent = bookedByLabel;
+
+        slotCell.setAttribute("data-booker", bookedByLabel);
+        slotCell.appendChild(timeRangeEl);
+        slotCell.appendChild(bookerEl);
       } else {
         slotCell.classList.add("rb-available");
-        slotCell.innerHTML = `<span>${slot.startTime} - ${slot.endTime}</span>`;
+        slotCell.appendChild(timeRangeEl);
         slotCell.setAttribute("data-slot-id", booking ? booking.slot_id : `slot_${slot.hour}`);
         slotCell.setAttribute("data-start-time", slot.startTime);
         slotCell.setAttribute("data-end-time", slot.endTime);
@@ -503,6 +567,10 @@
     if (notesInput) {
       notesInput.value = "";
     }
+    if (hybridToggle) {
+      hybridToggle.checked = false;
+    }
+    setAttendeeFieldsVisible(false);
     if (sessionSummary) {
       sessionSummary.innerHTML = `
         <strong>Date:</strong> ${slot.date}<br>
@@ -530,6 +598,8 @@
     modal.setAttribute("inert", "");
     modal.setAttribute("aria-hidden", "true");
     if (notesInput) notesInput.value = "";
+    if (hybridToggle) hybridToggle.checked = false;
+    setAttendeeFieldsVisible(false);
     if (bookSubmit) {
       bookSubmit.disabled = false;
       bookSubmit.textContent = "Book Now";
@@ -546,19 +616,29 @@
     if (event) event.preventDefault();
 
     const currentUser = getCurrentUser();
+    const hasRemoteParticipants = !!(hybridToggle && hybridToggle.checked);
+    const attendeeEmails = hasRemoteParticipants ? getAttendeeEmails() : [];
+    const meetingType = hasRemoteParticipants
+      ? "in_person_plus_online"
+      : "in_person_only";
+
     const payload = {
       slot_id: slotIdInput ? slotIdInput.value : "",
       date: activeSlot ? activeSlot.date : "",
       start_time: activeSlot ? activeSlot.start_time : "",
       requester_name: currentUser.name || "",
       requester_email: currentUser.email || "",
-      notes: notesInput ? notesInput.value.trim() : ""
+      notes: notesInput ? notesInput.value.trim() : "",
+      meeting_type: meetingType,
+      attendee_emails: attendeeEmails.join(",")
     };
 
     logger.info("Booking submission started", {
       slot_id: payload.slot_id,
       date: payload.date,
-      requesterName: payload.requester_name
+      requesterName: payload.requester_name,
+      meeting_type: payload.meeting_type,
+      attendee_count: attendeeEmails.length
     });
 
     if (!payload.requester_name || !payload.requester_email) {
@@ -568,6 +648,18 @@
       });
       setAlert("Name and email are required.", "error");
       return;
+    }
+
+    if (hasRemoteParticipants && attendeeEmails.length === 0) {
+      setAlert("Add at least one remote participant email.", "error");
+      return;
+    }
+    if (hasRemoteParticipants) {
+      const invalid = attendeeEmails.find((email) => !isValidEmail(email));
+      if (invalid) {
+        setAlert("One or more remote participant emails are invalid.", "error");
+        return;
+      }
     }
 
     if (bookSubmit) {
@@ -585,13 +677,33 @@
       const json = await jsonpRequest("book", payload);
 
       if (json && json.success) {
+        const meet =
+          json &&
+          json.data &&
+          json.data.meet &&
+          typeof json.data.meet === "object"
+            ? json.data.meet
+            : {};
+
         logger.info("Booking successful", {
           response: json,
           bookingId: json.data && json.data.booking_id,
-          ticketId: json.data && json.data.ticket_id
+          ticketId: json.data && json.data.ticket_id,
+          meet_status: meet.status || "",
+          meet_link: meet.meet_link || ""
         });
 
-        setAlert("Room booked successfully!", "success");
+        let successMessage = "Room booked successfully!";
+        if (payload.meeting_type === "in_person_plus_online") {
+          if (meet && meet.meet_link) {
+            successMessage = "Room booked and Google Meet link created. Invitations are sent to requester and remote participants.";
+          } else if (meet && meet.status === "failed") {
+            successMessage = "Room booked, but Google Meet link generation failed. The Zendesk ticket includes the failure details.";
+          } else {
+            successMessage = "Room booked. Google Meet link creation is still processing.";
+          }
+        }
+        setAlert(successMessage, meet && meet.status === "failed" ? "error" : "success");
 
         // Change button to red "BOOKED" state
         if (bookSubmit) {
@@ -665,6 +777,17 @@
     modalCancel.addEventListener("click", () => {
       logger.info("Modal closed via cancel button", {});
       closeModal();
+    });
+  }
+  if (hybridToggle) {
+    hybridToggle.addEventListener("change", () => {
+      setAttendeeFieldsVisible(hybridToggle.checked);
+    });
+  }
+  if (addAttendeeButton) {
+    addAttendeeButton.addEventListener("click", () => {
+      if (!hybridToggle || !hybridToggle.checked) return;
+      addAttendeeInput("");
     });
   }
   if (modalForm) modalForm.addEventListener("submit", submitBooking);
