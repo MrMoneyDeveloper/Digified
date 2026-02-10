@@ -773,3 +773,19 @@ function authorizeScriptC_() {
     advanced_calendar_error: advancedCalendarError
   };
 }
+
+/**
+ * Public wrappers for Apps Script Run dropdown.
+ * Note: functions ending with "_" are intentionally hidden by Apps Script UI.
+ */
+function setupScriptCProperties() {
+  return setupScriptCProperties_({});
+}
+
+function getScriptCSetupStatus() {
+  return getScriptCSetupStatus_();
+}
+
+function authorizeScriptC() {
+  return authorizeScriptC_();
+}
