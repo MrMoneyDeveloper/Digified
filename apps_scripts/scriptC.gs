@@ -614,6 +614,112 @@ function failC_(code, message, details, eventId, calendarId) {
 }
 
 /**
+ * Non-destructive Script C property bootstrap.
+ * Adds defaults only when keys are missing.
+ *
+ * Optional params:
+ * - calendar_id
+ * - timezone (or time_zone)
+ */
+function setupScriptCProperties_(params) {
+  params = params || {};
+  var props = PropertiesService.getScriptProperties();
+
+  var meetCalendarId = String(props.getProperty("MEET_CALENDAR_ID") || "").trim();
+  var trainingCalendarId = String(props.getProperty("TRAINING_CALENDAR_ID") || "").trim();
+  var trainingTz = String(props.getProperty("TRAINING_DEFAULT_TZ") || "").trim();
+
+  var desiredCalendarId = String(
+    params.calendar_id ||
+    meetCalendarId ||
+    trainingCalendarId ||
+    "primary"
+  ).trim();
+
+  var desiredTz = String(
+    params.timezone ||
+    params.time_zone ||
+    trainingTz ||
+    Session.getScriptTimeZone() ||
+    "Africa/Johannesburg"
+  ).trim();
+
+  var updates = {};
+
+  // Keep backward compatibility: if TRAINING_CALENDAR_ID already exists, do not override.
+  if (!meetCalendarId && !trainingCalendarId) {
+    updates.MEET_CALENDAR_ID = desiredCalendarId;
+  }
+  if (!trainingTz) {
+    updates.TRAINING_DEFAULT_TZ = desiredTz;
+  }
+
+  var added = Object.keys(updates);
+  if (added.length) {
+    props.setProperties(updates, false);
+  }
+
+  return {
+    ok: true,
+    added_keys: added,
+    calendar_id_effective: resolveCalendarIdC_(""),
+    timezone_effective: getTzC_(),
+    meet_calendar_id: String(props.getProperty("MEET_CALENDAR_ID") || "").trim(),
+    training_calendar_id: String(props.getProperty("TRAINING_CALENDAR_ID") || "").trim(),
+    training_default_tz: String(props.getProperty("TRAINING_DEFAULT_TZ") || "").trim()
+  };
+}
+
+/**
+ * Readiness status helper for Script C setup.
+ * Safe to run repeatedly.
+ */
+function getScriptCSetupStatus_() {
+  var props = PropertiesService.getScriptProperties();
+  var meetCalendarId = String(props.getProperty("MEET_CALENDAR_ID") || "").trim();
+  var trainingCalendarId = String(props.getProperty("TRAINING_CALENDAR_ID") || "").trim();
+  var timezone = String(props.getProperty("TRAINING_DEFAULT_TZ") || "").trim();
+
+  var effectiveCalendarId = resolveCalendarIdC_("");
+  var calendarAccessible = false;
+  var calendarAccessError = "";
+  try {
+    var cal = CalendarApp.getCalendarById(effectiveCalendarId) || CalendarApp.getDefaultCalendar();
+    calendarAccessible = !!cal;
+  } catch (err) {
+    calendarAccessError = String(err || "");
+  }
+
+  var advancedServiceLinked = false;
+  try {
+    advancedServiceLinked = !!(typeof Calendar !== "undefined" && Calendar.Events);
+  } catch (ignore) {}
+
+  return {
+    ok: true,
+    properties: {
+      MEET_CALENDAR_ID: meetCalendarId,
+      TRAINING_CALENDAR_ID: trainingCalendarId,
+      TRAINING_DEFAULT_TZ: timezone
+    },
+    effective: {
+      calendar_id: effectiveCalendarId,
+      timezone: getTzC_()
+    },
+    checks: {
+      calendar_accessible: calendarAccessible,
+      calendar_access_error: calendarAccessError,
+      advanced_calendar_service_linked: advancedServiceLinked
+    },
+    recommended_next: [
+      "1) Run setupScriptCProperties_() once.",
+      "2) Add Calendar advanced service (identifier: Calendar).",
+      "3) Run authorizeScriptC_() and accept permissions."
+    ]
+  };
+}
+
+/**
  * One-time manual authorization helper for Script C.
  *
  * Run this in the Apps Script editor as the script owner.
