@@ -1,7 +1,7 @@
 {
-  "name": "Copenhagen",
+  "name": "Digified",
   "author": "Zendesk",
-  "version": "13.0.2",
+  "version": "13.0.3",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [

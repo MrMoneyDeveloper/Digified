@@ -12,6 +12,16 @@ powershell -ExecutionPolicy Bypass -File .\package-theme.ps1
 
 The script runs `tar -a -c -f digified-theme.zip assets settings templates translations script.js style.css manifest.json settings_schema.json`, ensuring the resulting `digified-theme.zip` is ready for import with POSIX-style paths. Use the `-ExecutionPolicy Bypass` flag if your PowerShell policy blocks local scripts.
 
+### GitHub pull deployment
+
+If Zendesk Guide is connected directly to GitHub (instead of ZIP upload), use this flow:
+
+1. Bump `manifest.json` `version` on every deploy.
+2. Commit and push to the Zendesk-connected branch.
+3. In Zendesk Guide, click **Update from GitHub**.
+4. Click **Publish**.
+5. Verify `templates/document_head.hbs` `BUILD_MARKER` in page source to confirm the latest pull is live.
+
 ### Room booking setup
 
 The room booking page relies on a Google Apps Script web app that returns available sessions and creates Zendesk tickets after a booking.
