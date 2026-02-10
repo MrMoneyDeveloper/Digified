@@ -7,6 +7,17 @@ IMPORTANT
 
 ## Files
 
+### script0.json - Apps Script manifest config
+Reference manifest settings for the Apps Script project that hosts Scripts A/B/C.
+Includes:
+- `runtimeVersion: V8`
+- `timeZone: Africa/Johannesburg`
+- Web app settings (`executeAs: USER_DEPLOYING`, `access: ANYONE_ANONYMOUS`)
+- Advanced Calendar service (`Calendar` v3)
+
+Note: In the Apps Script editor, this content belongs in the project manifest
+file named `appsscript.json`.
+
 ### scriptA.gs - Room booking API
 Handles `action=sessions` and `action=book` for the room booking UI.
 It writes bookings to the `BOOKINGS` sheet and stores:
