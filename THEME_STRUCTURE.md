@@ -2,8 +2,8 @@
 
 - `manifest.json` (bump `version` on every deploy)
 - `settings_schema.json` (must include Room booking and Training booking settings)
-- `templates/home_internal.hbs`
-- `templates/home_tenant.hbs`
+- `templates/custom_pages/home_internal.hbs`
+- `templates/custom_pages/home_tenant.hbs`
 - `templates/custom_pages/room_booking.hbs`
 - `assets/room-bookings.css`
 - `assets/room-bookings-calendar.js`
@@ -13,8 +13,8 @@
 ## Routing Notes
 
 - Zendesk auto-renders `templates/home_page.hbs` for `/hc/{locale}`.
-- `templates/home_internal.hbs` and `templates/home_tenant.hbs` are not auto-routed by default.
-- To use separate internal/tenant pages, create custom pages in Zendesk Guide and map the templates you want to expose.
+- `templates/custom_pages/home_internal.hbs` and `templates/custom_pages/home_tenant.hbs` require Zendesk custom pages with slugs `home_internal` and `home_tenant`.
+- `templates/home_page.hbs` can redirect segmented users to those slugs after `window.DigifiedSegments` is resolved.
 
 ## GitHub Pull Checklist
 

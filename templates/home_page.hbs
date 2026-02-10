@@ -1,5 +1,63 @@
 <h1 class="visibility-hidden">{{ help_center.name }}</h1>
 
+{{#if signed_in}}
+  <script>
+    (function () {
+      var locale = "{{help_center.locale}}";
+      var internalUrl = "/hc/" + locale + "/p/home_internal";
+      var tenantUrl = "/hc/" + locale + "/p/home_tenant";
+      var startedAt = Date.now();
+      var waitLimitMs = 5000;
+
+      function resolveTarget() {
+        var segments = window.DigifiedSegments;
+        var hasUser = !!(window.HelpCenter && window.HelpCenter.user);
+
+        if (!segments) {
+          return null;
+        }
+
+        var hasNoSegmentData =
+          !segments.isInternalUser &&
+          !segments.isTenantUser &&
+          !segments.isManagementUser &&
+          (!Array.isArray(segments.userTags) || segments.userTags.length === 0) &&
+          (!Array.isArray(segments.orgIds) || segments.orgIds.length === 0);
+
+        if (!hasUser && hasNoSegmentData) {
+          return null;
+        }
+
+        if (segments.isManagementUser || segments.isInternalUser) {
+          return internalUrl;
+        }
+
+        if (segments.isTenantUser) {
+          return tenantUrl;
+        }
+
+        return "";
+      }
+
+      function redirectWhenReady() {
+        var target = resolveTarget();
+        if (target === null) {
+          if (Date.now() - startedAt < waitLimitMs) {
+            window.setTimeout(redirectWhenReady, 150);
+          }
+          return;
+        }
+
+        if (target) {
+          window.location.replace(target);
+        }
+      }
+
+      redirectWhenReady();
+    })();
+  </script>
+{{/if}}
+
 <main id="main-content">
   <div class="digify-landing digify-landing--anon">
     {{#if signed_in}}

@@ -53,6 +53,11 @@ Custom page setup:
 - The resulting URL should be `/hc/en-us/p/room_booking`.
 - The template loads `assets/room-bookings-calendar.js` and `assets/room-bookings.css` for the booking UI.
 
+Segmented home pages:
+- Create a Zendesk Guide custom page with slug `home_internal` using `templates/custom_pages/home_internal.hbs`.
+- Create a Zendesk Guide custom page with slug `home_tenant` using `templates/custom_pages/home_tenant.hbs`.
+- `templates/home_page.hbs` redirects signed-in segmented users to these pages.
+
 Validation checklist:
 - Visit `https://cxe-internal.zendesk.com/hc/en-us/p/room_booking` and confirm the template loads.
 - Click the "Book Room" nav link and confirm it routes to the same page.

@@ -1,0 +1,72 @@
+﻿<!-- HOME_TENANT_TEMPLATE: 2026-02-10 -->
+<h1 class="visibility-hidden">{{ help_center.name }} - Tenant</h1>
+
+<div id="tsparticles"></div>
+
+<main id="main-content" class="home-main homepage-sections">
+  <section class="access-hub-hero" style="background-image:url('{{settings.digify_cx_hero_image}}');">
+    <div class="access-hub-hero__overlay"></div>
+    <div class="access-hub-content container">
+      <p class="access-hub-eyebrow">Tenant experience</p>
+      <h1>Tenant access simplified</h1>
+      <p class="access-hub-subtitle">
+        External CX partners only see the forms, SLAs, and policies that apply to their tenant agreement.
+      </p>
+      <div class="access-hub-cards">
+        <div class="access-hub-card access-hub-card-tenant">
+          <h2>Tenant requests</h2>
+          <p>Provision logins, request facility help, or escalate incidents for your program.</p>
+          <a class="btn btn-primary" href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.tenant_form_id}}{{settings.tenant_form_id}}{{else}}23590702845724{{/if}}">
+            Tenant request form
+          </a>
+        </div>
+        <div class="access-hub-card access-hub-card-internal">
+          <h2>Tenant policies</h2>
+          <p>Read guest-access policies curated for your contract.</p>
+          <a class="btn btn-secondary" href="{{#if settings.tenant_policies_category_id}}{{page_path 'category' id=settings.tenant_policies_category_id}}{{else}}{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}{{/if}}">
+            Browse tenant policies
+          </a>
+        </div>
+        <div class="access-hub-card access-hub-card-tenant">
+          <h2>Book room</h2>
+          <p>Reserve an open meeting room slot for managers, staff, or tenants.</p>
+          <a class="btn btn-secondary" href="/hc/en-us/p/room_booking">
+            Book room
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="featured-policies container">
+    <header class="section-header">
+      <p class="eyebrow">Guides for partners</p>
+      <h2>Top tenant references</h2>
+      <p>Stay aligned with Digify facility rules, smoking standards, and shared-space etiquette.</p>
+    </header>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+      <div class="col">
+        <article class="policy-card cxi-policy-card">
+          <h3>Locker policy</h3>
+          <p>Secure devices and badges if you co-locate within Digify sites.</p>
+          <a class="link-cta" href="{{settings.locker_policy_url}}">Open locker policy</a>
+        </article>
+      </div>
+      <div class="col">
+        <article class="policy-card cxi-policy-card">
+          <h3>Smoking policy</h3>
+          <p>Permitted areas, schedule restrictions, and enforcement guidelines.</p>
+          <a class="link-cta" href="{{settings.smoking_policy_url}}">See smoking rules</a>
+        </article>
+      </div>
+      <div class="col">
+        <article class="policy-card cxi-policy-card">
+          <h3>Drug & alcohol</h3>
+          <p>Maintain safe shared facilities by following sobriety expectations.</p>
+          <a class="link-cta" href="{{settings.drug_policy_url}}">Review guidelines</a>
+        </article>
+      </div>
+    </div>
+  </section>
+</main>
+
