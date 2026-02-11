@@ -189,6 +189,41 @@
     return Array.from(form.querySelectorAll("input, select, textarea")).filter(isValidatableField);
   }
 
+  function getFieldTopOffset(field) {
+    if (!field || typeof field.getBoundingClientRect !== "function") {
+      return Number.POSITIVE_INFINITY;
+    }
+    const rect = field.getBoundingClientRect();
+    return rect.top + (window.scrollY || window.pageYOffset || 0);
+  }
+
+  function focusAndScrollToField(field) {
+    if (!field) return;
+
+    if (typeof field.focus === "function") {
+      try {
+        field.focus({ preventScroll: true });
+      } catch (error) {
+        field.focus();
+      }
+    }
+
+    if (typeof field.scrollIntoView === "function") {
+      field.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest"
+      });
+    }
+  }
+
+  function getTopMostField(fields) {
+    const list = Array.isArray(fields) ? fields.filter(Boolean) : [];
+    if (!list.length) return null;
+    list.sort((a, b) => getFieldTopOffset(a) - getFieldTopOffset(b));
+    return list[0];
+  }
+
   function getFieldKey(field) {
     return field.id || field.name || "";
   }
@@ -269,19 +304,19 @@
 
   function validateFormFields(form) {
     const controls = getFormControls(form);
-    let firstInvalid = null;
+    const invalidFields = [];
 
     controls.forEach((field) => {
       if (typeof field.checkValidity !== "function") return;
       if (!field.checkValidity()) {
         markFieldInvalid(field, field.validationMessage);
-        if (!firstInvalid) firstInvalid = field;
+        invalidFields.push(field);
       } else {
         clearFieldInvalid(field);
       }
     });
 
-    return firstInvalid;
+    return getTopMostField(invalidFields);
   }
 
   function clearAttendeeInputs() {
@@ -844,7 +879,7 @@
       const message = "Please complete the highlighted required fields.";
       setAlert(message, "error");
       setSubmitState("error", message);
-      nativeInvalidField.focus();
+      focusAndScrollToField(nativeInvalidField);
       if (typeof nativeInvalidField.reportValidity === "function") {
         nativeInvalidField.reportValidity();
       }
@@ -883,11 +918,18 @@
         hasEmail: !!payload.requester_email
       });
       const message = "Name and email are required.";
+      const missingRequesterFields = [];
       if (!payload.requester_name && requesterNameInput) {
         markFieldInvalid(requesterNameInput, "Requester name is required.");
+        missingRequesterFields.push(requesterNameInput);
       }
       if (!payload.requester_email && requesterEmailInput) {
         markFieldInvalid(requesterEmailInput, "Requester email is required.");
+        missingRequesterFields.push(requesterEmailInput);
+      }
+      const firstMissingRequesterField = getTopMostField(missingRequesterFields);
+      if (firstMissingRequesterField) {
+        focusAndScrollToField(firstMissingRequesterField);
       }
       setAlert(message, "error");
       setSubmitState("error", message);
@@ -903,7 +945,7 @@
       if (attendeeInput) {
         attendeeInput.required = true;
         markFieldInvalid(attendeeInput, "Add at least one remote participant email.");
-        attendeeInput.focus();
+        focusAndScrollToField(attendeeInput);
       }
       const message = "Add at least one remote participant email.";
       setAlert(message, "error");
@@ -920,7 +962,7 @@
       if (invalidInput) {
         const message = "One or more remote participant emails are invalid.";
         markFieldInvalid(invalidInput, "Please enter a valid email address.");
-        invalidInput.focus();
+        focusAndScrollToField(invalidInput);
         setAlert(message, "error");
         setSubmitState("error", message);
         return;
@@ -1029,7 +1071,7 @@
       if (invalidField) {
         const message = "Please select a date before loading availability.";
         setAlert(message, "error");
-        invalidField.focus();
+        focusAndScrollToField(invalidField);
         if (typeof invalidField.reportValidity === "function") {
           invalidField.reportValidity();
         }

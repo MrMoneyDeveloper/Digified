@@ -400,6 +400,47 @@
     );
   }
 
+  function getFieldTopOffset(field) {
+    if (!field || typeof field.getBoundingClientRect !== "function") {
+      return Number.POSITIVE_INFINITY;
+    }
+    const rect = field.getBoundingClientRect();
+    return rect.top + (window.scrollY || window.pageYOffset || 0);
+  }
+
+  function focusAndScrollToField(field) {
+    if (!field) {
+      return;
+    }
+
+    if (typeof field.focus === "function") {
+      try {
+        field.focus({ preventScroll: true });
+      } catch (error) {
+        field.focus();
+      }
+    }
+
+    if (typeof field.scrollIntoView === "function") {
+      field.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest"
+      });
+    }
+  }
+
+  function getTopMostField(fields) {
+    const list = Array.isArray(fields) ? fields.filter(Boolean) : [];
+    if (!list.length) {
+      return null;
+    }
+    list.sort(function (a, b) {
+      return getFieldTopOffset(a) - getFieldTopOffset(b);
+    });
+    return list[0];
+  }
+
   function getFieldKey(field) {
     return field.id || field.name || "";
   }
@@ -506,7 +547,7 @@
 
   function validateFormFields(form) {
     const controls = getFormControls(form);
-    let firstInvalid = null;
+    const invalidFields = [];
 
     controls.forEach(function (field) {
       if (typeof field.checkValidity !== "function") {
@@ -514,15 +555,13 @@
       }
       if (!field.checkValidity()) {
         markFieldInvalid(field, field.validationMessage);
-        if (!firstInvalid) {
-          firstInvalid = field;
-        }
+        invalidFields.push(field);
       } else {
         clearFieldInvalid(field);
       }
     });
 
-    return firstInvalid;
+    return getTopMostField(invalidFields);
   }
 
   function resetSubmitButtonState() {
@@ -1558,7 +1597,7 @@
     if (nativeInvalidField) {
       const message = "Please complete the highlighted required fields.";
       setAlert(message, "error");
-      nativeInvalidField.focus();
+      focusAndScrollToField(nativeInvalidField);
       if (typeof nativeInvalidField.reportValidity === "function") {
         nativeInvalidField.reportValidity();
       }
@@ -1580,11 +1619,14 @@
     });
     const validation = validatePayload(payload);
     if (validation) {
+      const invalidFields = [];
       if (!payload.requester_name && requesterNameInput) {
         markFieldInvalid(requesterNameInput, "Requester name is required.");
+        invalidFields.push(requesterNameInput);
       }
       if (!payload.requester_email && requesterEmailInput) {
         markFieldInvalid(requesterEmailInput, "Requester email is required.");
+        invalidFields.push(requesterEmailInput);
       }
       if (
         payload.meeting_type === "online" &&
@@ -1603,7 +1645,7 @@
             attendeeInput,
             "Please add at least one attendee email."
           );
-          attendeeInput.focus();
+          invalidFields.push(attendeeInput);
         }
       }
       if (
@@ -1623,7 +1665,12 @@
             invalidInput,
             "Please enter a valid attendee email address."
           );
+          invalidFields.push(invalidInput);
         }
+      }
+      const firstInvalidField = getTopMostField(invalidFields);
+      if (firstInvalidField) {
+        focusAndScrollToField(firstInvalidField);
       }
       setAlert(validation, "error");
       return;
@@ -1711,7 +1758,7 @@
       const invalidField = validateFormFields(filtersForm);
       if (invalidField) {
         setAlert("Please select a date before refreshing sessions.", "error");
-        invalidField.focus();
+        focusAndScrollToField(invalidField);
         if (typeof invalidField.reportValidity === "function") {
           invalidField.reportValidity();
         }

@@ -102,6 +102,34 @@
     }
   };
 
+  const getFieldTopOffset = (field) => {
+    if (!field || typeof field.getBoundingClientRect !== "function") {
+      return Number.POSITIVE_INFINITY;
+    }
+    const rect = field.getBoundingClientRect();
+    return rect.top + (window.scrollY || window.pageYOffset || 0);
+  };
+
+  const focusAndScrollToField = (field) => {
+    if (!field) return;
+
+    if (typeof field.focus === "function") {
+      try {
+        field.focus({ preventScroll: true });
+      } catch (error) {
+        field.focus();
+      }
+    }
+
+    if (typeof field.scrollIntoView === "function") {
+      field.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest"
+      });
+    }
+  };
+
   const ensureFormErrorSummary = (form) => {
     let summary = form.querySelector("[data-digify-form-error-summary]");
     if (!summary) {
@@ -117,17 +145,20 @@
 
   const validateForm = (form) => {
     const fields = getFormFields(form);
-    let firstInvalid = null;
+    const invalidFields = [];
 
     fields.forEach((field) => {
       if (typeof field.checkValidity !== "function") return;
       if (!field.checkValidity()) {
         setFieldInvalid(field, field.validationMessage);
-        if (!firstInvalid) firstInvalid = field;
+        invalidFields.push(field);
       } else {
         clearFieldInvalid(field);
       }
     });
+
+    invalidFields.sort((a, b) => getFieldTopOffset(a) - getFieldTopOffset(b));
+    const firstInvalid = invalidFields.length ? invalidFields[0] : null;
 
     const summary = ensureFormErrorSummary(form);
     if (firstInvalid) {
@@ -163,7 +194,7 @@
         if (typeof event.stopImmediatePropagation === "function") {
           event.stopImmediatePropagation();
         }
-        firstInvalid.focus();
+        focusAndScrollToField(firstInvalid);
         if (typeof firstInvalid.reportValidity === "function") {
           firstInvalid.reportValidity();
         }
