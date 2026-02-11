@@ -49,15 +49,132 @@
   const homePath = {{json (page_path 'help_center')}};
   const storageKey = "digifyRedirectAfterRequest";
 
+  const getFormFields = (form) => {
+    return Array.from(form.querySelectorAll("input, select, textarea")).filter((field) => {
+      if (!field || field.disabled) return false;
+      if ((field.type || "").toLowerCase() === "hidden") return false;
+      if (field.closest("[hidden]")) return false;
+      return true;
+    });
+  };
+
+  const getFieldKey = (field) => field.id || field.name || "";
+
+  const getFeedbackNode = (field) => {
+    const key = getFieldKey(field);
+    if (!key || !field.parentElement) return null;
+    return Array.from(field.parentElement.querySelectorAll(".invalid-feedback")).find((node) => {
+      return node.getAttribute("data-digify-feedback-for") === key;
+    }) || null;
+  };
+
+  const ensureFeedbackNode = (field) => {
+    const key = getFieldKey(field);
+    if (!key) return null;
+    const existing = getFeedbackNode(field);
+    if (existing) return existing;
+
+    const node = document.createElement("div");
+    node.className = "invalid-feedback";
+    node.setAttribute("data-digify-feedback-for", key);
+    node.hidden = true;
+    field.insertAdjacentElement("afterend", node);
+    return node;
+  };
+
+  const setFieldInvalid = (field, message) => {
+    field.classList.add("is-invalid");
+    field.setAttribute("aria-invalid", "true");
+    const feedback = ensureFeedbackNode(field);
+    if (feedback) {
+      feedback.textContent = message || field.validationMessage || "This field is required.";
+      feedback.hidden = false;
+    }
+  };
+
+  const clearFieldInvalid = (field) => {
+    field.classList.remove("is-invalid");
+    field.removeAttribute("aria-invalid");
+    const feedback = getFeedbackNode(field);
+    if (feedback) {
+      feedback.textContent = "";
+      feedback.hidden = true;
+    }
+  };
+
+  const ensureFormErrorSummary = (form) => {
+    let summary = form.querySelector("[data-digify-form-error-summary]");
+    if (!summary) {
+      summary = document.createElement("div");
+      summary.className = "alert alert-danger";
+      summary.setAttribute("data-digify-form-error-summary", "true");
+      summary.setAttribute("role", "alert");
+      summary.hidden = true;
+      form.prepend(summary);
+    }
+    return summary;
+  };
+
+  const validateForm = (form) => {
+    const fields = getFormFields(form);
+    let firstInvalid = null;
+
+    fields.forEach((field) => {
+      if (typeof field.checkValidity !== "function") return;
+      if (!field.checkValidity()) {
+        setFieldInvalid(field, field.validationMessage);
+        if (!firstInvalid) firstInvalid = field;
+      } else {
+        clearFieldInvalid(field);
+      }
+    });
+
+    const summary = ensureFormErrorSummary(form);
+    if (firstInvalid) {
+      summary.textContent = "Please complete the highlighted required fields before submitting.";
+      summary.hidden = false;
+    } else {
+      summary.textContent = "";
+      summary.hidden = true;
+    }
+
+    return firstInvalid;
+  };
+
   const armRedirect = (form) => {
     if (form.dataset.digifyRedirectHooked) return;
     form.dataset.digifyRedirectHooked = "true";
-    form.addEventListener("submit", () => {
+
+    const onFieldEdit = (event) => {
+      const field = event.target;
+      if (!field || typeof field.checkValidity !== "function") return;
+      if (field.checkValidity()) {
+        clearFieldInvalid(field);
+      }
+    };
+
+    form.addEventListener("input", onFieldEdit, true);
+    form.addEventListener("change", onFieldEdit, true);
+    form.addEventListener("submit", (event) => {
+      const firstInvalid = validateForm(form);
+      if (firstInvalid) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (typeof event.stopImmediatePropagation === "function") {
+          event.stopImmediatePropagation();
+        }
+        firstInvalid.focus();
+        if (typeof firstInvalid.reportValidity === "function") {
+          firstInvalid.reportValidity();
+        }
+        return;
+      }
+
       sessionStorage.setItem(
         storageKey,
         JSON.stringify({ target: homePath, timestamp: Date.now() })
       );
-    });
+    }, true);
   };
 
   const removeSuggestions = () => {

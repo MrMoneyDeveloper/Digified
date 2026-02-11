@@ -177,6 +177,113 @@
     if (modalClose) modalClose.disabled = !!isLocked;
   }
 
+  function isValidatableField(field) {
+    if (!field || field.disabled) return false;
+    if ((field.type || "").toLowerCase() === "hidden") return false;
+    if (field.closest("[hidden]")) return false;
+    return true;
+  }
+
+  function getFormControls(form) {
+    if (!form) return [];
+    return Array.from(form.querySelectorAll("input, select, textarea")).filter(isValidatableField);
+  }
+
+  function getFieldKey(field) {
+    return field.id || field.name || "";
+  }
+
+  function getFeedbackNode(field) {
+    const key = getFieldKey(field);
+    if (!key || !field.parentElement) return null;
+    return Array.from(field.parentElement.querySelectorAll(".rb-invalid-feedback")).find((node) => {
+      return node.getAttribute("data-rb-feedback-for") === key;
+    }) || null;
+  }
+
+  function ensureFeedbackNode(field) {
+    const key = getFieldKey(field);
+    if (!key) return null;
+    const existing = getFeedbackNode(field);
+    if (existing) return existing;
+
+    const node = document.createElement("div");
+    node.className = "invalid-feedback rb-invalid-feedback";
+    node.setAttribute("data-rb-feedback-for", key);
+    node.hidden = true;
+    field.insertAdjacentElement("afterend", node);
+    return node;
+  }
+
+  function clearFieldInvalid(field) {
+    if (!field) return;
+    field.classList.remove("is-invalid");
+    field.removeAttribute("aria-invalid");
+    const wrapper = field.closest(".rb-field");
+    if (wrapper) wrapper.classList.remove("rb-field--invalid");
+
+    const feedback = getFeedbackNode(field);
+    if (feedback) {
+      feedback.hidden = true;
+      feedback.textContent = "";
+    }
+  }
+
+  function markFieldInvalid(field, message) {
+    if (!field) return;
+    field.classList.add("is-invalid");
+    field.setAttribute("aria-invalid", "true");
+    const wrapper = field.closest(".rb-field");
+    if (wrapper) wrapper.classList.add("rb-field--invalid");
+
+    const feedback = ensureFeedbackNode(field);
+    if (feedback) {
+      feedback.textContent = message || field.validationMessage || "This field is required.";
+      feedback.hidden = false;
+    }
+  }
+
+  function bindFieldValidation(field) {
+    if (!field || field.dataset.rbValidationBound === "1") return;
+    field.dataset.rbValidationBound = "1";
+
+    const onFieldEdit = () => {
+      if (!isValidatableField(field)) {
+        clearFieldInvalid(field);
+        return;
+      }
+      if (typeof field.checkValidity === "function" && field.checkValidity()) {
+        clearFieldInvalid(field);
+      }
+    };
+
+    field.addEventListener("input", onFieldEdit);
+    field.addEventListener("change", onFieldEdit);
+  }
+
+  function clearFormValidation(form) {
+    getFormControls(form).forEach((field) => {
+      clearFieldInvalid(field);
+    });
+  }
+
+  function validateFormFields(form) {
+    const controls = getFormControls(form);
+    let firstInvalid = null;
+
+    controls.forEach((field) => {
+      if (typeof field.checkValidity !== "function") return;
+      if (!field.checkValidity()) {
+        markFieldInvalid(field, field.validationMessage);
+        if (!firstInvalid) firstInvalid = field;
+      } else {
+        clearFieldInvalid(field);
+      }
+    });
+
+    return firstInvalid;
+  }
+
   function clearAttendeeInputs() {
     if (!attendeesWrap) return;
     attendeesWrap.innerHTML = "";
@@ -192,9 +299,15 @@
     input.placeholder = "participant@example.com";
     input.autocomplete = "email";
     input.inputMode = "email";
-    if (count === 1) input.id = "room-booking-attendee-1";
+    if (count === 1) {
+      input.id = "room-booking-attendee-1";
+      if (hybridToggle && hybridToggle.checked) {
+        input.required = true;
+      }
+    }
     if (value) input.value = value;
     attendeesWrap.appendChild(input);
+    bindFieldValidation(input);
   }
 
   function setAttendeeFieldsVisible(isVisible) {
@@ -202,6 +315,7 @@
     attendeesField.hidden = !isVisible;
     if (!isVisible) {
       clearAttendeeInputs();
+      clearFormValidation(modalForm);
       return;
     }
     if (attendeesWrap && attendeesWrap.querySelectorAll("input").length === 0) {
@@ -657,15 +771,15 @@
     if (slotIdInput) slotIdInput.value = slot.slot_id || "";
     if (requesterNameInput) {
       requesterNameInput.value = currentUser.name;
+      requesterNameInput.removeAttribute("disabled");
       requesterNameInput.setAttribute("readonly", true);
-      requesterNameInput.setAttribute("disabled", true);
       requesterNameInput.style.backgroundColor = "#f5f5f5";
       requesterNameInput.style.cursor = "not-allowed";
     }
     if (requesterEmailInput) {
       requesterEmailInput.value = currentUser.email;
+      requesterEmailInput.removeAttribute("disabled");
       requesterEmailInput.setAttribute("readonly", true);
-      requesterEmailInput.setAttribute("disabled", true);
       requesterEmailInput.style.backgroundColor = "#f5f5f5";
       requesterEmailInput.style.cursor = "not-allowed";
     }
@@ -676,6 +790,7 @@
       hybridToggle.checked = false;
     }
     setAttendeeFieldsVisible(false);
+    clearFormValidation(modalForm);
     if (sessionSummary) {
       sessionSummary.innerHTML = `
         <strong>Date:</strong> ${slot.date}<br>
@@ -721,6 +836,20 @@
   // Submit booking
   async function submitBooking(event) {
     if (event) event.preventDefault();
+    clearAlert();
+    clearFormValidation(modalForm);
+
+    const nativeInvalidField = validateFormFields(modalForm);
+    if (nativeInvalidField) {
+      const message = "Please complete the highlighted required fields.";
+      setAlert(message, "error");
+      setSubmitState("error", message);
+      nativeInvalidField.focus();
+      if (typeof nativeInvalidField.reportValidity === "function") {
+        nativeInvalidField.reportValidity();
+      }
+      return;
+    }
 
     const currentUser = getCurrentUser();
     const hasRemoteParticipants = !!(hybridToggle && hybridToggle.checked);
@@ -753,18 +882,47 @@
         hasName: !!payload.requester_name,
         hasEmail: !!payload.requester_email
       });
-      setAlert("Name and email are required.", "error");
+      const message = "Name and email are required.";
+      if (!payload.requester_name && requesterNameInput) {
+        markFieldInvalid(requesterNameInput, "Requester name is required.");
+      }
+      if (!payload.requester_email && requesterEmailInput) {
+        markFieldInvalid(requesterEmailInput, "Requester email is required.");
+      }
+      setAlert(message, "error");
+      setSubmitState("error", message);
       return;
     }
 
     if (hasRemoteParticipants && attendeeEmails.length === 0) {
-      setAlert("Add at least one remote participant email.", "error");
+      let attendeeInput = attendeesWrap ? attendeesWrap.querySelector("input") : null;
+      if (!attendeeInput) {
+        addAttendeeInput("");
+        attendeeInput = attendeesWrap ? attendeesWrap.querySelector("input") : null;
+      }
+      if (attendeeInput) {
+        attendeeInput.required = true;
+        markFieldInvalid(attendeeInput, "Add at least one remote participant email.");
+        attendeeInput.focus();
+      }
+      const message = "Add at least one remote participant email.";
+      setAlert(message, "error");
+      setSubmitState("error", message);
       return;
     }
     if (hasRemoteParticipants) {
-      const invalid = attendeeEmails.find((email) => !isValidEmail(email));
-      if (invalid) {
-        setAlert("One or more remote participant emails are invalid.", "error");
+      const invalidInput = attendeesWrap
+        ? Array.from(attendeesWrap.querySelectorAll("input")).find((input) => {
+            const value = String(input.value || "").trim();
+            return value && !isValidEmail(value);
+          })
+        : null;
+      if (invalidInput) {
+        const message = "One or more remote participant emails are invalid.";
+        markFieldInvalid(invalidInput, "Please enter a valid email address.");
+        invalidInput.focus();
+        setAlert(message, "error");
+        setSubmitState("error", message);
         return;
       }
     }
@@ -862,8 +1020,21 @@
   if (requesterEmailInput && user.email) requesterEmailInput.value = user.email;
 
   if (filtersForm) {
+    getFormControls(filtersForm).forEach(bindFieldValidation);
     filtersForm.addEventListener("submit", (e) => {
       e.preventDefault();
+      clearAlert();
+      clearFormValidation(filtersForm);
+      const invalidField = validateFormFields(filtersForm);
+      if (invalidField) {
+        const message = "Please select a date before loading availability.";
+        setAlert(message, "error");
+        invalidField.focus();
+        if (typeof invalidField.reportValidity === "function") {
+          invalidField.reportValidity();
+        }
+        return;
+      }
       logger.info("Date filter submitted", { date: dateInput.value });
       loadAndRenderCalendar();
     });
@@ -902,7 +1073,10 @@
       addAttendeeInput("");
     });
   }
-  if (modalForm) modalForm.addEventListener("submit", submitBooking);
+  if (modalForm) {
+    getFormControls(modalForm).forEach(bindFieldValidation);
+    modalForm.addEventListener("submit", submitBooking);
+  }
   if (modal) {
     modal.addEventListener("click", (event) => {
       if (event.target === modal) {

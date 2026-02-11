@@ -378,6 +378,153 @@
     submitButton.classList.remove("tb-btn--loading");
   }
 
+  function isValidatableField(field) {
+    if (!field || field.disabled) {
+      return false;
+    }
+    if ((field.type || "").toLowerCase() === "hidden") {
+      return false;
+    }
+    if (field.closest("[hidden]")) {
+      return false;
+    }
+    return true;
+  }
+
+  function getFormControls(form) {
+    if (!form) {
+      return [];
+    }
+    return Array.from(form.querySelectorAll("input, select, textarea")).filter(
+      isValidatableField
+    );
+  }
+
+  function getFieldKey(field) {
+    return field.id || field.name || "";
+  }
+
+  function getFeedbackNode(field) {
+    const key = getFieldKey(field);
+    if (!key || !field.parentElement) {
+      return null;
+    }
+    return (
+      Array.from(
+        field.parentElement.querySelectorAll(".tb-invalid-feedback")
+      ).find(function (node) {
+        return node.getAttribute("data-tb-feedback-for") === key;
+      }) || null
+    );
+  }
+
+  function ensureFeedbackNode(field) {
+    const key = getFieldKey(field);
+    if (!key) {
+      return null;
+    }
+    const existing = getFeedbackNode(field);
+    if (existing) {
+      return existing;
+    }
+
+    const node = document.createElement("div");
+    node.className = "invalid-feedback tb-invalid-feedback";
+    node.setAttribute("data-tb-feedback-for", key);
+    node.hidden = true;
+    field.insertAdjacentElement("afterend", node);
+    return node;
+  }
+
+  function clearFieldInvalid(field) {
+    if (!field) {
+      return;
+    }
+    field.classList.remove("is-invalid");
+    field.removeAttribute("aria-invalid");
+
+    const wrapper = field.closest(".tb-field");
+    if (wrapper) {
+      wrapper.classList.remove("tb-field--invalid");
+    }
+
+    const feedback = getFeedbackNode(field);
+    if (feedback) {
+      feedback.hidden = true;
+      feedback.textContent = "";
+    }
+  }
+
+  function markFieldInvalid(field, message) {
+    if (!field) {
+      return;
+    }
+    field.classList.add("is-invalid");
+    field.setAttribute("aria-invalid", "true");
+
+    const wrapper = field.closest(".tb-field");
+    if (wrapper) {
+      wrapper.classList.add("tb-field--invalid");
+    }
+
+    const feedback = ensureFeedbackNode(field);
+    if (feedback) {
+      feedback.textContent =
+        message || field.validationMessage || "This field is required.";
+      feedback.hidden = false;
+    }
+  }
+
+  function bindFieldValidation(field) {
+    if (!field || field.dataset.tbValidationBound === "1") {
+      return;
+    }
+    field.dataset.tbValidationBound = "1";
+
+    const onFieldEdit = function () {
+      if (!isValidatableField(field)) {
+        clearFieldInvalid(field);
+        return;
+      }
+      if (
+        typeof field.checkValidity === "function" &&
+        field.checkValidity()
+      ) {
+        clearFieldInvalid(field);
+      }
+    };
+
+    field.addEventListener("input", onFieldEdit);
+    field.addEventListener("change", onFieldEdit);
+  }
+
+  function clearFormValidation(form) {
+    getFormControls(form).forEach(function (field) {
+      clearFieldInvalid(field);
+    });
+  }
+
+  function validateFormFields(form) {
+    const controls = getFormControls(form);
+    let firstInvalid = null;
+
+    controls.forEach(function (field) {
+      if (typeof field.checkValidity !== "function") {
+        return;
+      }
+      if (!field.checkValidity()) {
+        markFieldInvalid(field, field.validationMessage);
+        if (!firstInvalid) {
+          firstInvalid = field;
+        }
+      } else {
+        clearFieldInvalid(field);
+      }
+    });
+
+    return firstInvalid;
+  }
+
   function resetSubmitButtonState() {
     if (!submitButton) {
       return;
@@ -419,11 +566,15 @@
     input.setAttribute("aria-label", "Attendee email " + count);
     if (count === 1) {
       input.id = "training-booking-attendee-1";
+      if (onlineToggle && onlineToggle.checked) {
+        input.required = true;
+      }
     }
     if (value) {
       input.value = value;
     }
     attendeesWrap.appendChild(input);
+    bindFieldValidation(input);
     return input;
   }
 
@@ -434,6 +585,7 @@
     attendeesField.hidden = !isVisible;
     if (!isVisible) {
       clearAttendeeInputs();
+      clearFormValidation(modalForm);
       return;
     }
     if (attendeesWrap && attendeesWrap.querySelectorAll("input").length === 0) {
@@ -1098,6 +1250,7 @@
     }
 
     resetBookingForm();
+    clearFormValidation(modalForm);
 
     const normalizedSlot = normalizeSlot(session);
     if (!normalizedSlot || !normalizedSlot.slot_id) {
@@ -1208,16 +1361,19 @@
     const currentUser = getCurrentUser();
     if (requesterNameInput) {
       requesterNameInput.value = currentUser.name;
+      requesterNameInput.removeAttribute("disabled");
       requesterNameInput.setAttribute("readonly", true);
       requesterNameInput.style.backgroundColor = "#f5f5f5";
       requesterNameInput.style.cursor = "not-allowed";
     }
     if (requesterEmailInput) {
       requesterEmailInput.value = currentUser.email;
+      requesterEmailInput.removeAttribute("disabled");
       requesterEmailInput.setAttribute("readonly", true);
       requesterEmailInput.style.backgroundColor = "#f5f5f5";
       requesterEmailInput.style.cursor = "not-allowed";
     }
+    clearFormValidation(modalForm);
     resetSubmitButtonState();
   }
 
@@ -1397,6 +1553,18 @@
     }
 
     clearAlert();
+    clearFormValidation(modalForm);
+    const nativeInvalidField = validateFormFields(modalForm);
+    if (nativeInvalidField) {
+      const message = "Please complete the highlighted required fields.";
+      setAlert(message, "error");
+      nativeInvalidField.focus();
+      if (typeof nativeInvalidField.reportValidity === "function") {
+        nativeInvalidField.reportValidity();
+      }
+      return;
+    }
+
     try {
       ensureConfig();
     } catch (error) {
@@ -1412,6 +1580,51 @@
     });
     const validation = validatePayload(payload);
     if (validation) {
+      if (!payload.requester_name && requesterNameInput) {
+        markFieldInvalid(requesterNameInput, "Requester name is required.");
+      }
+      if (!payload.requester_email && requesterEmailInput) {
+        markFieldInvalid(requesterEmailInput, "Requester email is required.");
+      }
+      if (
+        payload.meeting_type === "online" &&
+        (!Array.isArray(payload.attendee_emails) ||
+          payload.attendee_emails.length === 0)
+      ) {
+        let attendeeInput = attendeesWrap
+          ? attendeesWrap.querySelector("input")
+          : null;
+        if (!attendeeInput) {
+          attendeeInput = addAttendeeInput();
+        }
+        if (attendeeInput) {
+          attendeeInput.required = true;
+          markFieldInvalid(
+            attendeeInput,
+            "Please add at least one attendee email."
+          );
+          attendeeInput.focus();
+        }
+      }
+      if (
+        payload.meeting_type === "online" &&
+        Array.isArray(payload.attendee_emails)
+      ) {
+        const invalidInput = attendeesWrap
+          ? Array.from(attendeesWrap.querySelectorAll("input")).find(
+              function (input) {
+                const value = String(input.value || "").trim();
+                return value && !isValidEmail(value);
+              }
+            )
+          : null;
+        if (invalidInput) {
+          markFieldInvalid(
+            invalidInput,
+            "Please enter a valid attendee email address."
+          );
+        }
+      }
       setAlert(validation, "error");
       return;
     }
@@ -1490,8 +1703,20 @@
   }
 
   if (filtersForm) {
+    getFormControls(filtersForm).forEach(bindFieldValidation);
     filtersForm.addEventListener("submit", function (event) {
       event.preventDefault();
+      clearAlert();
+      clearFormValidation(filtersForm);
+      const invalidField = validateFormFields(filtersForm);
+      if (invalidField) {
+        setAlert("Please select a date before refreshing sessions.", "error");
+        invalidField.focus();
+        if (typeof invalidField.reportValidity === "function") {
+          invalidField.reportValidity();
+        }
+        return;
+      }
       loadSessions();
     });
   }
@@ -1544,6 +1769,7 @@
     });
   }
   if (modalForm && !modalForm.dataset.bound) {
+    getFormControls(modalForm).forEach(bindFieldValidation);
     modalForm.addEventListener("submit", submitBooking);
     modalForm.dataset.bound = "1";
   }

@@ -71,6 +71,22 @@
   outline: none;
 }
 
+.tb-field--invalid label {
+  color: #b42318;
+}
+
+.tb-field .form-control.is-invalid {
+  border-color: #d92d20;
+  box-shadow: 0 0 0 3px rgba(217, 45, 32, 0.12);
+}
+
+.tb-invalid-feedback {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  color: #b42318;
+}
+
 .tb-field label {
   display: block;
   font-size: 12px;

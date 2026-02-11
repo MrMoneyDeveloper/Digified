@@ -578,6 +578,22 @@
   box-shadow: 0 0 0 3px rgba(120, 238, 214, 0.22);
 }
 
+.rb-field--invalid label {
+  color: #b42318;
+}
+
+.rb-field .form-control.is-invalid {
+  border-color: #d92d20;
+  box-shadow: 0 0 0 3px rgba(217, 45, 32, 0.12);
+}
+
+.rb-invalid-feedback {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  color: #b42318;
+}
+
 .rb-timeline-calendar {
   border-radius: 1.1rem;
   border: 1px solid rgba(31, 30, 58, 0.1);
