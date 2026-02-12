@@ -2214,6 +2214,69 @@ a[href*="/hc/"][href*="activities"],
   box-shadow: 0 0 0 3px rgba(120, 238, 214, 0.28);
 }
 
+.digify-form-page #new-request-form .invalid-feedback {
+  display: block;
+  margin-top: 0.35rem;
+  color: #b42318;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.digify-form-page #new-request-form .digify-field-invalid label,
+.digify-form-page #new-request-form .digify-field-invalid [data-garden-id="dropdowns.combobox.label"],
+.digify-form-page #new-request-form .digify-invalid-label {
+  color: #b42318 !important;
+}
+
+.digify-form-page #new-request-form .digify-field-invalid {
+  border-radius: 0.75rem;
+  outline: 2px solid rgba(217, 45, 32, 0.22);
+  outline-offset: 2px;
+}
+
+.digify-form-page #new-request-form .digify-invalid-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: 0.45rem;
+  padding: 0.08rem 0.45rem;
+  border: 1px solid rgba(180, 35, 24, 0.28);
+  border-radius: 999px;
+  background: #fef3f2;
+  color: #b42318;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.digify-form-page #new-request-form .digify-invalid-indicator::before {
+  content: "!";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: #b42318;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.digify-form-page #new-request-form input.is-invalid,
+.digify-form-page #new-request-form select.is-invalid,
+.digify-form-page #new-request-form textarea.is-invalid,
+.digify-form-page #new-request-form .nesty-input.is-invalid,
+.digify-form-page #new-request-form .digify-field-invalid [data-garden-id="dropdowns.combobox.trigger"],
+.digify-form-page #new-request-form .digify-field-invalid [role="combobox"],
+.digify-form-page #new-request-form .digify-field-invalid button[aria-haspopup="listbox"] {
+  border-color: #d92d20 !important;
+  background-color: #fff6f7 !important;
+  box-shadow: 0 0 0 3px rgba(217, 45, 32, 0.16) !important;
+}
+
 .digify-form-page .hbs-form input[type=submit],
 .digify-form-page .button,
 .digify-form-page .button-large {

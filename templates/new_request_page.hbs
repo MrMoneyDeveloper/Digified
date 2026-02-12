@@ -48,22 +48,94 @@
 
   const homePath = {{json (page_path 'help_center')}};
   const storageKey = "digifyRedirectAfterRequest";
+  let generatedFieldKey = 0;
+
+  const isGardenComboboxField = (field) => {
+    return !!(
+      field &&
+      typeof field.getAttribute === "function" &&
+      field.getAttribute("data-garden-id") === "dropdowns.combobox.field"
+    );
+  };
+
+  const getFieldContainer = (field) => {
+    if (!field) return null;
+    if (isGardenComboboxField(field)) return field;
+    return (
+      field.closest('[data-garden-id="dropdowns.combobox.field"]') ||
+      field.closest(".form-field") ||
+      field.parentElement ||
+      null
+    );
+  };
+
+  const getFieldFocusTarget = (field) => {
+    const container = getFieldContainer(field);
+    if (!container) return field;
+    if (isGardenComboboxField(container)) {
+      return (
+        container.querySelector('[data-garden-id="dropdowns.combobox.trigger"]') ||
+        container.querySelector('[role="combobox"]') ||
+        container.querySelector("button") ||
+        field
+      );
+    }
+    return (
+      container.querySelector("input:not([type='hidden']), select, textarea, button") ||
+      field
+    );
+  };
+
+  const getFieldLabelNode = (field) => {
+    const container = getFieldContainer(field);
+    if (!container) return null;
+    return (
+      container.querySelector('[data-garden-id="dropdowns.combobox.label"]') ||
+      container.querySelector("label") ||
+      null
+    );
+  };
 
   const getFormFields = (form) => {
     return Array.from(form.querySelectorAll("input, select, textarea")).filter((field) => {
       if (!field || field.disabled) return false;
       if ((field.type || "").toLowerCase() === "hidden") return false;
+      if (field.closest('[data-garden-id="dropdowns.combobox.field"]')) return false;
       if (field.closest("[hidden]")) return false;
       return true;
     });
   };
 
-  const getFieldKey = (field) => field.id || field.name || "";
+  const getFieldKey = (field) => {
+    const container = getFieldContainer(field);
+    const source =
+      isGardenComboboxField(container)
+        ? (container.querySelector("input[name], select[name], textarea[name]") || field)
+        : field;
+    const key = (source && (source.id || source.name)) || (container && container.id) || "";
+    if (key) return key;
+
+    if (container) {
+      if (!container.dataset.digifyGeneratedKey) {
+        generatedFieldKey += 1;
+        container.dataset.digifyGeneratedKey = "digify-field-" + generatedFieldKey;
+      }
+      return container.dataset.digifyGeneratedKey;
+    }
+    return "";
+  };
+
+  const getFeedbackHost = (field) => {
+    const focusTarget = getFieldFocusTarget(field);
+    const container = getFieldContainer(field);
+    return container || focusTarget || field;
+  };
 
   const getFeedbackNode = (field) => {
     const key = getFieldKey(field);
-    if (!key || !field.parentElement) return null;
-    return Array.from(field.parentElement.querySelectorAll(".invalid-feedback")).find((node) => {
+    const host = getFeedbackHost(field);
+    if (!key || !host || !host.parentElement) return null;
+    return Array.from(host.parentElement.querySelectorAll(".invalid-feedback")).find((node) => {
       return node.getAttribute("data-digify-feedback-for") === key;
     }) || null;
   };
@@ -78,13 +150,58 @@
     node.className = "invalid-feedback";
     node.setAttribute("data-digify-feedback-for", key);
     node.hidden = true;
-    field.insertAdjacentElement("afterend", node);
+    const host = getFeedbackHost(field);
+    if (!host) return null;
+    if (isGardenComboboxField(host)) {
+      host.appendChild(node);
+    } else {
+      host.insertAdjacentElement("afterend", node);
+    }
     return node;
   };
 
+  const setFieldRequiredIndicator = (field, show) => {
+    const label = getFieldLabelNode(field);
+    if (!label) return;
+    const indicatorClass = "digify-invalid-indicator";
+    let indicator = label.querySelector("." + indicatorClass);
+
+    if (show) {
+      label.classList.add("digify-invalid-label");
+      if (!indicator) {
+        indicator = document.createElement("span");
+        indicator.className = indicatorClass;
+        indicator.setAttribute("aria-hidden", "true");
+        indicator.textContent = "Required";
+        label.appendChild(indicator);
+      }
+      return;
+    }
+
+    label.classList.remove("digify-invalid-label");
+    if (indicator) {
+      indicator.remove();
+    }
+  };
+
   const setFieldInvalid = (field, message) => {
-    field.classList.add("is-invalid");
-    field.setAttribute("aria-invalid", "true");
+    const container = getFieldContainer(field);
+    const focusTarget = getFieldFocusTarget(field);
+    if (field && field.classList) {
+      field.classList.add("is-invalid");
+    }
+    if (focusTarget && focusTarget.classList) {
+      focusTarget.classList.add("is-invalid");
+      focusTarget.setAttribute("aria-invalid", "true");
+    }
+    if (container && container.classList) {
+      container.classList.add("digify-field-invalid");
+    }
+    if (field && typeof field.setAttribute === "function") {
+      field.setAttribute("aria-invalid", "true");
+    }
+    setFieldRequiredIndicator(field, true);
+
     const feedback = ensureFeedbackNode(field);
     if (feedback) {
       feedback.textContent = message || field.validationMessage || "This field is required.";
@@ -93,8 +210,21 @@
   };
 
   const clearFieldInvalid = (field) => {
-    field.classList.remove("is-invalid");
-    field.removeAttribute("aria-invalid");
+    const container = getFieldContainer(field);
+    const focusTarget = getFieldFocusTarget(field);
+    if (field && field.classList) {
+      field.classList.remove("is-invalid");
+      field.removeAttribute("aria-invalid");
+    }
+    if (focusTarget && focusTarget.classList) {
+      focusTarget.classList.remove("is-invalid");
+      focusTarget.removeAttribute("aria-invalid");
+    }
+    if (container && container.classList) {
+      container.classList.remove("digify-field-invalid");
+    }
+    setFieldRequiredIndicator(field, false);
+
     const feedback = getFeedbackNode(field);
     if (feedback) {
       feedback.textContent = "";
@@ -102,27 +232,74 @@
     }
   };
 
+  const isGardenComboboxRequired = (comboboxField) => {
+    if (!comboboxField) return false;
+    const explicitRequired = comboboxField.querySelector("[required], [aria-required='true']");
+    if (explicitRequired) return true;
+    if (comboboxField.classList.contains("required")) return true;
+    if (comboboxField.closest(".required")) return true;
+    const label = getFieldLabelNode(comboboxField);
+    if (label && label.classList.contains("required")) return true;
+    const labelText = label ? String(label.textContent || "").trim() : "";
+    return labelText.indexOf("*") >= 0;
+  };
+
+  const getGardenComboboxValue = (comboboxField) => {
+    if (!comboboxField) return "";
+    const valueSources = Array.from(
+      comboboxField.querySelectorAll("input[name], select[name], textarea[name]")
+    );
+    for (const source of valueSources) {
+      const value = String(source.value || "").trim();
+      if (value && value !== "null" && value !== "__none__") {
+        return value;
+      }
+    }
+    return "";
+  };
+
+  const validateGardenComboboxes = (form, invalidFields) => {
+    const comboboxes = Array.from(
+      form.querySelectorAll('[data-garden-id="dropdowns.combobox.field"]')
+    );
+
+    comboboxes.forEach((combobox) => {
+      if (!isGardenComboboxRequired(combobox)) {
+        clearFieldInvalid(combobox);
+        return;
+      }
+      if (!getGardenComboboxValue(combobox)) {
+        setFieldInvalid(combobox, "This field is required.");
+        invalidFields.push(combobox);
+        return;
+      }
+      clearFieldInvalid(combobox);
+    });
+  };
+
   const getFieldTopOffset = (field) => {
-    if (!field || typeof field.getBoundingClientRect !== "function") {
+    const anchor = getFieldFocusTarget(field) || getFieldContainer(field) || field;
+    if (!anchor || typeof anchor.getBoundingClientRect !== "function") {
       return Number.POSITIVE_INFINITY;
     }
-    const rect = field.getBoundingClientRect();
+    const rect = anchor.getBoundingClientRect();
     return rect.top + (window.scrollY || window.pageYOffset || 0);
   };
 
   const focusAndScrollToField = (field) => {
     if (!field) return;
+    const anchor = getFieldFocusTarget(field) || getFieldContainer(field) || field;
 
-    if (typeof field.focus === "function") {
+    if (anchor && typeof anchor.focus === "function") {
       try {
-        field.focus({ preventScroll: true });
+        anchor.focus({ preventScroll: true });
       } catch (error) {
-        field.focus();
+        anchor.focus();
       }
     }
 
-    if (typeof field.scrollIntoView === "function") {
-      field.scrollIntoView({
+    if (anchor && typeof anchor.scrollIntoView === "function") {
+      anchor.scrollIntoView({
         behavior: "smooth",
         block: "center",
         inline: "nearest"
@@ -156,6 +333,7 @@
         clearFieldInvalid(field);
       }
     });
+    validateGardenComboboxes(form, invalidFields);
 
     invalidFields.sort((a, b) => getFieldTopOffset(a) - getFieldTopOffset(b));
     const firstInvalid = invalidFields.length ? invalidFields[0] : null;
@@ -178,7 +356,15 @@
 
     const onFieldEdit = (event) => {
       const field = event.target;
-      if (!field || typeof field.checkValidity !== "function") return;
+      if (!field) return;
+      const combobox = field.closest('[data-garden-id="dropdowns.combobox.field"]');
+      if (combobox) {
+        if (!isGardenComboboxRequired(combobox) || getGardenComboboxValue(combobox)) {
+          clearFieldInvalid(combobox);
+        }
+        return;
+      }
+      if (typeof field.checkValidity !== "function") return;
       if (field.checkValidity()) {
         clearFieldInvalid(field);
       }
