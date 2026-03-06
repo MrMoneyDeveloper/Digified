@@ -35,10 +35,17 @@ const CFG = {
     START_HHMM: "08:00",
     END_HHMM: "20:00",
     SLOT_MINUTES: 60,
+    TRAINING_SLOT_MINUTES: 30,
+    INTERVIEW_START_HHMM: "12:00",
+    INTERVIEW_ROOM: "Interview Room",
+    INTERVIEW_ALIASES: ["Meeting Room"],
+    TRAINING_ROOMS: ["Training Room 1", "Training Room 2"],
 
     DEFAULT_RESERVED_BY: "", // vendor (reserved by) override default
-    DEFAULT_TOPIC: "Training Session",
-    DEFAULT_DEPT: "All",
+    DEFAULT_TOPIC: "Room Booking",
+    TRAINING_TOPIC: "Training Session",
+    INTERVIEW_TOPIC: "Interview Room Booking",
+    DEFAULT_DEPT: "Interview Room",
     DEFAULT_CAPACITY: 1,
 
     SLOT_ID_PREFIX: "SLOT_",
@@ -80,6 +87,10 @@ function doGet(e) {
         result = handleBook_(
           {
             slot_id: params.slot_id,
+            start_date: params.start_date || params.date,
+            start_time: params.start_time,
+            end_time: params.end_time,
+            repeat_days: params.repeat_days,
             requester_email: params.requester_email,
             requester_name: params.requester_name,
             notes: params.notes,
@@ -192,6 +203,11 @@ function handleInit_(requestId, params) {
     "attendees",        // kept for compatibility; always forced to 1
     "notes",
     "dept",
+    "start_date",
+    "start_time",
+    "end_date",
+    "end_time",
+    "duration_minutes",
     "booked_at",
     "debug_json",
     "meeting_type",      // in_person_only / in_person_plus_online
@@ -224,8 +240,10 @@ function handleInit_(requestId, params) {
   upsertSetting_(ss, "ALLOW_GET_BOOKING", String(CFG.ALLOW_GET_BOOKING));
   upsertSetting_(ss, "RULES_ENABLED", String(CFG.RULES.ENABLED));
   upsertSetting_(ss, "WORKING_HOURS", `${CFG.RULES.START_HHMM}-${CFG.RULES.END_HHMM}`);
+  upsertSetting_(ss, "INTERVIEW_WORKING_HOURS", `${CFG.RULES.INTERVIEW_START_HHMM}-${CFG.RULES.END_HHMM}`);
   upsertSetting_(ss, "WORKING_WEEKDAYS", CFG.RULES.WEEKDAYS.join(","));
   upsertSetting_(ss, "SLOT_MINUTES", String(CFG.RULES.SLOT_MINUTES));
+  upsertSetting_(ss, "TRAINING_SLOT_MINUTES", String(CFG.RULES.TRAINING_SLOT_MINUTES));
 
   return ok_(
     requestId,
@@ -238,12 +256,14 @@ function handleInit_(requestId, params) {
         weekdays: CFG.RULES.WEEKDAYS,
         working_hours: `${CFG.RULES.START_HHMM}-${CFG.RULES.END_HHMM}`,
         slot_minutes: CFG.RULES.SLOT_MINUTES,
+        training_slot_minutes: CFG.RULES.TRAINING_SLOT_MINUTES,
+        interview_working_hours: `${CFG.RULES.INTERVIEW_START_HHMM}-${CFG.RULES.END_HHMM}`,
         example_slot_id: buildSlotId_("2026-01-15", "08:00"),
-        note: "Slots are generated hourly between START_HHMM and END_HHMM.",
+        note: "Training rooms use 30-minute slots from 08:00-20:00. Interview room uses 60-minute slots from 12:00-20:00.",
       },
       next_steps: [
-        "1) Test sessions: ?action=sessions&from=2026-01-01&to=2026-01-31&api_key=YOUR_KEY",
-        "2) Book via JSONP GET: ?action=book&slot_id=SLOT_...&requester_email=...&api_key=...&callback=cb",
+        "1) Test sessions: ?action=sessions&from=2026-01-01&to=2026-01-31&dept=Training%20Room%201&api_key=YOUR_KEY",
+        "2) Book via JSONP GET: ?action=book&start_date=2026-01-15&start_time=09:00&end_time=10:30&dept=Training%20Room%201&requester_email=...&api_key=...&callback=cb",
         "3) Optional overrides: add a row to SESSIONS to cancel/change a specific slot",
       ],
     },
@@ -282,6 +302,7 @@ function handleGetApiKey_(requestId) {
 function handleSessions_(params, requestId) {
   const from = (params.from || "").trim();
   const to = (params.to || "").trim();
+  const dept = normalizeDept_(params.dept || params.room || CFG.RULES.DEFAULT_DEPT);
 
   const today = formatDate_(new Date());
   const fromDate = isDateStr_(from) ? from : today;
@@ -290,14 +311,15 @@ function handleSessions_(params, requestId) {
   const ss = getSS_();
 
   // 1) Rule-based slots
-  const slots = generateSlots_(fromDate, toDate);
+  const slots = generateSlots_(fromDate, toDate, dept);
 
   // 2) Overrides (SESSIONS)
   const overrides = readSessionsAsOverrideMap_(ss);
 
   // 3) Merge + compute availability from BOOKINGS
   const sessions = slots.map(s => {
-    const o = overrides[s.slot_id] || null;
+    const o = findSessionOverride_(overrides, s.dept, s.slot_id);
+    const mergedDept = normalizeDept_((o && o.dept) ? o.dept : s.dept);
 
     const merged = {
       slot_id: s.slot_id,
@@ -306,18 +328,32 @@ function handleSessions_(params, requestId) {
       end_time: s.end_time,
       vendor: (o && o.vendor) ? String(o.vendor).trim() : s.vendor, // manual reserve (optional)
       topic: (o && o.topic) ? String(o.topic).trim() : s.topic,
-      dept: (o && o.dept) ? String(o.dept).trim() : s.dept,
+      dept: mergedDept,
       capacity: (o && toInt_(o.capacity, 0)) ? toInt_(o.capacity, 0) : s.capacity,
       status: (o && o.status) ? String(o.status).toLowerCase() : "open",
     };
 
-    const bookedCount = countBookedForSlot_(ss, merged.slot_id);
+    const bookedCount = countBookedForRange_(ss, {
+      dept: merged.dept,
+      start_date: merged.date,
+      start_time: merged.start_time,
+      end_date: merged.date,
+      end_time: merged.end_time,
+    });
     const cap = toInt_(merged.capacity, 0);
     const isFull = cap > 0 && bookedCount >= cap;
     const isCancelled = String(merged.status || "open").toLowerCase() === "cancelled";
 
     // vendor output = reserved by (latest booker if booked, else manual reserve if any)
-    const latestBooker = bookedCount > 0 ? getLatestBookerNameForSlot_(ss, merged.slot_id) : "";
+    const latestBooker = bookedCount > 0
+      ? getLatestBookerNameForRange_(ss, {
+          dept: merged.dept,
+          start_date: merged.date,
+          start_time: merged.start_time,
+          end_date: merged.date,
+          end_time: merged.end_time,
+        })
+      : "";
     const reservedBy = latestBooker ? latestBooker : (merged.vendor || "");
 
     return {
@@ -340,7 +376,7 @@ function handleSessions_(params, requestId) {
 
   return ok_(
     requestId,
-    { from: fromDate, to: toDate, total_sessions: sessions.length, sessions },
+    { from: fromDate, to: toDate, dept, total_sessions: sessions.length, sessions },
     "Sessions loaded"
   );
 }
@@ -352,19 +388,20 @@ function handleSessions_(params, requestId) {
 function handleDays_(params, requestId) {
   const from = (params.from || "").trim();
   const to = (params.to || "").trim();
+  const dept = normalizeDept_(params.dept || params.room || CFG.RULES.DEFAULT_DEPT);
 
   const today = formatDate_(new Date());
   const fromDate = isDateStr_(from) ? from : today;
   const toDate = isDateStr_(to) ? to : formatDate_(addDays_(new Date(), 30));
 
-  const slots = generateSlots_(fromDate, toDate);
+  const slots = generateSlots_(fromDate, toDate, dept);
 
   const dayMap = {};
   slots.forEach(s => dayMap[s.date] = (dayMap[s.date] || 0) + 1);
 
   const days = Object.keys(dayMap).sort().map(d => ({ date: d, count: dayMap[d] }));
 
-  return ok_(requestId, { from: fromDate, to: toDate, total_days: days.length, days }, "Days loaded");
+  return ok_(requestId, { from: fromDate, to: toDate, dept, total_days: days.length, days }, "Days loaded");
 }
 
 /**
@@ -375,12 +412,12 @@ function handleDays_(params, requestId) {
 function handleBook_(body, requestId) {
   body = body || {};
 
-  const slotId = (body.slot_id || "").trim();
   const requesterEmail = (body.requester_email || "").trim().toLowerCase();
   const requesterName = (body.requester_name || "").trim();
   const notes = (body.notes || "").toString().trim();
-  const dept = (body.dept || "").toString().trim();
+  const dept = normalizeDept_(body.dept || CFG.RULES.DEFAULT_DEPT);
   const userType = (body.user_type || "").toString().trim();
+  const repeatDays = Math.min(Math.max(toInt_(body.repeat_days, 0), 0), 5);
   const attendees = 1; // forced for physical room capacity
 
   const attendeeRaw = body.attendee_emails !== undefined
@@ -390,9 +427,18 @@ function handleBook_(body, requestId) {
   const attendeeEmails = attendeeParse.valid.slice();
   const meetingType = normalizeMeetingType_(body.meeting_type !== undefined ? body.meeting_type : body.online_meeting, attendeeEmails);
   const attendeeCsv = attendeeEmails.join(",");
+  const resolved = resolveBookingWindow_(body, dept);
 
-  if (!slotId) return fail_(requestId, "MISSING_SLOT_ID", "slot_id is required", 400);
   if (!requesterEmail) return fail_(requestId, "MISSING_EMAIL", "requester_email is required", 400);
+  if (!resolved.ok) {
+    return fail_(
+      requestId,
+      resolved.code || "FAIL_INVALID_TIME_RANGE",
+      resolved.message || messageForFailCode_(resolved.code),
+      resolved.statusCode || 400,
+      resolved.data || {}
+    );
+  }
 
   if (meetingType === "in_person_plus_online") {
     if (attendeeParse.invalid.length) {
@@ -405,217 +451,204 @@ function handleBook_(body, requestId) {
     }
   }
 
-  // Validate slot against rules
-  const parsed = parseSlotId_(slotId);
-  if (!parsed || !isSlotAllowedByRules_(parsed.date, parsed.start_time)) {
-    writeBooking_(getSS_(), buildBookingRow_({
-      booking_id: makeId_("book"),
-      slot_id: slotId,
-      booking_status: "failed",
-      fail_code: "FAIL_SLOT_NOT_ALLOWED",
-      requester_email: requesterEmail,
-      requester_name: requesterName,
-      attendees,
-      notes,
-      dept,
-      booked_at: new Date().toISOString(),
-      debug_json: JSON.stringify({ reason: "slot not allowed by rules", parsed, user_type: userType }),
-      meeting_type: meetingType,
-      attendee_emails: attendeeCsv,
-      meet_status: "",
-    }));
-    return fail_(requestId, "FAIL_SLOT_NOT_ALLOWED", "This slot is not within allowed working hours.", 400);
+  const bookingRequests = expandBookingRequests_(resolved.request, repeatDays);
+  if (!bookingRequests.length) {
+    return fail_(requestId, "FAIL_INVALID_SLOT", "No valid booking dates were produced for this request.", 400);
   }
 
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
 
   const ss = getSS_();
+  const bookingIds = [];
+  const bookings = [];
+  const meets = [];
   const bookingId = makeId_("book");
 
   try {
     ensureBookingSheet_(ss);
+    const prepared = [];
 
-    // Build session from rules + overrides
-    const session = buildSessionFromRulesAndOverrides_(ss, parsed.date, parsed.start_time);
-    if (!session) {
-      writeBooking_(ss, buildBookingRow_({
-        booking_id: bookingId,
-        slot_id: slotId,
-        booking_status: "failed",
-        fail_code: "FAIL_INVALID_SLOT",
+    for (let i = 0; i < bookingRequests.length; i++) {
+      const validation = validateBookingRequest_(ss, bookingRequests[i], requesterEmail);
+      if (!validation.ok) {
+        const failCode = i > 0 ? "FAIL_REPEAT_CONFLICT" : validation.code;
+        const failMessage = i > 0
+          ? messageForFailCode_("FAIL_REPEAT_CONFLICT")
+          : (validation.message || messageForFailCode_(validation.code));
+
+        logBookingFailure_(ss, {
+          booking_id: bookingId,
+          request: bookingRequests[i],
+          fail_code: failCode,
+          requester_email: requesterEmail,
+          requester_name: requesterName,
+          notes,
+          user_type: userType,
+          meeting_type: meetingType,
+          attendee_emails: attendeeCsv,
+          meet_status: meetingType === "in_person_plus_online" ? "failed" : "",
+          debug: Object.assign({}, validation.data || {}, {
+            requested_range: bookingRequests[i],
+            validation_code: validation.code || "",
+          }),
+        });
+
+        return fail_(
+          requestId,
+          failCode,
+          failMessage,
+          validation.statusCode || 409,
+          Object.assign({}, validation.data || {}, {
+            failed_date: bookingRequests[i].start_date,
+            dept: bookingRequests[i].dept,
+          })
+        );
+      }
+      prepared.push(validation);
+    }
+
+    for (let i = 0; i < bookingRequests.length; i++) {
+      const request = bookingRequests[i];
+      const validation = prepared[i];
+      const currentBookingId = i === 0 ? bookingId : makeId_("book");
+      const bookingRowNum = writeBooking_(ss, buildBookingRow_({
+        booking_id: currentBookingId,
+        slot_id: request.slot_id,
+        booking_status: "booked",
+        fail_code: "",
         requester_email: requesterEmail,
         requester_name: requesterName,
         attendees,
         notes,
-        dept,
+        dept: request.dept,
+        start_date: request.start_date,
+        start_time: request.start_time,
+        end_date: request.end_date,
+        end_time: request.end_time,
+        duration_minutes: request.duration_minutes,
         booked_at: new Date().toISOString(),
-        debug_json: JSON.stringify({ reason: "could not build session", user_type: userType }),
+        debug_json: JSON.stringify({
+          request,
+          user_type: userType,
+          sessions: validation.sessions.map(sessionToPublic_),
+        }),
         meeting_type: meetingType,
         attendee_emails: attendeeCsv,
-        meet_status: "",
+        meet_status: meetingType === "in_person_plus_online" ? "pending" : "",
       }));
-      return fail_(requestId, "FAIL_INVALID_SLOT", "Slot not found: " + slotId, 404);
+
+      let meetResult = {
+        required: meetingType === "in_person_plus_online",
+        status: meetingType === "in_person_plus_online" ? "pending" : "skipped",
+        meet_link: "",
+        event_id: "",
+        error_code: "",
+        error_details: "",
+        message: meetingType === "in_person_plus_online"
+          ? "Meet creation pending."
+          : "In-person-only booking; Meet skipped.",
+        created_at: "",
+      };
+
+      if (meetingType === "in_person_plus_online") {
+        meetResult = createMeetForBooking_({
+          booking_id: currentBookingId,
+          slot_id: request.slot_id,
+          dept: request.dept,
+          requester_email: requesterEmail,
+          requester_name: requesterName,
+          attendee_emails: attendeeEmails,
+          slot_minutes: request.slot_minutes,
+          start_date: request.start_date,
+          start_time: request.start_time,
+          end_date: request.end_date,
+          end_time: request.end_time,
+        });
+
+        patchBookingMeetFieldsByRow_(ss, bookingRowNum, {
+          meet_link: meetResult.meet_link,
+          meet_event_id: meetResult.event_id,
+          meet_status: meetResult.status,
+          meet_error_code: meetResult.error_code,
+          meet_error_details: meetResult.error_details,
+          meet_created_at: meetResult.created_at,
+        });
+      }
+
+      bookingIds.push(currentBookingId);
+      bookings.push({
+        booking_id: currentBookingId,
+        slot_id: request.slot_id,
+        start_date: request.start_date,
+        start_time: request.start_time,
+        end_date: request.end_date,
+        end_time: request.end_time,
+        dept: request.dept,
+        duration_minutes: request.duration_minutes,
+      });
+      meets.push(meetResult);
     }
 
-    // Cancelled?
-    if (String(session.status || "open").toLowerCase() === "cancelled") {
-      writeBooking_(ss, buildBookingRow_({
-        booking_id: bookingId,
-        slot_id: slotId,
-        booking_status: "failed",
-        fail_code: "FAIL_CANCELLED",
-        requester_email: requesterEmail,
-        requester_name: requesterName,
-        attendees,
-        notes,
-        dept,
-        booked_at: new Date().toISOString(),
-        debug_json: JSON.stringify({ reason: "session cancelled", user_type: userType }),
-        meeting_type: meetingType,
-        attendee_emails: attendeeCsv,
-        meet_status: "",
-      }));
-      return fail_(requestId, "FAIL_CANCELLED", "This session is cancelled", 409);
-    }
-
-    // Duplicate booking by same email for same slot?
-    if (hasActiveBookingForEmailAndSlot_(ss, requesterEmail, slotId)) {
-      writeBooking_(ss, buildBookingRow_({
-        booking_id: bookingId,
-        slot_id: slotId,
-        booking_status: "failed",
-        fail_code: "FAIL_ALREADY_BOOKED",
-        requester_email: requesterEmail,
-        requester_name: requesterName,
-        attendees,
-        notes,
-        dept,
-        booked_at: new Date().toISOString(),
-        debug_json: JSON.stringify({ reason: "duplicate booking by same user", user_type: userType }),
-        meeting_type: meetingType,
-        attendee_emails: attendeeCsv,
-        meet_status: "",
-      }));
-      return fail_(requestId, "FAIL_ALREADY_BOOKED", "You already booked this slot", 409);
-    }
-
-    // Capacity check
-    const capacity = toInt_(session.capacity, 0);
-    const bookedCount = countBookedForSlot_(ss, slotId);
-    if (capacity > 0 && bookedCount >= capacity) {
-      writeBooking_(ss, buildBookingRow_({
-        booking_id: bookingId,
-        slot_id: slotId,
-        booking_status: "failed",
-        fail_code: "FAIL_SLOT_FULL",
-        requester_email: requesterEmail,
-        requester_name: requesterName,
-        attendees,
-        notes,
-        dept,
-        booked_at: new Date().toISOString(),
-        debug_json: JSON.stringify({ capacity, bookedCount, user_type: userType }),
-        meeting_type: meetingType,
-        attendee_emails: attendeeCsv,
-        meet_status: "",
-      }));
-      return fail_(requestId, "FAIL_SLOT_FULL", "This slot is already full", 409, { capacity, bookedCount });
-    }
-
-    // Commit booking
-    const bookingRowNum = writeBooking_(ss, buildBookingRow_({
-      booking_id: bookingId,
-      slot_id: slotId,
-      booking_status: "booked",
-      fail_code: "",
-      requester_email: requesterEmail,
-      requester_name: requesterName,
-      attendees,
-      notes,
-      dept: dept || session.dept || "",
-      booked_at: new Date().toISOString(),
-      debug_json: JSON.stringify({ session, user_type: userType }),
-      meeting_type: meetingType,
-      attendee_emails: attendeeCsv,
-      meet_status: meetingType === "in_person_plus_online" ? "pending" : "",
-    }));
-
-    let meetResult = {
-      required: meetingType === "in_person_plus_online",
-      status: meetingType === "in_person_plus_online" ? "pending" : "skipped",
+    const primaryMeet = meets[0] || {
+      status: "skipped",
       meet_link: "",
-      event_id: "",
+      meet_event_id: "",
       error_code: "",
       error_details: "",
-      message: meetingType === "in_person_plus_online"
-        ? "Meet creation pending."
-        : "In-person-only booking; Meet skipped.",
-      created_at: "",
+      message: "In-person-only booking; Meet skipped.",
     };
-
-    if (meetingType === "in_person_plus_online") {
-      meetResult = createMeetForBooking_({
-        booking_id: bookingId,
-        slot_id: slotId,
-        requester_email: requesterEmail,
-        requester_name: requesterName,
-        attendee_emails: attendeeEmails,
-        slot_minutes: CFG.RULES.SLOT_MINUTES,
-      });
-
-      patchBookingMeetFieldsByRow_(ss, bookingRowNum, {
-        meet_link: meetResult.meet_link,
-        meet_event_id: meetResult.event_id,
-        meet_status: meetResult.status,
-        meet_error_code: meetResult.error_code,
-        meet_error_details: meetResult.error_details,
-        meet_created_at: meetResult.created_at,
-      });
-    }
+    const hasMeetFailure = meets.some(m => m && m.status === "failed");
 
     return ok_(
       requestId,
       {
-        booking_id: bookingId,
-        slot_id: slotId,
-        session: sessionToPublic_(session),
+        booking_id: bookingIds[0] || bookingId,
+        booking_ids: bookingIds,
+        booking_count: bookings.length,
+        slot_id: resolved.request.slot_id,
+        session: {
+          slot_id: resolved.request.slot_id,
+          date: resolved.request.start_date,
+          start_time: resolved.request.start_time,
+          end_time: resolved.request.end_time,
+          dept: resolved.request.dept,
+        },
+        bookings,
         attendees_forced: 1,
         meeting_type: meetingType,
         attendee_emails: attendeeEmails,
         meet: {
-          status: meetResult.status,
-          meet_link: meetResult.meet_link,
-          meet_event_id: meetResult.event_id,
-          error_code: meetResult.error_code,
-          error_details: meetResult.error_details,
-          message: meetResult.message,
+          status: primaryMeet.status,
+          meet_link: primaryMeet.meet_link,
+          meet_event_id: primaryMeet.event_id,
+          error_code: primaryMeet.error_code,
+          error_details: primaryMeet.error_details,
+          message: primaryMeet.message,
         },
+        meets,
       },
-      meetResult.status === "failed"
-        ? "Booked successfully, but online meeting link generation failed."
+      hasMeetFailure
+        ? "Booked successfully, but one or more online meeting links failed."
         : "Booked successfully"
     );
 
   } catch (err) {
-    writeBooking_(ss, buildBookingRow_({
+    logBookingFailure_(ss, {
       booking_id: bookingId,
-      slot_id: slotId,
-      booking_status: "failed",
+      request: bookingRequests[0] || resolved.request,
       fail_code: "FAIL_SYSTEM_ERROR",
       requester_email: requesterEmail,
       requester_name: requesterName,
-      attendees,
       notes,
-      dept,
-      booked_at: new Date().toISOString(),
-      debug_json: JSON.stringify({ error: String(err), stack: err && err.stack ? err.stack : "", user_type: userType }),
+      user_type: userType,
       meeting_type: meetingType,
       attendee_emails: attendeeCsv,
       meet_status: meetingType === "in_person_plus_online" ? "failed" : "",
       meet_error_code: meetingType === "in_person_plus_online" ? "FAIL_SYSTEM_ERROR" : "",
       meet_error_details: meetingType === "in_person_plus_online" ? String(err) : "",
-    }));
+      debug: { error: String(err), stack: err && err.stack ? err.stack : "" },
+    });
     return errorPayload_(requestId, "FAIL_SYSTEM_ERROR", err);
 
   } finally {
@@ -689,11 +722,15 @@ function ensureSheetWithHeader_(ss, name, headerRow) {
   // append missing headers if sheet is older
   const existingWidth = sh.getLastColumn();
   const existingHeader = sh.getRange(1, 1, 1, existingWidth).getValues()[0].map(x => String(x || "").trim());
+  const existingLookup = {};
+  existingHeader.forEach(h => {
+    if (h) existingLookup[h.toLowerCase()] = true;
+  });
+  const missing = headerRow.filter(h => !existingLookup[String(h || "").trim().toLowerCase()]);
 
-  if (existingHeader.length < headerRow.length) {
-    const missing = headerRow.slice(existingHeader.length);
+  if (missing.length) {
     sh.getRange(1, existingHeader.length + 1, 1, missing.length).setValues([missing]);
-    sh.autoResizeColumns(1, headerRow.length);
+    sh.autoResizeColumns(1, existingHeader.length + missing.length);
   }
 
   return sh;
@@ -710,6 +747,11 @@ function ensureBookingSheet_(ss) {
     "attendees",
     "notes",
     "dept",
+    "start_date",
+    "start_time",
+    "end_date",
+    "end_time",
+    "duration_minutes",
     "booked_at",
     "debug_json",
     "meeting_type",
@@ -760,14 +802,20 @@ function readSessionsAsOverrideMap_(ss) {
 
     const norm = normaliseSession_(obj);
     if (!norm.slot_id) continue;
+    const rawDept = String(obj.dept || "").trim();
 
-    map[String(norm.slot_id).toUpperCase()] = norm;
+    map[sessionKey_(norm.dept, norm.slot_id)] = norm;
+    if (!rawDept) {
+      map[sessionKey_("", norm.slot_id)] = norm;
+    }
   }
 
   return map;
 }
 
 function normaliseSession_(s) {
+  const dept = normalizeDept_(s.dept || "");
+  const roomRules = getRoomRules_(dept);
   const dateStr = normaliseDateValue_(s.date);
   const startStr = normaliseTimeValue_(s.start_time);
   const endStr = normaliseTimeValue_(s.end_time);
@@ -776,7 +824,7 @@ function normaliseSession_(s) {
   const derivedDate = (!dateStr && parsed) ? parsed.date : dateStr;
   const derivedStart = (!startStr && parsed) ? parsed.start_time : startStr;
   const derivedEnd = (!endStr && derivedStart)
-    ? addMinutesToHHMM_(derivedStart, CFG.RULES.SLOT_MINUTES)
+    ? addMinutesToHHMM_(derivedStart, roomRules.slot_minutes)
     : endStr;
 
   return {
@@ -786,7 +834,7 @@ function normaliseSession_(s) {
     end_time: String(derivedEnd || "").trim(),
     vendor: String(s.vendor || "").trim(), // manual reserve (optional)
     topic: String(s.topic || "").trim(),
-    dept: String(s.dept || "").trim(),
+    dept,
     capacity: toInt_(s.capacity, 0),
     status: String(s.status || "open").trim().toLowerCase(),
   };
@@ -830,6 +878,10 @@ function sessionToPublic_(s) {
  * BOOKINGS
  */
 function buildBookingRow_(b) {
+  const startDate = b.start_date || "";
+  const startTime = b.start_time || "";
+  const endDate = b.end_date || startDate || "";
+  const endTime = b.end_time || "";
   return {
     booking_id: b.booking_id || "",
     slot_id: b.slot_id || "",
@@ -840,6 +892,13 @@ function buildBookingRow_(b) {
     attendees: 1,
     notes: b.notes || "",
     dept: b.dept || "",
+    start_date: startDate,
+    start_time: startTime,
+    end_date: endDate,
+    end_time: endTime,
+    duration_minutes: b.duration_minutes !== undefined && b.duration_minutes !== null
+      ? toInt_(b.duration_minutes, 0)
+      : durationBetweenHHMM_(startTime, endTime),
     booked_at: b.booked_at || "",
     debug_json: b.debug_json || "",
     meeting_type: b.meeting_type || "in_person_only",
@@ -856,29 +915,17 @@ function buildBookingRow_(b) {
 function writeBooking_(ss, booking) {
   ensureBookingSheet_(ss);
   const sh = ss.getSheetByName(CFG.SHEETS.BOOKINGS);
+  const header = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(x => String(x || "").trim());
+  const row = new Array(header.length).fill("");
+  const normalized = buildBookingRow_(booking);
 
-  sh.appendRow([
-    booking.booking_id || "",
-    booking.slot_id || "",
-    booking.booking_status || "",
-    booking.fail_code || "",
-    booking.requester_email || "",
-    booking.requester_name || "",
-    1,
-    booking.notes || "",
-    booking.dept || "",
-    booking.booked_at || "",
-    booking.debug_json || "",
-    booking.meeting_type || "in_person_only",
-    booking.attendee_emails || "",
-    booking.meet_link || "",
-    booking.meet_event_id || "",
-    booking.meet_status || "",
-    booking.meet_error_code || "",
-    booking.meet_error_details || "",
-    booking.meet_created_at || "",
-  ]);
+  header.forEach((key, idx) => {
+    if (Object.prototype.hasOwnProperty.call(normalized, key)) {
+      row[idx] = normalized[key];
+    }
+  });
 
+  sh.appendRow(row);
   return sh.getLastRow();
 }
 
@@ -988,11 +1035,18 @@ function createMeetForBooking_(params) {
     const payload = {
       booking_id: params.booking_id,
       slot_id: params.slot_id,
+      dept: params.dept || "",
       meeting_type: "in_person_plus_online",
       requester_name: params.requester_name,
       requester_email: params.requester_email,
       attendee_emails: params.attendee_emails || [],
       slot_minutes: params.slot_minutes || CFG.RULES.SLOT_MINUTES,
+      start_iso: (params.start_date && params.start_time)
+        ? params.start_date + "T" + params.start_time + ":00"
+        : "",
+      end_iso: (params.end_date && params.end_time)
+        ? params.end_date + "T" + params.end_time + ":00"
+        : "",
     };
 
     const res = (typeof createMeetForBooking_C_ === "function"
@@ -1077,163 +1131,551 @@ function markBookingCancelled_(ss, bookingId) {
   return false;
 }
 
-function countBookedForSlot_(ss, slotId) {
+function countBookedForSlot_(ss, slotId, dept) {
+  const parsed = parseSlotId_(slotId);
+  if (!parsed) return 0;
+  const room = normalizeDept_(dept || CFG.RULES.DEFAULT_DEPT);
+  const rules = getRoomRules_(room);
+  return countBookedForRange_(ss, {
+    dept: room,
+    start_date: parsed.date,
+    start_time: parsed.start_time,
+    end_date: parsed.date,
+    end_time: addMinutesToHHMM_(parsed.start_time, rules.slot_minutes),
+  });
+}
+
+function hasActiveBookingForEmailAndSlot_(ss, email, slotId, dept) {
+  const parsed = parseSlotId_(slotId);
+  if (!parsed) return false;
+  const room = normalizeDept_(dept || CFG.RULES.DEFAULT_DEPT);
+  const rules = getRoomRules_(room);
+  return hasActiveBookingForEmailInRange_(ss, String(email || "").trim().toLowerCase(), {
+    dept: room,
+    start_date: parsed.date,
+    start_time: parsed.start_time,
+    end_date: parsed.date,
+    end_time: addMinutesToHHMM_(parsed.start_time, rules.slot_minutes),
+  });
+}
+
+function getLatestBookerNameForSlot_(ss, slotId, dept) {
+  const parsed = parseSlotId_(slotId);
+  if (!parsed) return "";
+  const room = normalizeDept_(dept || CFG.RULES.DEFAULT_DEPT);
+  const rules = getRoomRules_(room);
+  return getLatestBookerNameForRange_(ss, {
+    dept: room,
+    start_date: parsed.date,
+    start_time: parsed.start_time,
+    end_date: parsed.date,
+    end_time: addMinutesToHHMM_(parsed.start_time, rules.slot_minutes),
+  });
+}
+
+function countBookedForRange_(ss, request) {
   const sh = ss.getSheetByName(CFG.SHEETS.BOOKINGS);
   if (!sh) return 0;
-
   const values = sh.getDataRange().getValues();
   if (values.length < 2) return 0;
-
-  const header = values[0].map(String);
-  const idx = indexMap_(header);
+  const idx = indexMap_(values[0].map(String));
+  const normalized = normalizeRequestWindow_(request);
+  if (!normalized) return 0;
 
   let count = 0;
   for (let i = 1; i < values.length; i++) {
     const row = values[i];
-    const rowSlot = String(row[idx.slot_id] || "");
-    const status = lower_(row[idx.booking_status]);
-    if (rowSlot === String(slotId) && status === "booked") count++;
+    if (lower_(row[idx.booking_status]) !== "booked") continue;
+    const window = bookingRowWindow_(row, idx);
+    if (!window) continue;
+    if (window.dept !== normalized.dept) continue;
+    if (rangesOverlap_(normalized.start_ms, normalized.end_ms, window.start_ms, window.end_ms)) {
+      count++;
+    }
   }
   return count;
 }
 
-function hasActiveBookingForEmailAndSlot_(ss, email, slotId) {
+function hasActiveBookingForEmailInRange_(ss, email, request) {
   const sh = ss.getSheetByName(CFG.SHEETS.BOOKINGS);
   if (!sh) return false;
-
   const values = sh.getDataRange().getValues();
   if (values.length < 2) return false;
-
-  const header = values[0].map(String);
-  const idx = indexMap_(header);
+  const idx = indexMap_(values[0].map(String));
+  const normalized = normalizeRequestWindow_(request);
+  if (!normalized) return false;
+  const targetEmail = lower_(email);
+  if (!targetEmail) return false;
 
   for (let i = 1; i < values.length; i++) {
     const row = values[i];
-    const rowSlot = String(row[idx.slot_id] || "");
-    const status = lower_(row[idx.booking_status]);
-    const rowEmail = lower_(row[idx.requester_email]);
-    if (rowSlot === String(slotId) && status === "booked" && rowEmail === email.toLowerCase()) return true;
+    if (lower_(row[idx.booking_status]) !== "booked") continue;
+    if (lower_(row[idx.requester_email]) !== targetEmail) continue;
+    const window = bookingRowWindow_(row, idx);
+    if (!window) continue;
+    if (window.dept !== normalized.dept) continue;
+    if (rangesOverlap_(normalized.start_ms, normalized.end_ms, window.start_ms, window.end_ms)) {
+      return true;
+    }
   }
   return false;
 }
 
-function getLatestBookerNameForSlot_(ss, slotId) {
+function getLatestBookerNameForRange_(ss, request) {
   const sh = ss.getSheetByName(CFG.SHEETS.BOOKINGS);
   if (!sh) return "";
-
   const values = sh.getDataRange().getValues();
   if (values.length < 2) return "";
-
-  const header = values[0].map(String);
-  const idx = indexMap_(header);
+  const idx = indexMap_(values[0].map(String));
+  const normalized = normalizeRequestWindow_(request);
+  if (!normalized) return "";
 
   for (let i = values.length - 1; i >= 1; i--) {
     const row = values[i];
-    const rowSlot = String(row[idx.slot_id] || "");
-    const status = lower_(row[idx.booking_status]);
-    if (rowSlot === String(slotId) && status === "booked") {
-      const nm = String(row[idx.requester_name] || "").trim();
-      return nm || String(row[idx.requester_email] || "").trim();
-    }
+    if (lower_(row[idx.booking_status]) !== "booked") continue;
+    const window = bookingRowWindow_(row, idx);
+    if (!window) continue;
+    if (window.dept !== normalized.dept) continue;
+    if (!rangesOverlap_(normalized.start_ms, normalized.end_ms, window.start_ms, window.end_ms)) continue;
+    const name = String(row[idx.requester_name] || "").trim();
+    return name || String(row[idx.requester_email] || "").trim();
   }
   return "";
 }
 
+function resolveBookingWindow_(body, dept) {
+  const room = normalizeDept_(dept || body.dept || CFG.RULES.DEFAULT_DEPT);
+  const rules = getRoomRules_(room);
+  const parsed = parseSlotId_(body.slot_id || "");
+
+  const startDateRaw = String(body.start_date || body.date || (parsed ? parsed.date : "")).trim();
+  const startTimeRaw = normalizeHHMM_(body.start_time || (parsed ? parsed.start_time : ""));
+  const endTimeRaw = normalizeHHMM_(body.end_time || "");
+  const endDateRaw = String(body.end_date || startDateRaw).trim();
+
+  if (!startDateRaw || !startTimeRaw) {
+    return { ok: false, code: "FAIL_INVALID_TIME_RANGE", message: "start_date and start_time are required.", statusCode: 400 };
+  }
+  if (!isDateStr_(startDateRaw)) {
+    return { ok: false, code: "FAIL_INVALID_TIME_RANGE", message: "start_date must be YYYY-MM-DD.", statusCode: 400 };
+  }
+  if (!isDateStr_(endDateRaw)) {
+    return { ok: false, code: "FAIL_INVALID_TIME_RANGE", message: "end_date must be YYYY-MM-DD.", statusCode: 400 };
+  }
+  if (startDateRaw !== endDateRaw) {
+    return { ok: false, code: "FAIL_INVALID_TIME_RANGE", message: "Cross-day bookings are not supported.", statusCode: 400 };
+  }
+
+  let endTime = endTimeRaw;
+  if (!endTime) {
+    endTime = addMinutesToHHMM_(startTimeRaw, rules.slot_minutes);
+  }
+  if (!/^\d{2}:\d{2}$/.test(startTimeRaw) || !/^\d{2}:\d{2}$/.test(endTime)) {
+    return { ok: false, code: "FAIL_INVALID_TIME_RANGE", message: "start_time and end_time must use HH:mm format.", statusCode: 400 };
+  }
+
+  const request = {
+    slot_id: buildSlotId_(startDateRaw, startTimeRaw),
+    start_date: startDateRaw,
+    start_time: startTimeRaw,
+    end_date: endDateRaw,
+    end_time: endTime,
+    dept: room,
+    slot_minutes: rules.slot_minutes,
+    duration_minutes: durationBetweenHHMM_(startTimeRaw, endTime),
+  };
+
+  const window = normalizeRequestWindow_(request);
+  if (!window || window.end_ms <= window.start_ms) {
+    return { ok: false, code: "FAIL_INVALID_TIME_RANGE", message: "end_time must be after start_time.", statusCode: 400 };
+  }
+
+  if (!isBookingWithinRules_(request, rules)) {
+    return {
+      ok: false,
+      code: "FAIL_SLOT_NOT_ALLOWED",
+      message: messageForFailCode_("FAIL_SLOT_NOT_ALLOWED"),
+      statusCode: 400,
+      data: { dept: room, start_time: startTimeRaw, end_time: endTime },
+    };
+  }
+
+  if (isTrainingRoom_(room)) {
+    if ((hhmmToMinutes_(startTimeRaw) % rules.slot_minutes) !== 0 || (hhmmToMinutes_(endTime) % rules.slot_minutes) !== 0) {
+      return { ok: false, code: "FAIL_INVALID_TIME_RANGE", message: "Training room bookings must align to 30-minute boundaries.", statusCode: 400 };
+    }
+  } else {
+    if ((hhmmToMinutes_(startTimeRaw) % rules.slot_minutes) !== 0 || (hhmmToMinutes_(endTime) % rules.slot_minutes) !== 0) {
+      return { ok: false, code: "FAIL_INVALID_TIME_RANGE", message: "Interview room bookings must align to hourly boundaries.", statusCode: 400 };
+    }
+    if (request.duration_minutes !== rules.slot_minutes) {
+      return { ok: false, code: "FAIL_INVALID_TIME_RANGE", message: "Interview room bookings must be exactly 60 minutes.", statusCode: 400 };
+    }
+  }
+
+  return { ok: true, request };
+}
+
+function expandBookingRequests_(baseRequest, repeatDays) {
+  const out = [];
+  const count = Math.max(0, toInt_(repeatDays, 0));
+  const baseDate = parseDate_(baseRequest.start_date);
+  if (!baseDate || isNaN(baseDate.getTime())) return out;
+
+  let cursor = new Date(baseDate.getTime());
+  while (out.length < (count + 1)) {
+    const isoWd = isoWeekday_(cursor);
+    if (CFG.RULES.WEEKDAYS.indexOf(isoWd) >= 0) {
+      const dateStr = formatDate_(cursor);
+      out.push(Object.assign({}, baseRequest, {
+        slot_id: buildSlotId_(dateStr, baseRequest.start_time),
+        start_date: dateStr,
+        end_date: dateStr,
+      }));
+    }
+    cursor = addDays_(cursor, 1);
+  }
+  return out;
+}
+
+function validateBookingRequest_(ss, request, requesterEmail) {
+  const room = normalizeDept_(request.dept);
+  const rules = getRoomRules_(room);
+  if (!isBookingWithinRules_(request, rules)) {
+    return { ok: false, code: "FAIL_SLOT_NOT_ALLOWED", message: messageForFailCode_("FAIL_SLOT_NOT_ALLOWED"), statusCode: 400 };
+  }
+
+  const startMin = hhmmToMinutes_(request.start_time);
+  const endMin = hhmmToMinutes_(request.end_time);
+  if ((startMin % rules.slot_minutes) !== 0 || (endMin % rules.slot_minutes) !== 0) {
+    return { ok: false, code: "FAIL_INVALID_TIME_RANGE", message: messageForFailCode_("FAIL_INVALID_TIME_RANGE"), statusCode: 400 };
+  }
+
+  const sessions = [];
+  const overrides = readSessionsAsOverrideMap_(ss);
+  for (let m = startMin; m < endMin; m += rules.slot_minutes) {
+    const slotStart = minutesToHHMM_(m);
+    const slotEnd = minutesToHHMM_(m + rules.slot_minutes);
+    const slot = buildSessionFromRulesAndOverrides_(ss, request.start_date, slotStart, room, overrides);
+    if (!slot) {
+      return { ok: false, code: "FAIL_INVALID_SLOT", message: messageForFailCode_("FAIL_INVALID_SLOT"), statusCode: 404 };
+    }
+    if (String(slot.status || "open").toLowerCase() === "cancelled") {
+      return { ok: false, code: "FAIL_CANCELLED", message: messageForFailCode_("FAIL_CANCELLED"), statusCode: 409 };
+    }
+    const bookedCount = countBookedForRange_(ss, {
+      dept: room,
+      start_date: request.start_date,
+      start_time: slotStart,
+      end_date: request.end_date,
+      end_time: slotEnd,
+    });
+    const capacity = toInt_(slot.capacity, 0);
+    if (capacity > 0 && bookedCount >= capacity) {
+      return {
+        ok: false,
+        code: "FAIL_SLOT_FULL",
+        message: messageForFailCode_("FAIL_SLOT_FULL"),
+        statusCode: 409,
+        data: { capacity, booked_count: bookedCount, slot_id: slot.slot_id },
+      };
+    }
+    sessions.push(slot);
+  }
+
+  if (hasActiveBookingForEmailInRange_(ss, requesterEmail, request)) {
+    return { ok: false, code: "FAIL_ALREADY_BOOKED", message: messageForFailCode_("FAIL_ALREADY_BOOKED"), statusCode: 409 };
+  }
+
+  if (countBookedForRange_(ss, request) > 0) {
+    return { ok: false, code: "FAIL_RANGE_OVERLAP", message: messageForFailCode_("FAIL_RANGE_OVERLAP"), statusCode: 409 };
+  }
+
+  return { ok: true, sessions };
+}
+
+function logBookingFailure_(ss, params) {
+  const request = params.request || {};
+  writeBooking_(ss, buildBookingRow_({
+    booking_id: params.booking_id || makeId_("book"),
+    slot_id: request.slot_id || "",
+    booking_status: "failed",
+    fail_code: params.fail_code || "FAIL_SYSTEM_ERROR",
+    requester_email: params.requester_email || "",
+    requester_name: params.requester_name || "",
+    notes: params.notes || "",
+    dept: request.dept || "",
+    start_date: request.start_date || "",
+    start_time: request.start_time || "",
+    end_date: request.end_date || request.start_date || "",
+    end_time: request.end_time || "",
+    duration_minutes: request.duration_minutes || 0,
+    booked_at: new Date().toISOString(),
+    debug_json: JSON.stringify(Object.assign({
+      user_type: params.user_type || "",
+    }, params.debug || {})),
+    meeting_type: params.meeting_type || "in_person_only",
+    attendee_emails: params.attendee_emails || "",
+    meet_status: params.meet_status || "",
+    meet_error_code: params.meet_error_code || "",
+    meet_error_details: params.meet_error_details || "",
+  }));
+}
+
+function normalizeRequestWindow_(request) {
+  if (!request) return null;
+  const dept = normalizeDept_(request.dept || CFG.RULES.DEFAULT_DEPT);
+  const startDate = String(request.start_date || "").trim();
+  const startTime = normalizeHHMM_(request.start_time || "");
+  const endDate = String(request.end_date || startDate).trim();
+  const endTime = normalizeHHMM_(request.end_time || "");
+  if (!isDateStr_(startDate) || !isDateStr_(endDate)) return null;
+  if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) return null;
+  const startMs = dateTimeToMs_(startDate, startTime);
+  const endMs = dateTimeToMs_(endDate, endTime);
+  if (!isFinite(startMs) || !isFinite(endMs)) return null;
+  return {
+    dept,
+    start_date: startDate,
+    start_time: startTime,
+    end_date: endDate,
+    end_time: endTime,
+    start_ms: startMs,
+    end_ms: endMs,
+  };
+}
+
+function bookingRowWindow_(row, idx) {
+  const dept = normalizeDept_(row[idx.dept] || CFG.RULES.DEFAULT_DEPT);
+  const rules = getRoomRules_(dept);
+  const slot = parseSlotId_(row[idx.slot_id] || "");
+
+  const startDate = String(row[idx.start_date] || (slot ? slot.date : "")).trim();
+  const startTime = normalizeHHMM_(row[idx.start_time] || (slot ? slot.start_time : ""));
+  let endDate = String(row[idx.end_date] || startDate).trim();
+  let endTime = normalizeHHMM_(row[idx.end_time] || "");
+
+  if (!startDate || !startTime) return null;
+  if (!endTime) endTime = addMinutesToHHMM_(startTime, rules.slot_minutes);
+  if (!endDate) endDate = startDate;
+
+  const window = normalizeRequestWindow_({
+    dept,
+    start_date: startDate,
+    start_time: startTime,
+    end_date: endDate,
+    end_time: endTime,
+  });
+  return window;
+}
+
+function rangesOverlap_(aStart, aEnd, bStart, bEnd) {
+  return aStart < bEnd && bStart < aEnd;
+}
+
+function dateTimeToMs_(dateStr, hhmm) {
+  if (!isDateStr_(dateStr) || !/^\d{2}:\d{2}$/.test(String(hhmm || ""))) return NaN;
+  const d = parseDate_(dateStr);
+  if (!d || isNaN(d.getTime())) return NaN;
+  const mins = hhmmToMinutes_(hhmm);
+  d.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+  return d.getTime();
+}
+
+function durationBetweenHHMM_(startHHMM, endHHMM) {
+  if (!/^\d{2}:\d{2}$/.test(String(startHHMM || ""))) return 0;
+  if (!/^\d{2}:\d{2}$/.test(String(endHHMM || ""))) return 0;
+  const diff = hhmmToMinutes_(endHHMM) - hhmmToMinutes_(startHHMM);
+  return diff > 0 ? diff : 0;
+}
+
+function normalizeHHMM_(value) {
+  const s = String(value || "").trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return "";
+  const hh = toInt_(m[1], -1);
+  const mm = toInt_(m[2], -1);
+  if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return "";
+  return String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+}
+
+function sessionKey_(dept, slotId) {
+  const deptKey = String(dept || "").trim()
+    ? normalizeDept_(dept)
+    : "*";
+  return deptKey + "::" + String(slotId || "").trim().toUpperCase();
+}
+
+function findSessionOverride_(map, dept, slotId) {
+  const full = sessionKey_(dept, slotId);
+  if (map[full]) return map[full];
+  const generic = sessionKey_("", slotId);
+  return map[generic] || null;
+}
+
+function isTrainingRoom_(dept) {
+  const room = normalizeDept_(dept || "");
+  return CFG.RULES.TRAINING_ROOMS.some(r => lower_(r) === lower_(room));
+}
+
+function normalizeDept_(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return CFG.RULES.DEFAULT_DEPT;
+
+  for (let i = 0; i < CFG.RULES.TRAINING_ROOMS.length; i++) {
+    if (lower_(raw) === lower_(CFG.RULES.TRAINING_ROOMS[i])) {
+      return CFG.RULES.TRAINING_ROOMS[i];
+    }
+  }
+
+  if (lower_(raw) === lower_(CFG.RULES.INTERVIEW_ROOM)) {
+    return CFG.RULES.INTERVIEW_ROOM;
+  }
+  for (let i = 0; i < CFG.RULES.INTERVIEW_ALIASES.length; i++) {
+    if (lower_(raw) === lower_(CFG.RULES.INTERVIEW_ALIASES[i])) {
+      return CFG.RULES.INTERVIEW_ROOM;
+    }
+  }
+  if (lower_(raw) === "all") return CFG.RULES.INTERVIEW_ROOM;
+  return raw;
+}
+
+function getRoomRules_(dept) {
+  const room = normalizeDept_(dept || CFG.RULES.DEFAULT_DEPT);
+  const training = isTrainingRoom_(room);
+  return {
+    dept: room,
+    slot_minutes: training ? toInt_(CFG.RULES.TRAINING_SLOT_MINUTES, 30) : toInt_(CFG.RULES.SLOT_MINUTES, 60),
+    start_hhmm: training ? CFG.RULES.START_HHMM : CFG.RULES.INTERVIEW_START_HHMM,
+    end_hhmm: CFG.RULES.END_HHMM,
+    topic: training ? CFG.RULES.TRAINING_TOPIC : CFG.RULES.INTERVIEW_TOPIC,
+    capacity: CFG.RULES.DEFAULT_CAPACITY,
+  };
+}
+
+function isBookingWithinRules_(request, roomRules) {
+  if (!CFG.RULES.ENABLED) return false;
+  if (!isDateStr_(request.start_date) || !isDateStr_(request.end_date)) return false;
+  if (request.start_date !== request.end_date) return false;
+
+  const d = parseDate_(request.start_date);
+  const wd = isoWeekday_(d);
+  if (CFG.RULES.WEEKDAYS.indexOf(wd) < 0) return false;
+
+  const start = hhmmToMinutes_(request.start_time);
+  const end = hhmmToMinutes_(request.end_time);
+  const ruleStart = hhmmToMinutes_(roomRules.start_hhmm);
+  const ruleEnd = hhmmToMinutes_(roomRules.end_hhmm);
+  if (end <= start) return false;
+  return start >= ruleStart && end <= ruleEnd;
+}
+
+function messageForFailCode_(code) {
+  const map = {
+    FAIL_SLOT_NOT_ALLOWED: "This time is outside allowed booking hours.",
+    FAIL_INVALID_SLOT: "The requested slot could not be found.",
+    FAIL_CANCELLED: "The requested slot has been cancelled.",
+    FAIL_SLOT_FULL: "One or more requested slots are already booked.",
+    FAIL_ALREADY_BOOKED: "You already have a booking that overlaps this request.",
+    FAIL_INVALID_TIME_RANGE: "Please choose a valid start and end time.",
+    FAIL_RANGE_OVERLAP: "This booking overlaps an existing booking.",
+    FAIL_REPEAT_CONFLICT: "One or more repeat days are unavailable.",
+  };
+  return map[code] || "Booking request could not be completed.";
+}
+
 /**
  * ===== DYNAMIC SLOT ENGINE =====
- * Supports configured ranges and wrap-around if END_HHMM <= START_HHMM.
  */
-function generateSlots_(fromDateStr, toDateStr) {
+function generateSlots_(fromDateStr, toDateStr, dept) {
   if (!CFG.RULES.ENABLED) return [];
-
+  const roomRules = getRoomRules_(dept || CFG.RULES.DEFAULT_DEPT);
   const from = parseDate_(fromDateStr);
   const to = parseDate_(toDateStr);
+  if (!from || !to || isNaN(from.getTime()) || isNaN(to.getTime())) return [];
 
-  const startMin = hhmmToMinutes_(CFG.RULES.START_HHMM);
-  let endMin = hhmmToMinutes_(CFG.RULES.END_HHMM);
-  const slotMin = toInt_(CFG.RULES.SLOT_MINUTES, 60);
-
-  if (endMin <= startMin) endMin += 1440; // wrap
-
+  const startMin = hhmmToMinutes_(roomRules.start_hhmm);
+  const endMin = hhmmToMinutes_(roomRules.end_hhmm);
+  const slotMin = roomRules.slot_minutes;
   const out = [];
-  let d = new Date(from.getTime());
 
+  let d = new Date(from.getTime());
   while (d <= to) {
     const isoWd = isoWeekday_(d);
     const dateStr = formatDate_(d);
-
     if (CFG.RULES.WEEKDAYS.indexOf(isoWd) >= 0) {
       for (let m = startMin; m + slotMin <= endMin; m += slotMin) {
         const st = minutesToHHMM_(m);
         const et = minutesToHHMM_(m + slotMin);
-
         out.push({
           slot_id: buildSlotId_(dateStr, st),
           date: dateStr,
           start_time: st,
           end_time: et,
           vendor: CFG.RULES.DEFAULT_RESERVED_BY,
-          topic: CFG.RULES.DEFAULT_TOPIC,
-          dept: CFG.RULES.DEFAULT_DEPT,
-          capacity: CFG.RULES.DEFAULT_CAPACITY,
+          topic: roomRules.topic,
+          dept: roomRules.dept,
+          capacity: roomRules.capacity,
           status: "open",
         });
       }
     }
-
     d = addDays_(d, 1);
   }
-
   return out;
 }
 
-function buildSessionFromRulesAndOverrides_(ss, dateStr, startHHMM) {
+function buildSessionFromRulesAndOverrides_(ss, dateStr, startHHMM, dept, overridesMap) {
+  const room = normalizeDept_(dept || CFG.RULES.DEFAULT_DEPT);
+  const rules = getRoomRules_(room);
+  if (!isSlotAllowedByRules_(dateStr, startHHMM, room, rules.slot_minutes)) return null;
+
   const base = {
     slot_id: buildSlotId_(dateStr, startHHMM),
     date: dateStr,
     start_time: startHHMM,
-    end_time: addMinutesToHHMM_(startHHMM, CFG.RULES.SLOT_MINUTES),
+    end_time: addMinutesToHHMM_(startHHMM, rules.slot_minutes),
     vendor: CFG.RULES.DEFAULT_RESERVED_BY,
-    topic: CFG.RULES.DEFAULT_TOPIC,
-    dept: CFG.RULES.DEFAULT_DEPT,
-    capacity: CFG.RULES.DEFAULT_CAPACITY,
+    topic: rules.topic,
+    dept: room,
+    capacity: rules.capacity,
     status: "open",
   };
 
-  const overrides = readSessionsAsOverrideMap_(ss);
-  const o = overrides[base.slot_id];
-
-  if (o) {
-    if (o.vendor) base.vendor = o.vendor;
-    if (o.topic) base.topic = o.topic;
-    if (o.dept) base.dept = o.dept;
-    if (toInt_(o.capacity, 0)) base.capacity = toInt_(o.capacity, base.capacity);
-    if (o.status) base.status = String(o.status).toLowerCase();
+  const overrides = overridesMap || readSessionsAsOverrideMap_(ss);
+  const override = findSessionOverride_(overrides, room, base.slot_id);
+  if (override) {
+    if (override.vendor) base.vendor = override.vendor;
+    if (override.topic) base.topic = override.topic;
+    if (override.dept) base.dept = normalizeDept_(override.dept);
+    if (override.start_time) base.start_time = normalizeHHMM_(override.start_time) || base.start_time;
+    if (override.end_time) base.end_time = normalizeHHMM_(override.end_time) || base.end_time;
+    if (toInt_(override.capacity, 0)) base.capacity = toInt_(override.capacity, base.capacity);
+    if (override.status) base.status = String(override.status).toLowerCase();
   }
-
   return base;
 }
 
-function isSlotAllowedByRules_(dateStr, startHHMM) {
+function isSlotAllowedByRules_(dateStr, startHHMM, dept, durationMinutes) {
   if (!CFG.RULES.ENABLED) return false;
   if (!isDateStr_(dateStr)) return false;
-  if (!/^\d{2}:\d{2}$/.test(String(startHHMM || ""))) return false;
+  const start = normalizeHHMM_(startHHMM);
+  if (!start) return false;
+
+  const room = normalizeDept_(dept || CFG.RULES.DEFAULT_DEPT);
+  const rules = getRoomRules_(room);
+  const duration = toInt_(durationMinutes, rules.slot_minutes) || rules.slot_minutes;
 
   const d = parseDate_(dateStr);
   const wd = isoWeekday_(d);
   if (CFG.RULES.WEEKDAYS.indexOf(wd) < 0) return false;
 
-  const startMin = hhmmToMinutes_(startHHMM);
-  const ruleStart = hhmmToMinutes_(CFG.RULES.START_HHMM);
-  let ruleEnd = hhmmToMinutes_(CFG.RULES.END_HHMM);
-  const slotMin = toInt_(CFG.RULES.SLOT_MINUTES, 60);
+  const startMin = hhmmToMinutes_(start);
+  const endMin = startMin + duration;
+  const ruleStart = hhmmToMinutes_(rules.start_hhmm);
+  const ruleEnd = hhmmToMinutes_(rules.end_hhmm);
 
-  if (ruleEnd <= ruleStart) ruleEnd += 1440;
-
-  let s = startMin;
-  if (s < ruleStart && ruleEnd > 1440) s += 1440;
-
-  return s >= ruleStart && (s + slotMin) <= ruleEnd;
+  return startMin >= ruleStart && endMin <= ruleEnd;
 }
 
 function buildSlotId_(dateStr, startHHMM) {
@@ -1410,31 +1852,36 @@ function getHeader_(e, headerName) {
 function indexMap_(header) {
   const m = {};
   for (let i = 0; i < header.length; i++) {
-    const key = String(header[i] || "").trim();
+    const key = String(header[i] || "").trim().toLowerCase();
     if (!key) continue;
     m[key] = i;
   }
 
   return {
-    booking_id: m.booking_id ?? 0,
-    slot_id: m.slot_id ?? 1,
-    booking_status: m.booking_status ?? 2,
-    fail_code: m.fail_code ?? 3,
-    requester_email: m.requester_email ?? 4,
-    requester_name: m.requester_name ?? 5,
-    attendees: m.attendees ?? 6,
-    notes: m.notes ?? 7,
-    dept: m.dept ?? 8,
-    booked_at: m.booked_at ?? 9,
-    debug_json: m.debug_json ?? 10,
-    meeting_type: m.meeting_type ?? 11,
-    attendee_emails: m.attendee_emails ?? 12,
-    meet_link: m.meet_link ?? 13,
-    meet_event_id: m.meet_event_id ?? 14,
-    meet_status: m.meet_status ?? 15,
-    meet_error_code: m.meet_error_code ?? 16,
-    meet_error_details: m.meet_error_details ?? 17,
-    meet_created_at: m.meet_created_at ?? 18,
+    booking_id: m["booking_id"] ?? 0,
+    slot_id: m["slot_id"] ?? 1,
+    booking_status: m["booking_status"] ?? 2,
+    fail_code: m["fail_code"] ?? 3,
+    requester_email: m["requester_email"] ?? 4,
+    requester_name: m["requester_name"] ?? 5,
+    attendees: m["attendees"] ?? 6,
+    notes: m["notes"] ?? 7,
+    dept: m["dept"] ?? 8,
+    start_date: m["start_date"] !== undefined ? m["start_date"] : -1,
+    start_time: m["start_time"] !== undefined ? m["start_time"] : -1,
+    end_date: m["end_date"] !== undefined ? m["end_date"] : -1,
+    end_time: m["end_time"] !== undefined ? m["end_time"] : -1,
+    duration_minutes: m["duration_minutes"] !== undefined ? m["duration_minutes"] : -1,
+    booked_at: m["booked_at"] ?? 9,
+    debug_json: m["debug_json"] ?? 10,
+    meeting_type: m["meeting_type"] ?? 11,
+    attendee_emails: m["attendee_emails"] ?? 12,
+    meet_link: m["meet_link"] ?? 13,
+    meet_event_id: m["meet_event_id"] ?? 14,
+    meet_status: m["meet_status"] ?? 15,
+    meet_error_code: m["meet_error_code"] ?? 16,
+    meet_error_details: m["meet_error_details"] ?? 17,
+    meet_created_at: m["meet_created_at"] ?? 18,
   };
 }
 

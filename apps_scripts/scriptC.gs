@@ -19,6 +19,7 @@ function createMeetForBooking_C_(params) {
   var calendarId = resolveCalendarIdC_(params.calendar_id);
   var bookingId = String(params.booking_id || "").trim();
   var slotId = String(params.slot_id || "").trim();
+  var roomLabel = String(params.dept || "Room").trim() || "Room";
 
   if (meetingType !== "in_person_plus_online") {
     return {
@@ -92,9 +93,10 @@ function createMeetForBooking_C_(params) {
     }
   }
 
-  var title = "Training Room Booking - " + (slotId || slotWindow.slot_key);
+  var title = roomLabel + " Booking - " + (slotId || slotWindow.slot_key);
   var description =
     "Hybrid room booking\n" +
+    "Room: " + roomLabel + "\n" +
     "Booking ID: " + (bookingId || "(none)") + "\n" +
     "Requester: " + requesterName + " <" + requesterEmail + ">\n" +
     "Remote attendees: " + attendeeParse.valid.join(", ") + "\n" +

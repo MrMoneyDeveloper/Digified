@@ -844,7 +844,7 @@
   <div class="container">
     <div class="tb-hero">
       <h1>Book Training Room</h1>
-      <p class="tb-intro">Select a date to view available training room sessions.</p>
+      <p class="tb-intro">Choose a room, then drag across the half-hour calendar on your start date to set the exact training window you need.</p>
     </div>
 
     {{#if signed_in}}
@@ -859,8 +859,26 @@
 
         <form id="training-booking-filters" class="tb-filters" autocomplete="off">
           <div class="tb-field">
-            <label for="training-date">Date</label>
+            <label for="training-date">Start date</label>
             <input class="form-control" id="training-date" name="date" type="date" required>
+          </div>
+          <div class="tb-field">
+            <label for="training-room">Room</label>
+            <select class="form-control" id="training-room" name="room" required>
+              <option value="Training Room 1">Training Room 1</option>
+              <option value="Training Room 2">Training Room 2</option>
+            </select>
+          </div>
+          <div class="tb-field">
+            <label for="training-repeat-days">Repeat for next N weekdays</label>
+            <select class="form-control" id="training-repeat-days" name="repeat_days">
+              <option value="0">Do not repeat</option>
+              <option value="1">1 additional day</option>
+              <option value="2">2 additional days</option>
+              <option value="3">3 additional days</option>
+              <option value="4">4 additional days</option>
+              <option value="5">5 additional days</option>
+            </select>
           </div>
           <div class="tb-actions">
             <button class="btn btn-primary" id="training-load" type="submit">Refresh</button>
@@ -870,10 +888,16 @@
 
         <div id="training-booking-loading" class="tb-loading" hidden>
           <span class="tb-spinner" aria-hidden="true"></span>
-          <span>Loading sessions...</span>
+          <span>Loading room availability...</span>
         </div>
 
-        <div id="training-booking-list" class="tb-list"></div>
+        <div id="training-booking-selection" class="tb-selection-summary" hidden></div>
+
+        <div id="training-booking-list" class="tb-list">
+          <div class="tb-placeholder">
+            Choose a date and room to load the training calendar.
+          </div>
+        </div>
 
         <div id="training-booking-modal" class="tb-modal" aria-hidden="true" hidden>
           <div class="tb-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="training-booking-modal-title">
@@ -885,6 +909,11 @@
               <div id="training-booking-session-summary" class="tb-session-summary"></div>
               <form id="training-booking-form" class="tb-form">
                 <input id="training-booking-slot-id" name="slot_id" type="hidden">
+                <input id="training-booking-start-date" name="start_date" type="hidden">
+                <input id="training-booking-start-time" name="start_time" type="hidden">
+                <input id="training-booking-end-time" name="end_time" type="hidden">
+                <input id="training-booking-room-value" name="dept" type="hidden">
+                <input id="training-booking-repeat-days-value" name="repeat_days" type="hidden">
                 <div class="tb-form-grid">
                   <div class="tb-field">
                     <label for="training-booking-requester-name">Requester name</label>
@@ -901,7 +930,7 @@
                   <div class="tb-field">
                     <label class="tb-checkbox" for="training-booking-online">
                       <input id="training-booking-online" name="online_meeting" type="checkbox" value="1">
-                      <span>Online meeting (not in-person)</span>
+                      <span>Include remote participants (create Google Meet link)</span>
                     </label>
                   </div>
                   <div class="tb-field" id="training-booking-attendees-field" hidden>

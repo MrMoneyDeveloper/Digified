@@ -1,139 +1,130 @@
 (function () {
   "use strict";
 
-  // Booking widget notes:
-  // - Uses runtime config with fallback via booking-config.js.
-  // - Auto-detects user type (tenant/staff) from Digify segments.
-  // - Attendees are fixed at 1; only notes are editable.
-  // - "Reserved by" is set to the booker's name after booking.
-  // - Zendesk ticket creation happens server-side (Apps Script).
-  // - Single-date UI (no department/availability filters) with today's date defaulted.
-  // - JSONP GET for sessions and bookings to avoid CORS.
-
   const path = window.location.pathname || "";
-  if (!/\/hc\/[^/]+\/p\/training_booking/.test(path)) {
-    return;
-  }
+  if (!/\/hc\/[^/]+\/p\/training_booking/.test(path)) return;
 
   const root = document.getElementById("training-booking-root");
-  if (!root) {
-    return;
-  }
+  if (!root) return;
+
+  const ROOMS = ["Training Room 1", "Training Room 2"];
+  const SLOT_MINUTES = 30;
+  const DAY_START = 8 * 60;
+  const DAY_END = 20 * 60;
+  const MAX_REPEAT_DAYS = 5;
+  const TZ = "Africa/Johannesburg";
 
   const configProvider = window.DigifyBookingConfig;
   const config =
     configProvider && typeof configProvider.getConfig === "function"
       ? configProvider.getConfig(root)
       : { baseUrl: "", apiKey: "" };
-  const baseUrl = (config.baseUrl || "").trim();
-  const apiKey = config.apiKey || "";
+  const baseUrl = String(config.baseUrl || "").trim();
+  const apiKey = String(config.apiKey || "").trim();
 
-  console.log("[training_booking] baseUrl", baseUrl);
-  console.log("[training_booking] apiKey length", apiKey.length);
+  const ui = {
+    alert: document.getElementById("training-booking-alert"),
+    filtersForm: document.getElementById("training-booking-filters"),
+    date: document.getElementById("training-date"),
+    room: document.getElementById("training-room"),
+    repeatDays: document.getElementById("training-repeat-days"),
+    load: document.getElementById("training-load"),
+    reset: document.getElementById("training-reset"),
+    list: document.getElementById("training-booking-list"),
+    loading: document.getElementById("training-booking-loading"),
+    selection: document.getElementById("training-booking-selection"),
+    modal: document.getElementById("training-booking-modal"),
+    modalClose: document.getElementById("training-booking-modal-close"),
+    modalCancel: document.getElementById("training-booking-modal-cancel"),
+    modalForm: document.getElementById("training-booking-form"),
+    sessionSummary: document.getElementById("training-booking-session-summary"),
+    slotId: document.getElementById("training-booking-slot-id"),
+    startDate: document.getElementById("training-booking-start-date"),
+    startTime: document.getElementById("training-booking-start-time"),
+    endTime: document.getElementById("training-booking-end-time"),
+    roomValue: document.getElementById("training-booking-room-value"),
+    repeatDaysValue: document.getElementById("training-booking-repeat-days-value"),
+    requesterName: document.getElementById("training-booking-requester-name"),
+    requesterEmail: document.getElementById("training-booking-requester-email"),
+    notes: document.getElementById("training-booking-notes"),
+    online: document.getElementById("training-booking-online"),
+    attendeesField: document.getElementById("training-booking-attendees-field"),
+    attendees: document.getElementById("training-booking-attendees"),
+    addAttendee: document.getElementById("training-booking-add-attendee"),
+    submit: document.getElementById("training-booking-submit")
+  };
 
-  // Core UI elements
-  const alertEl = document.getElementById("training-booking-alert");
-  const filtersForm = document.getElementById("training-booking-filters");
-  const dateInput = document.getElementById("training-date");
-  const loadButton = document.getElementById("training-load");
-  const resetButton = document.getElementById("training-reset");
-  const listWrap = document.getElementById("training-booking-list");
-  const loadingEl = document.getElementById("training-booking-loading");
+  const errorMessages = {
+    FAIL_SLOT_FULL: "One or more selected slots are no longer available.",
+    FAIL_ALREADY_BOOKED: "You already have a booking that overlaps this request.",
+    FAIL_INVALID_SLOT: "The selected time range is no longer available.",
+    FAIL_CANCELLED: "One or more selected slots have been cancelled.",
+    FAIL_SLOT_NOT_ALLOWED: "Selected times fall outside permitted booking hours.",
+    FAIL_OUTSIDE_HOURS: "Selected times fall outside permitted booking hours.",
+    FAIL_INVALID_TIME_RANGE: "Select a valid continuous time range.",
+    FAIL_RANGE_OVERLAP: "The selected range overlaps an existing booking.",
+    FAIL_REPEAT_CONFLICT: "One or more repeat days are unavailable.",
+    UNAUTHORIZED: "API key not accepted."
+  };
 
-  const modal = document.getElementById("training-booking-modal");
-  const modalClose = document.getElementById("training-booking-modal-close");
-  const modalCancel = document.getElementById("training-booking-modal-cancel");
-  const modalForm = document.getElementById("training-booking-form");
-  const sessionSummary = document.getElementById("training-booking-session-summary");
-  const slotIdInput = document.getElementById("training-booking-slot-id");
-  const requesterNameInput = document.getElementById(
-    "training-booking-requester-name"
-  );
-  const requesterEmailInput = document.getElementById(
-    "training-booking-requester-email"
-  );
-  const notesInput = document.getElementById("training-booking-notes");
-  const onlineToggle = document.getElementById("training-booking-online");
-  const attendeesField = document.getElementById(
-    "training-booking-attendees-field"
-  );
-  const attendeesWrap = document.getElementById("training-booking-attendees");
-  const addAttendeeButton = document.getElementById(
-    "training-booking-add-attendee"
-  );
-  const submitButton = document.getElementById("training-booking-submit");
+  const longDateFormatter = new Intl.DateTimeFormat("en-ZA", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: TZ
+  });
+  const shortDateFormatter = new Intl.DateTimeFormat("en-ZA", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    timeZone: TZ
+  });
+
+  const TIME_SLOTS = [];
+  const SLOT_INDEX = Object.create(null);
+  for (let m = DAY_START; m < DAY_END; m += SLOT_MINUTES) {
+    const slot = {
+      index: TIME_SLOTS.length,
+      start_time: minutesToHHMM(m),
+      end_time: minutesToHHMM(m + SLOT_MINUTES)
+    };
+    TIME_SLOTS.push(slot);
+    SLOT_INDEX[slot.start_time] = slot.index;
+  }
+
+  const state = {
+    room: ROOMS[0],
+    startDate: "",
+    repeatDays: 0,
+    dates: [],
+    lookup: Object.create(null),
+    selected: null,
+    drag: null,
+    cells: new Map()
+  };
 
   function getCurrentUser() {
-    if (
-      window.TRAINING_BOOKING_USER &&
-      window.TRAINING_BOOKING_USER.isSignedIn
-    ) {
+    if (window.TRAINING_BOOKING_USER && window.TRAINING_BOOKING_USER.isSignedIn) {
       return {
         name: window.TRAINING_BOOKING_USER.name || "Unknown User",
         email: window.TRAINING_BOOKING_USER.email || "unknown@example.com"
       };
     }
-
     if (typeof HelpCenter !== "undefined" && HelpCenter.user) {
       return {
         name: HelpCenter.user.name || "Unknown User",
         email: HelpCenter.user.email || "unknown@example.com"
       };
     }
-
-    const userMetaName = document.querySelector('meta[name="user-name"]');
-    const userMetaEmail = document.querySelector('meta[name="user-email"]');
-
-    if (userMetaName && userMetaEmail) {
-      return {
-        name: userMetaName.getAttribute("content") || "Unknown User",
-        email: userMetaEmail.getAttribute("content") || "unknown@example.com"
-      };
-    }
-
     if (window.currentUser) {
       return {
         name: window.currentUser.name || "Unknown User",
         email: window.currentUser.email || "unknown@example.com"
       };
     }
-
-    console.warn("[RoomBooking] Could not detect signed-in user");
-    return {
-      name: "Unknown User",
-      email: "unknown@example.com"
-    };
+    return { name: "Unknown User", email: "unknown@example.com" };
   }
-
-  const user = getCurrentUser();
-  const errorMessages = {
-    FAIL_SLOT_FULL: "Sorry, this session is now full.",
-    FAIL_ALREADY_BOOKED: "You have already booked this session.",
-    FAIL_INVALID_SLOT: "This session is no longer available.",
-    FAIL_CANCELLED: "This session has been cancelled.",
-    UNAUTHORIZED: "API key not accepted."
-  };
-
-  const dateFormatter = new Intl.DateTimeFormat("en-ZA", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: "Africa/Johannesburg"
-  });
-  const bookedAtFormatter = new Intl.DateTimeFormat("en-ZA", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true
-  });
-
-  let cachedSessions = [];
-  let selectedDate = "";
-  let userType = "";
-  window.selectedSession = null;
 
   function resolveUserType() {
     const segments = window.DigifySegments || window.DigifiedSegments || {};
@@ -144,1682 +135,884 @@
     return isTenant ? "tenant" : "staff";
   }
 
-  function setSelectedSession(session) {
-    if (!session) {
-      window.selectedSession = null;
-      return;
-    }
-
-    const normalized = normalizeSlot(session);
-    if (!normalized) {
-      window.selectedSession = null;
-      return;
-    }
-
-    const slotId = normalized.slot_id || normalized.slotid || "";
-    window.selectedSession = {
-      slot_id: slotId,
-      slotid: slotId,
-      date: normalized.date || "",
-      start_time: normalized.start_time || "",
-      end_time: normalized.end_time || ""
-    };
-  }
-
   function ensureConfig() {
     if (!baseUrl || !apiKey) {
-      throw new Error(
-        "Training booking is not configured. Please contact an admin."
-      );
+      throw new Error("Training booking is not configured. Please contact an admin.");
     }
+  }
+
+  function setAlert(message, type, options) {
+    if (!ui.alert) return;
+    ui.alert.className = "tb-alert" + (type ? " tb-alert--" + type : "");
+    ui.alert.innerHTML = "";
+    ui.alert.appendChild(document.createTextNode(message));
+    if (options && options.action && typeof options.action.onClick === "function") {
+      ui.alert.appendChild(document.createTextNode(" "));
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn btn-secondary";
+      button.textContent = options.action.label;
+      button.addEventListener("click", options.action.onClick);
+      ui.alert.appendChild(button);
+    }
+    ui.alert.hidden = false;
+  }
+
+  function clearAlert() {
+    if (!ui.alert) return;
+    ui.alert.hidden = true;
+    ui.alert.className = "tb-alert";
+    ui.alert.textContent = "";
+  }
+
+  function setLoading(isLoading) {
+    if (ui.loading) ui.loading.hidden = !isLoading;
+    if (ui.load) {
+      ui.load.disabled = !!isLoading;
+      ui.load.textContent = isLoading ? "Refreshing..." : "Refresh";
+    }
+  }
+
+  function setBookingLoading(isLoading) {
+    if (!ui.submit) return;
+    ui.submit.disabled = !!isLoading;
+    ui.submit.textContent = isLoading ? "Booking..." : "Book now";
+    ui.submit.classList.toggle("tb-btn--loading", !!isLoading);
+  }
+
+  function resetSubmitButton() {
+    if (!ui.submit) return;
+    ui.submit.disabled = false;
+    ui.submit.textContent = "Book now";
+    ui.submit.classList.remove("tb-btn--loading", "tb-btn--booked");
   }
 
   function buildApiUrl(action, params) {
-    if (!baseUrl) {
-      return "";
-    }
-
     let url;
     try {
       url = new URL(baseUrl);
     } catch (error) {
       return "";
     }
-
-    if (action) {
-      url.searchParams.set("action", action);
-    }
-    if (apiKey) {
-      url.searchParams.set("api_key", apiKey);
-    }
-    if (params) {
-      Object.keys(params).forEach((key) => {
-        if (Object.prototype.hasOwnProperty.call(params, key)) {
-          const value = params[key];
-          if (value !== undefined && value !== null) {
-            url.searchParams.set(key, value);
-          }
-        }
-      });
-    }
-
+    url.searchParams.set("action", action);
+    url.searchParams.set("api_key", apiKey);
+    Object.keys(params || {}).forEach(function (key) {
+      const value = params[key];
+      if (value !== undefined && value !== null && value !== "") {
+        url.searchParams.set(key, value);
+      }
+    });
     return url.toString();
   }
 
-  function jsonpRequest(action, params) {
-    return new Promise((resolve, reject) => {
+  function jsonp(action, params) {
+    return new Promise(function (resolve, reject) {
       const callbackName =
-        "calApiJsonpCb_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-      const callbackIsValid = /^[A-Za-z_][A-Za-z0-9_.]*$/.test(callbackName);
-      if (!callbackIsValid) {
-        reject(new Error("Invalid JSONP callback name."));
-        return;
-      }
+        "trainingJsonpCb_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
       const url = buildApiUrl(
         action,
-        Object.assign({}, params, {
-          callback: callbackName,
-          _ts: Date.now()
-        })
+        Object.assign({}, params, { callback: callbackName, _ts: Date.now() })
       );
-
       if (!url) {
         reject(new Error("Training API URL is invalid."));
         return;
       }
-
       const script = document.createElement("script");
       let timeoutId = null;
-
       function cleanup() {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-        if (window[callbackName]) {
-          delete window[callbackName];
-        }
-        if (script.parentNode) {
-          script.parentNode.removeChild(script);
-        }
+        if (timeoutId) clearTimeout(timeoutId);
+        if (window[callbackName]) delete window[callbackName];
+        if (script.parentNode) script.parentNode.removeChild(script);
       }
-
       window[callbackName] = function (data) {
         cleanup();
         resolve(data);
       };
-
       script.onerror = function () {
         cleanup();
         reject(new Error("JSONP request failed."));
       };
-
       timeoutId = setTimeout(function () {
         cleanup();
         reject(new Error("JSONP request timed out."));
       }, 10000);
-
       script.src = url;
       (document.head || document.body).appendChild(script);
     });
   }
 
-  function apiErrorMessage(json) {
-    if (!json || typeof json !== "object") {
-      return "";
-    }
-
+  function apiError(json) {
+    if (!json || typeof json !== "object") return "";
     const statusCode = Number(json.statusCode);
-    const hasStatus = !Number.isNaN(statusCode) && statusCode !== 0;
-    const isError = json.success === false || (hasStatus && statusCode !== 200);
-
-    if (!isError) {
-      return "";
-    }
-
-    const code = json.code ? String(json.code) : "";
-    if (code && errorMessages[code]) {
-      return errorMessages[code];
-    }
-
-    const message = json.message ? String(json.message) : "Request failed.";
-    if (code) {
-      return code + ": " + message;
-    }
-    if (hasStatus) {
-      return message + " (status " + statusCode + ")";
-    }
-    return message;
+    const isError =
+      json.success === false ||
+      (!Number.isNaN(statusCode) && statusCode !== 0 && statusCode !== 200);
+    if (!isError) return "";
+    const code = String(json.code || "");
+    return errorMessages[code] || String(json.message || "Request failed.");
   }
 
-  function friendlyErrorMessage(error, fallback) {
+  function friendlyError(error, fallback) {
     const message = error && error.message ? String(error.message) : "";
-    if (
-      message === "JSONP request timed out." ||
-      message === "JSONP request failed."
-    ) {
+    if (message === "JSONP request failed." || message === "JSONP request timed out.") {
       return "Unable to reach the training API. Please try again.";
     }
     return message || fallback;
   }
 
-  // Status messaging
-  function setAlert(message, type, options) {
-    if (!alertEl) {
-      return;
-    }
-
-    alertEl.className = "tb-alert";
-    if (type) {
-      alertEl.classList.add("tb-alert--" + type);
-    }
-    alertEl.innerHTML = "";
-    const textNode = document.createElement("span");
-    textNode.textContent = message;
-    alertEl.appendChild(textNode);
-
-    if (options && options.link && options.link.href && options.link.label) {
-      const spacer = document.createTextNode(" ");
-      const anchor = document.createElement("a");
-      anchor.href = options.link.href;
-      anchor.textContent = options.link.label;
-      anchor.target = "_blank";
-      anchor.rel = "noopener";
-      alertEl.appendChild(spacer);
-      alertEl.appendChild(anchor);
-    }
-    if (
-      options &&
-      options.action &&
-      options.action.label &&
-      typeof options.action.onClick === "function"
-    ) {
-      const spacer = document.createTextNode(" ");
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "btn btn-secondary tb-alert-action";
-      button.textContent = options.action.label;
-      button.addEventListener("click", options.action.onClick);
-      alertEl.appendChild(spacer);
-      alertEl.appendChild(button);
-    }
-    alertEl.hidden = false;
-  }
-
-  function clearAlert() {
-    if (!alertEl) {
-      return;
-    }
-
-    alertEl.textContent = "";
-    alertEl.hidden = true;
-    alertEl.className = "tb-alert";
-  }
-
-  function setLoading(isLoading) {
-    if (loadingEl) {
-      loadingEl.hidden = !isLoading;
-    }
-    if (loadButton) {
-      loadButton.disabled = isLoading;
-      loadButton.textContent = isLoading ? "Refreshing..." : "Refresh";
-    }
-  }
-
-  function setBookingLoading(isLoading) {
-    if (!submitButton) {
-      return;
-    }
-    if (isLoading) {
-      submitButton.disabled = true;
-      submitButton.textContent = "Booking...";
-      submitButton.classList.add("tb-btn--loading");
-      return;
-    }
-    submitButton.classList.remove("tb-btn--loading");
-  }
-
-  function isValidatableField(field) {
-    if (!field || field.disabled) {
-      return false;
-    }
-    if ((field.type || "").toLowerCase() === "hidden") {
-      return false;
-    }
-    if (field.closest("[hidden]")) {
-      return false;
-    }
-    return true;
-  }
-
-  function getFormControls(form) {
-    if (!form) {
-      return [];
-    }
-    return Array.from(form.querySelectorAll("input, select, textarea")).filter(
-      isValidatableField
-    );
-  }
-
-  function getFieldTopOffset(field) {
-    if (!field || typeof field.getBoundingClientRect !== "function") {
-      return Number.POSITIVE_INFINITY;
-    }
-    const rect = field.getBoundingClientRect();
-    return rect.top + (window.scrollY || window.pageYOffset || 0);
-  }
-
-  function focusAndScrollToField(field) {
-    if (!field) {
-      return;
-    }
-
-    if (typeof field.focus === "function") {
-      try {
-        field.focus({ preventScroll: true });
-      } catch (error) {
-        field.focus();
-      }
-    }
-
-    if (typeof field.scrollIntoView === "function") {
-      field.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-        inline: "nearest"
-      });
-    }
-  }
-
-  function getTopMostField(fields) {
-    const list = Array.isArray(fields) ? fields.filter(Boolean) : [];
-    if (!list.length) {
-      return null;
-    }
-    list.sort(function (a, b) {
-      return getFieldTopOffset(a) - getFieldTopOffset(b);
+  function todayIsoInTz() {
+    const parts = new Intl.DateTimeFormat("en-ZA", {
+      timeZone: TZ,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).formatToParts(new Date());
+    const lookup = {};
+    parts.forEach(function (part) {
+      lookup[part.type] = part.value;
     });
-    return list[0];
-  }
-
-  function getFieldKey(field) {
-    return field.id || field.name || "";
-  }
-
-  function getFeedbackNode(field) {
-    const key = getFieldKey(field);
-    if (!key || !field.parentElement) {
-      return null;
+    let date = new Date(
+      Date.UTC(
+        Number(lookup.year),
+        Number(lookup.month) - 1,
+        Number(lookup.day)
+      )
+    );
+    while (!isWeekday(date)) {
+      date = addDays(date, 1);
     }
+    return toIso(date);
+  }
+
+  function toIso(date) {
     return (
-      Array.from(
-        field.parentElement.querySelectorAll(".tb-invalid-feedback")
-      ).find(function (node) {
-        return node.getAttribute("data-tb-feedback-for") === key;
-      }) || null
+      String(date.getUTCFullYear()) +
+      "-" +
+      String(date.getUTCMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(date.getUTCDate()).padStart(2, "0")
     );
   }
 
-  function ensureFeedbackNode(field) {
-    const key = getFieldKey(field);
-    if (!key) {
-      return null;
-    }
-    const existing = getFeedbackNode(field);
-    if (existing) {
-      return existing;
-    }
-
-    const node = document.createElement("div");
-    node.className = "invalid-feedback tb-invalid-feedback";
-    node.setAttribute("data-tb-feedback-for", key);
-    node.hidden = true;
-    field.insertAdjacentElement("afterend", node);
-    return node;
+  function parseIso(value) {
+    const parts = String(value || "").split("-");
+    if (parts.length !== 3) return null;
+    const year = Number(parts[0]);
+    const month = Number(parts[1]);
+    const day = Number(parts[2]);
+    if (!year || !month || !day) return null;
+    return new Date(Date.UTC(year, month - 1, day));
   }
 
-  function clearFieldInvalid(field) {
-    if (!field) {
-      return;
-    }
-    field.classList.remove("is-invalid");
-    field.removeAttribute("aria-invalid");
-
-    const wrapper = field.closest(".tb-field");
-    if (wrapper) {
-      wrapper.classList.remove("tb-field--invalid");
-    }
-
-    const feedback = getFeedbackNode(field);
-    if (feedback) {
-      feedback.hidden = true;
-      feedback.textContent = "";
-    }
+  function addDays(date, days) {
+    const next = new Date(date.getTime());
+    next.setUTCDate(next.getUTCDate() + days);
+    return next;
   }
 
-  function markFieldInvalid(field, message) {
-    if (!field) {
-      return;
-    }
-    field.classList.add("is-invalid");
-    field.setAttribute("aria-invalid", "true");
-
-    const wrapper = field.closest(".tb-field");
-    if (wrapper) {
-      wrapper.classList.add("tb-field--invalid");
-    }
-
-    const feedback = ensureFeedbackNode(field);
-    if (feedback) {
-      feedback.textContent =
-        message || field.validationMessage || "This field is required.";
-      feedback.hidden = false;
-    }
+  function isWeekday(date) {
+    const day = date.getUTCDay();
+    return day >= 1 && day <= 5;
   }
 
-  function bindFieldValidation(field) {
-    if (!field || field.dataset.tbValidationBound === "1") {
-      return;
-    }
-    field.dataset.tbValidationBound = "1";
+  function formatDate(value, short) {
+    const date = parseIso(value);
+    if (!date) return String(value || "");
+    return (short ? shortDateFormatter : longDateFormatter).format(date);
+  }
 
-    const onFieldEdit = function () {
-      if (!isValidatableField(field)) {
-        clearFieldInvalid(field);
-        return;
-      }
-      if (
-        typeof field.checkValidity === "function" &&
-        field.checkValidity()
-      ) {
-        clearFieldInvalid(field);
-      }
+  function timeLabel(value) {
+    if (!/^\d{2}:\d{2}$/.test(String(value || ""))) return String(value || "");
+    const parts = String(value).split(":");
+    const hour = Number(parts[0]);
+    const period = hour >= 12 ? "PM" : "AM";
+    const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+    return hour12 + ":" + parts[1] + " " + period;
+  }
+
+  function timeRange(start, end) {
+    return timeLabel(start) + " - " + timeLabel(end);
+  }
+
+  function minutesToHHMM(minutes) {
+    return (
+      String(Math.floor(minutes / 60)).padStart(2, "0") +
+      ":" +
+      String(minutes % 60).padStart(2, "0")
+    );
+  }
+
+  function slotId(date, startTime) {
+    return ("SLOT_" + date + "_" + String(startTime).replace(":", "")).toUpperCase();
+  }
+
+  function normalizeRoom(value) {
+    return ROOMS.indexOf(String(value || "").trim()) >= 0
+      ? String(value || "").trim()
+      : ROOMS[0];
+  }
+
+  function displayDates(startDate, repeatDays) {
+    const start = parseIso(startDate);
+    if (!start || !isWeekday(start)) return [];
+    const dates = [startDate];
+    let cursor = start;
+    while (dates.length < repeatDays + 1) {
+      cursor = addDays(cursor, 1);
+      if (isWeekday(cursor)) dates.push(toIso(cursor));
+    }
+    return dates;
+  }
+
+  function sessionLookup(sessions) {
+    const lookup = Object.create(null);
+    sessions.forEach(function (session) {
+      if (!lookup[session.date]) lookup[session.date] = Object.create(null);
+      lookup[session.date][session.start_time] = session;
+    });
+    return lookup;
+  }
+
+  function normalizeSession(session) {
+    const date = String(session.date || "").trim();
+    const start = String(session.start_time || "").trim();
+    const end = String(session.end_time || "").trim();
+    if (!date || !start || !end) return null;
+    const status = String(session.status || "").trim().toLowerCase();
+    return {
+      date: date,
+      start_time: start,
+      end_time: end,
+      dept: normalizeRoom(session.dept || state.room),
+      available:
+        session.available !== false &&
+        status !== "full" &&
+        status !== "cancelled" &&
+        session.booked !== true,
+      status: status || "open",
+      reserved_by: String(
+        session.reserved_by || session.vendor || session.booker_name || ""
+      ).trim()
     };
-
-    field.addEventListener("input", onFieldEdit);
-    field.addEventListener("change", onFieldEdit);
   }
 
-  function clearFormValidation(form) {
-    getFormControls(form).forEach(function (field) {
-      clearFieldInvalid(field);
+  function availability(date, slotIndex) {
+    const slot = TIME_SLOTS[slotIndex];
+    const session =
+      state.lookup[date] && slot ? state.lookup[date][slot.start_time] : null;
+    if (!session) {
+      return { available: false, status: "full", reserved_by: "" };
+    }
+    return session;
+  }
+
+  function cellKey(date, slotIndex) {
+    return date + "|" + slotIndex;
+  }
+
+  function buildRange(anchorIndex, currentIndex) {
+    const startIndex = Math.min(anchorIndex, currentIndex);
+    const endIndex = Math.max(anchorIndex, currentIndex);
+    return {
+      slot_id: slotId(state.startDate, TIME_SLOTS[startIndex].start_time),
+      start_date: state.startDate,
+      start_time: TIME_SLOTS[startIndex].start_time,
+      end_time: TIME_SLOTS[endIndex].end_time,
+      room: state.room,
+      repeat_days: state.repeatDays,
+      dates: state.dates.slice(),
+      start_index: startIndex,
+      end_index: endIndex
+    };
+  }
+
+  function rangeIssues(range) {
+    const issues = [];
+    range.dates.forEach(function (date) {
+      for (let i = range.start_index; i <= range.end_index; i += 1) {
+        if (!availability(date, i).available) {
+          issues.push(cellKey(date, i));
+        }
+      }
+    });
+    return new Set(issues);
+  }
+
+  function paintSelection() {
+    state.cells.forEach(function (cell) {
+      cell.classList.remove(
+        "tb-cell--preview",
+        "tb-cell--selected",
+        "tb-cell--mirrored",
+        "tb-cell--preview-invalid",
+        "tb-cell--repeat-conflict"
+      );
+    });
+    const active = state.drag
+      ? buildRange(state.drag.anchor, state.drag.current)
+      : state.selected;
+    if (!active) return;
+    const issues = rangeIssues(active);
+    active.dates.forEach(function (date) {
+      for (let i = active.start_index; i <= active.end_index; i += 1) {
+        const cell = state.cells.get(cellKey(date, i));
+        if (!cell) continue;
+        cell.classList.add(
+          date === active.start_date
+            ? state.drag
+              ? "tb-cell--preview"
+              : "tb-cell--selected"
+            : "tb-cell--mirrored"
+        );
+        if (issues.has(cellKey(date, i))) {
+          cell.classList.add(
+            date === active.start_date
+              ? "tb-cell--preview-invalid"
+              : "tb-cell--repeat-conflict"
+          );
+        }
+      }
     });
   }
 
-  function validateFormFields(form) {
-    const controls = getFormControls(form);
-    const invalidFields = [];
-
-    controls.forEach(function (field) {
-      if (typeof field.checkValidity !== "function") {
-        return;
-      }
-      if (!field.checkValidity()) {
-        markFieldInvalid(field, field.validationMessage);
-        invalidFields.push(field);
-      } else {
-        clearFieldInvalid(field);
-      }
-    });
-
-    return getTopMostField(invalidFields);
+  function writeSelectionFields() {
+    ui.slotId.value = state.selected ? state.selected.slot_id : "";
+    ui.startDate.value = state.selected ? state.selected.start_date : "";
+    ui.startTime.value = state.selected ? state.selected.start_time : "";
+    ui.endTime.value = state.selected ? state.selected.end_time : "";
+    ui.roomValue.value = state.selected ? state.selected.room : "";
+    ui.repeatDaysValue.value = state.selected
+      ? String(state.selected.repeat_days)
+      : "0";
   }
 
-  function resetSubmitButtonState() {
-    if (!submitButton) {
+  function renderSelectionSummary() {
+    if (!ui.selection) return;
+    if (!state.selected) {
+      ui.selection.hidden = true;
+      ui.selection.innerHTML = "";
       return;
     }
-    submitButton.disabled = false;
-    submitButton.textContent = "Book now";
-    submitButton.classList.remove(
-      "tb-btn--loading",
-      "tb-btn--booked",
-      "tb-btn--error",
-      "tb-btn--success",
-      "booked",
-      "disabled",
-      "success",
-      "loading",
-      "error"
+    const repeated = state.selected.dates
+      .slice(1)
+      .map(function (date) {
+        return formatDate(date, true);
+      })
+      .join(", ");
+    ui.selection.innerHTML =
+      '<span class="tb-selection-summary__label">Selected window</span>' +
+      '<p class="tb-selection-summary__text">' +
+      state.selected.room +
+      " on " +
+      formatDate(state.selected.start_date, false) +
+      " from " +
+      timeRange(state.selected.start_time, state.selected.end_time) +
+      (repeated ? ". Repeats on " + repeated + "." : ".") +
+      "</p>" +
+      '<p class="tb-selection-summary__hint">Drag again if you want to change the time range.</p>';
+    ui.selection.hidden = false;
+  }
+
+  function setSelection(range) {
+    state.selected = range;
+    writeSelectionFields();
+    renderSelectionSummary();
+    paintSelection();
+  }
+
+  function clearSelection() {
+    state.selected = null;
+    writeSelectionFields();
+    renderSelectionSummary();
+    paintSelection();
+  }
+
+  function clearDrag() {
+    state.drag = null;
+    document.body.classList.remove("tb-dragging");
+  }
+
+  function finishDrag() {
+    if (!state.drag) return;
+    const range = buildRange(state.drag.anchor, state.drag.current);
+    const issues = rangeIssues(range);
+    clearDrag();
+    if (issues.size) {
+      paintSelection();
+      setAlert(
+        "Some selected slots are unavailable for the chosen room or repeat days.",
+        "error"
+      );
+      return;
+    }
+    clearAlert();
+    setSelection(range);
+    openModal();
+  }
+
+  function handleCellEnter(event) {
+    if (!state.drag) return;
+    if (String(event.currentTarget.dataset.date || "") !== state.startDate) return;
+    state.drag.current = Number(event.currentTarget.dataset.slotIndex);
+    paintSelection();
+  }
+
+  function handleCellDown(event) {
+    if (event.currentTarget.dataset.interactive !== "1") return;
+    event.preventDefault();
+    state.drag = {
+      anchor: Number(event.currentTarget.dataset.slotIndex),
+      current: Number(event.currentTarget.dataset.slotIndex)
+    };
+    document.body.classList.add("tb-dragging");
+    paintSelection();
+  }
+
+  function cellTitle(date, slot, info, primary) {
+    const label = formatDate(date, true) + " " + timeRange(slot.start_time, slot.end_time);
+    if (info.available && primary) return "Drag to select " + label + ".";
+    if (info.available) return "Repeat-day preview for " + label + ".";
+    if (info.reserved_by) return label + " is booked by " + info.reserved_by + ".";
+    return label + " is unavailable.";
+  }
+
+  function renderPlaceholder(message) {
+    state.cells = new Map();
+    ui.list.innerHTML = '<div class="tb-placeholder">' + message + "</div>";
+  }
+
+  function renderCalendar() {
+    state.cells = new Map();
+    if (!state.dates.length) {
+      renderPlaceholder("Select a weekday to load the training calendar.");
+      return;
+    }
+
+    const wrapper = document.createElement("section");
+    wrapper.className = "tb-calendar";
+    wrapper.innerHTML =
+      '<div class="tb-calendar__header"><div><h2 class="tb-calendar__title">' +
+      state.room +
+      ' availability</h2><p class="tb-calendar__subtitle">' +
+      (state.repeatDays
+        ? "Drag on the first day column. The same time span will be checked against the next " +
+          state.repeatDays +
+          " weekday(s)."
+        : "Drag on the first day column to choose a continuous time range.") +
+      '</p></div><div class="tb-legend"></div></div><div class="tb-calendar__body"><div class="tb-calendar__shell"><div class="tb-calendar-grid"></div></div><p class="tb-calendar__footnote">Training rooms are bookable Monday to Friday between 08:00 and 20:00 in 30-minute steps.</p></div>';
+
+    const legend = wrapper.querySelector(".tb-legend");
+    [
+      ["Open slot", "open"],
+      ["Unavailable", "booked"],
+      ["Selected", "selected"],
+      ["Repeat preview", "repeat"]
+    ].forEach(function (entry) {
+      const item = document.createElement("span");
+      item.className = "tb-legend__item";
+      item.innerHTML =
+        '<span class="tb-legend__swatch tb-legend__swatch--' +
+        entry[1] +
+        '"></span><span>' +
+        entry[0] +
+        "</span>";
+      legend.appendChild(item);
+    });
+
+    const grid = wrapper.querySelector(".tb-calendar-grid");
+    grid.style.setProperty("--tb-day-count", String(state.dates.length));
+
+    const corner = document.createElement("div");
+    corner.className = "tb-calendar-corner";
+    corner.textContent = "Time";
+    grid.appendChild(corner);
+
+    state.dates.forEach(function (date, index) {
+      const day = document.createElement("div");
+      day.className =
+        "tb-calendar-day" + (index === 0 ? " tb-calendar-day--primary" : "");
+      day.innerHTML =
+        '<span class="tb-calendar-day__dow">' +
+        formatDate(date, true).split(" ")[0] +
+        '</span><span class="tb-calendar-day__date">' +
+        formatDate(date, true) +
+        "</span>";
+      grid.appendChild(day);
+    });
+
+    TIME_SLOTS.forEach(function (slot) {
+      const label = document.createElement("div");
+      label.className = "tb-time-label";
+      label.textContent = timeLabel(slot.start_time);
+      grid.appendChild(label);
+
+      state.dates.forEach(function (date, columnIndex) {
+        const info = availability(date, slot.index);
+        const primary = columnIndex === 0;
+        const interactive = primary && info.available;
+        const cell = document.createElement("button");
+        cell.type = "button";
+        cell.className = "tb-cell";
+        cell.dataset.date = date;
+        cell.dataset.slotIndex = String(slot.index);
+        cell.dataset.interactive = interactive ? "1" : "0";
+        cell.tabIndex = interactive ? 0 : -1;
+        cell.title = cellTitle(date, slot, info, primary);
+        cell.setAttribute("aria-label", cell.title);
+        if (info.available) {
+          cell.classList.add(primary ? "tb-cell--open" : "tb-cell--secondary");
+        } else {
+          cell.classList.add("tb-cell--blocked");
+          if (info.status === "cancelled") cell.classList.add("tb-cell--cancelled");
+        }
+        if (primary) {
+          cell.addEventListener("pointerdown", handleCellDown);
+          cell.addEventListener("pointerenter", handleCellEnter);
+        }
+        state.cells.set(cellKey(date, slot.index), cell);
+        grid.appendChild(cell);
+      });
+    });
+
+    ui.list.innerHTML = "";
+    ui.list.appendChild(wrapper);
+    paintSelection();
+  }
+
+  function syncState() {
+    state.startDate = String(ui.date.value || "").trim();
+    state.room = normalizeRoom(ui.room.value);
+    state.repeatDays = Math.min(
+      Math.max(Number(ui.repeatDays.value || 0), 0),
+      MAX_REPEAT_DAYS
     );
+    state.dates = displayDates(state.startDate, state.repeatDays);
   }
 
-  function clearAttendeeInputs() {
-    if (!attendeesWrap) {
+  async function loadCalendar(options) {
+    const preserveAlert = options && options.preserveAlert === true;
+    if (!preserveAlert) clearAlert();
+    try {
+      ensureConfig();
+    } catch (error) {
+      setAlert(error.message, "error");
       return;
     }
-    attendeesWrap.innerHTML = "";
+
+    syncState();
+    clearSelection();
+
+    if (!state.startDate) {
+      renderPlaceholder("Select a date to load the training calendar.");
+      setAlert("Select a valid date.", "error");
+      return;
+    }
+    if (!state.dates.length) {
+      renderPlaceholder("Training rooms can only be booked on weekdays.");
+      setAlert("Training rooms are available Monday to Friday only.", "error");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const json = await jsonp("sessions", {
+        from: state.startDate,
+        to: state.dates[state.dates.length - 1],
+        dept: state.room
+      });
+      const message = apiError(json);
+      if (message) throw new Error(message);
+      const source =
+        json && json.data && Array.isArray(json.data.sessions)
+          ? json.data.sessions
+          : json && json.data && Array.isArray(json.data.slots)
+            ? json.data.slots
+            : [];
+      state.lookup = sessionLookup(
+        source
+          .map(normalizeSession)
+          .filter(function (session) {
+            return session && session.dept === state.room;
+          })
+      );
+      renderCalendar();
+    } catch (error) {
+      renderPlaceholder("Unable to load the training calendar right now.");
+      if (!preserveAlert) {
+        setAlert(friendlyError(error, "Unable to load availability."), "error", {
+          action: { label: "Retry", onClick: loadCalendar }
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function updateModalSummary() {
+    if (!state.selected) {
+      ui.sessionSummary.textContent = "";
+      return;
+    }
+    const repeated = state.selected.dates
+      .slice(1)
+      .map(function (date) {
+        return formatDate(date, true);
+      })
+      .join(", ");
+    ui.sessionSummary.textContent =
+      "Room: " +
+      state.selected.room +
+      " | Date: " +
+      formatDate(state.selected.start_date, false) +
+      " | Time: " +
+      timeRange(state.selected.start_time, state.selected.end_time) +
+      (repeated ? " | Repeats: " + repeated : "");
+  }
+
+  function setAttendeesVisible(show) {
+    ui.attendeesField.hidden = !show;
+    if (!show) ui.attendees.innerHTML = "";
+    if (show && !ui.attendees.querySelector("input")) addAttendeeInput();
   }
 
   function addAttendeeInput(value) {
-    if (!attendeesWrap) {
-      return null;
-    }
-    const count = attendeesWrap.querySelectorAll("input").length + 1;
     const input = document.createElement("input");
     input.type = "email";
-    input.name = "attendee_emails[]";
     input.className = "form-control";
+    input.name = "attendee_emails[]";
     input.placeholder = "Attendee email";
-    input.autocomplete = "email";
-    input.inputMode = "email";
-    input.setAttribute("aria-label", "Attendee email " + count);
-    if (count === 1) {
-      input.id = "training-booking-attendee-1";
-      if (onlineToggle && onlineToggle.checked) {
-        input.required = true;
-      }
-    }
-    if (value) {
-      input.value = value;
-    }
-    attendeesWrap.appendChild(input);
-    bindFieldValidation(input);
+    if (value) input.value = value;
+    ui.attendees.appendChild(input);
     return input;
   }
 
-  function setAttendeeFieldsVisible(isVisible) {
-    if (!attendeesField) {
-      return;
-    }
-    attendeesField.hidden = !isVisible;
-    if (!isVisible) {
-      clearAttendeeInputs();
-      clearFormValidation(modalForm);
-      return;
-    }
-    if (attendeesWrap && attendeesWrap.querySelectorAll("input").length === 0) {
-      addAttendeeInput();
-    }
+  function resetModalForm() {
+    ui.modalForm.reset();
+    ui.modalForm.style.display = "";
+    const currentUser = getCurrentUser();
+    ui.requesterName.value = currentUser.name;
+    ui.requesterEmail.value = currentUser.email;
+    ui.requesterName.readOnly = true;
+    ui.requesterEmail.readOnly = true;
+    ui.requesterName.style.backgroundColor = "#f5f5f5";
+    ui.requesterEmail.style.backgroundColor = "#f5f5f5";
+    ui.requesterName.style.cursor = "not-allowed";
+    ui.requesterEmail.style.cursor = "not-allowed";
+    setAttendeesVisible(false);
+    const confirmation = ui.modal.querySelector(".tb-booking-confirmation");
+    if (confirmation) confirmation.remove();
+    resetSubmitButton();
+    writeSelectionFields();
+    updateModalSummary();
   }
 
-  function getAttendeeEmails() {
-    if (!attendeesWrap) {
-      return [];
-    }
-    return Array.from(attendeesWrap.querySelectorAll("input"))
+  function openModal() {
+    if (!state.selected) return;
+    resetModalForm();
+    ui.modal.hidden = false;
+    ui.modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("tb-modal-open");
+  }
+
+  function closeModal() {
+    ui.modal.hidden = true;
+    ui.modal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("tb-modal-open");
+    resetModalForm();
+  }
+
+  function attendeeEmails() {
+    return Array.from(ui.attendees.querySelectorAll("input"))
       .map(function (input) {
         return String(input.value || "").trim();
       })
       .filter(Boolean);
   }
 
-  function isValidEmail(value) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || ""));
-  }
-
-  function normalizeMeetingType(value) {
-    if (value === true) {
-      return "online";
-    }
-    const raw = String(value || "").trim().toLowerCase();
-    if (!raw) {
-      return "";
-    }
-    if (raw === "online" || raw === "virtual" || raw === "remote") {
-      return "online";
-    }
-    if (
-      raw === "in_person" ||
-      raw === "in-person" ||
-      raw === "in person" ||
-      raw === "onsite"
-    ) {
-      return "in_person";
-    }
-    return raw;
-  }
-
-  function normalizeAttendeeEmails(value) {
-    if (!value) {
-      return [];
-    }
-    if (Array.isArray(value)) {
-      return value
-        .map(function (item) {
-          return String(item || "").trim();
-        })
-        .filter(Boolean);
-    }
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      if (!trimmed) {
-        return [];
-      }
-      if (trimmed[0] === "[" && trimmed[trimmed.length - 1] === "]") {
-        try {
-          const parsed = JSON.parse(trimmed);
-          if (Array.isArray(parsed)) {
-            return parsed
-              .map(function (item) {
-                return String(item || "").trim();
-              })
-              .filter(Boolean);
-          }
-        } catch (error) {
-          // Fall through to delimiter parsing.
-        }
-      }
-      return trimmed
-        .split(/[;,]/)
-        .map(function (item) {
-          return String(item || "").trim();
-        })
-        .filter(Boolean);
-    }
-    return [];
-  }
-
-  function toIsoDate(date) {
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-    const day = String(date.getUTCDate()).padStart(2, "0");
-    return year + "-" + month + "-" + day;
-  }
-
-  function getSastDate() {
-    const formatter = new Intl.DateTimeFormat("en-ZA", {
-      timeZone: "Africa/Johannesburg",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit"
-    });
-    const parts = formatter.formatToParts(new Date());
-    const lookup = {};
-    parts.forEach(function (part) {
-      lookup[part.type] = part.value;
-    });
-    const year = Number(lookup.year);
-    const month = Number(lookup.month);
-    const day = Number(lookup.day);
-    return new Date(Date.UTC(year, month - 1, day));
-  }
-
-  function setDefaultDates() {
-    if (!dateInput) {
-      return;
-    }
-
-    const today = getSastDate();
-    const todayValue = toIsoDate(today);
-    dateInput.value = todayValue;
-    selectedDate = todayValue;
-    window.selectedDate = todayValue;
-  }
-
-  function getSelectedDate() {
-    if (!dateInput) {
-      return "";
-    }
-    return dateInput.value;
-  }
-
-  function parseDateParts(value) {
-    if (!value) {
-      return null;
-    }
-    const parts = value.split("-");
-    if (parts.length !== 3) {
-      return null;
-    }
-    const year = Number(parts[0]);
-    const month = Number(parts[1]);
-    const day = Number(parts[2]);
-    if (!year || !month || !day) {
-      return null;
-    }
-    return { year: year, month: month, day: day };
-  }
-
-  function formatDateLabel(value) {
-    const parts = parseDateParts(value);
-    if (!parts) {
-      return value || "";
-    }
-    const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
-    return dateFormatter.format(date);
-  }
-
-  function to12Hour(value) {
-    if (!value) {
-      return "";
-    }
-    const parts = value.split(":");
-    const hour = Number(parts[0]);
-    const minutes = parts[1] || "00";
-    if (Number.isNaN(hour)) {
-      return value;
-    }
-    const period = hour >= 12 ? "PM" : "AM";
-    const adjusted = hour % 12 === 0 ? 12 : hour % 12;
-    return adjusted + ":" + minutes + " " + period;
-  }
-
-  function formatTimeRange(start, end) {
-    if (start && end) {
-      return to12Hour(start) + " - " + to12Hour(end) + " SAST";
-    }
-    const single = to12Hour(start || end || "");
-    return single ? single + " SAST" : "";
-  }
-
-  function formatBookedAt(value) {
-    if (!value) {
-      return "";
-    }
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-      return "";
-    }
-    return bookedAtFormatter.format(parsed);
-  }
-
-  function normalizeSlot(slot) {
-    if (!slot || typeof slot !== "object") {
-      return null;
-    }
-
-    const dateValue = slot.date || "";
-    const startTimeRaw = slot.start_time || slot.starttime || slot.from || "";
-    const endTimeRaw = slot.end_time || slot.endtime || slot.to || "";
-    const startTime = startTimeRaw ? String(startTimeRaw) : "";
-    const endTime = endTimeRaw ? String(endTimeRaw) : "";
-    const slotId =
-      slot.slot_id ||
-      slot.slotid ||
-      (dateValue && startTime
-        ? `SLOT_${dateValue}_${startTime.replace(":", "")}`.toUpperCase()
-        : null);
-
-    const statusValue = String(slot.status || "").toLowerCase();
-    const booked =
-      slot.booked === true ||
-      slot.available === false ||
-      statusValue === "full";
-
-    const bookerName =
-      slot.booker_name || slot.reserved_by || slot.reservedby || slot.vendor || null;
-
-    const bookedAt = slot.booked_at || slot.bookedAt || null;
-    const meetingType = normalizeMeetingType(
-      slot.meeting_type ||
-        slot.meetingType ||
-        slot.meeting ||
-        (slot.online_meeting === true ? "online" : "")
-    );
-    const attendeeEmails = normalizeAttendeeEmails(
-      slot.attendee_emails ||
-        slot.attendeeEmails ||
-        slot.attendees ||
-        slot.attendee_email ||
-        slot.attendeeEmail ||
-        ""
-    );
-
-    return Object.assign({}, slot, {
-      slot_id: slotId,
-      date: dateValue || slot.date || "",
-      start_time: startTime,
-      end_time: endTime,
-      booked: booked,
-      booker_name: bookerName,
-      booked_at: bookedAt,
-      meeting_type: meetingType,
-      attendee_emails: attendeeEmails
-    });
-  }
-
-  function seatInfo(session) {
-    const capacity = Number(session.capacity);
-    const bookedRaw =
-      session.booked_count !== undefined
-        ? session.booked_count
-        : session.bookedcount !== undefined
-          ? session.bookedcount
-          : session.bookedCount !== undefined
-            ? session.bookedCount
-            : session.booked;
-    let booked = Number(bookedRaw);
-    if (Number.isNaN(booked) && !Number.isNaN(capacity)) {
-      if (session.booked === true) {
-        booked = capacity;
-      } else if (session.booked === false) {
-        booked = 0;
-      }
-    }
-    if (Number.isNaN(capacity) || Number.isNaN(booked)) {
-      return { capacity: null, booked: null, remaining: null };
-    }
-    const remaining = Math.max(capacity - booked, 0);
-    return { capacity: capacity, booked: booked, remaining: remaining };
-  }
-
-  function sessionStatus(session, seats) {
-    const status = String(session.status || "").toLowerCase();
-    if (status === "cancelled") {
-      return "cancelled";
-    }
-    if (session.booked === true || status === "full") {
-      return "full";
-    }
-    if (seats.capacity !== null && seats.booked !== null) {
-      if (seats.booked >= seats.capacity) {
-        return "full";
-      }
-    }
-    if (session.available === false) {
-      return "full";
-    }
-    return "open";
-  }
-
-  function statusLabel(status) {
-    if (status === "cancelled") {
-      return "Cancelled";
-    }
-    if (status === "full") {
-      return "Full";
-    }
-    return "Available";
-  }
-
-  function createMetaRow(label, value, options) {
-    const allowBlank = options && options.allowBlank;
-    const row = document.createElement("div");
-    row.className = "tb-meta-row";
-
-    const labelEl = document.createElement("span");
-    labelEl.className = "tb-meta-label";
-    labelEl.textContent = label;
-
-    const valueEl = document.createElement("span");
-    valueEl.className = "tb-meta-value";
-    valueEl.textContent = allowBlank ? value || "" : value || "n/a";
-
-    row.appendChild(labelEl);
-    row.appendChild(valueEl);
-    return row;
-  }
-
-  function renderPlaceholder(message) {
-    if (!listWrap) {
-      return;
-    }
-    listWrap.innerHTML = "";
-    const placeholder = document.createElement("div");
-    placeholder.className = "tb-placeholder";
-    placeholder.textContent = message;
-    listWrap.appendChild(placeholder);
-  }
-
-  function buildCard(session, index) {
-    const seats = seatInfo(session);
-    const status = sessionStatus(session, seats);
-    const isBooked = session.booked === true || status === "full";
-    const meetingType = normalizeMeetingType(
-      session.meeting_type ||
-        session.meetingType ||
-        session.meeting ||
-        (session.online_meeting === true ? "online" : "")
-    );
-    const attendeeEmails = normalizeAttendeeEmails(
-      session.attendee_emails ||
-        session.attendeeEmails ||
-        session.attendees ||
-        session.attendee_email ||
-        session.attendeeEmail ||
-        ""
-    );
-
-    const card = document.createElement("article");
-    card.className = "tb-card tb-card--" + status;
-    card.classList.add("slot-card");
-    card.classList.add(isBooked ? "is-booked" : "is-open");
-    if (meetingType === "online") {
-      card.classList.add("tb-card--online");
-    }
-    if (typeof index === "number") {
-      const delay = Math.min(index * 40, 200);
-      card.style.setProperty("--tb-card-delay", `${delay}ms`);
-    }
-    if (session.slot_id) {
-      card.setAttribute("data-slot-id", session.slot_id);
-    }
-
-    const header = document.createElement("div");
-    header.className = "tb-card-header";
-
-    const dot = document.createElement("span");
-    dot.className = "tb-status-dot tb-status-dot--" + status;
-    if (meetingType === "online") {
-      dot.classList.add("tb-status-dot--online");
-    }
-    dot.setAttribute("aria-hidden", "true");
-
-    const dateEl = document.createElement("span");
-    dateEl.className = "tb-date";
-    dateEl.textContent = formatDateLabel(session.date);
-
-    const timeEl = document.createElement("span");
-    timeEl.className = "tb-time";
-    timeEl.textContent = formatTimeRange(session.start_time, session.end_time);
-
-    header.appendChild(dot);
-    const dateWrap = document.createElement("div");
-    dateWrap.className = "tb-date-wrap";
-    const dateIcon = document.createElement("span");
-    dateIcon.className = "tb-icon tb-icon--date";
-    dateIcon.setAttribute("aria-hidden", "true");
-    dateWrap.appendChild(dateIcon);
-    dateWrap.appendChild(dateEl);
-
-    const timeWrap = document.createElement("div");
-    timeWrap.className = "tb-time-wrap";
-    const timeIcon = document.createElement("span");
-    timeIcon.className = "tb-icon tb-icon--time";
-    timeIcon.setAttribute("aria-hidden", "true");
-    timeWrap.appendChild(timeIcon);
-    timeWrap.appendChild(timeEl);
-
-    header.appendChild(dateWrap);
-    header.appendChild(timeWrap);
-
-    const body = document.createElement("div");
-    body.className = "tb-card-body";
-
-    const topic = document.createElement("h3");
-    topic.className = "tb-topic";
-    topic.textContent = "Training Session";
-
-    const badges = document.createElement("div");
-    badges.className = "tb-badges";
-
-    const statusBadge = document.createElement("span");
-    statusBadge.className = "tb-status-badge tb-status-badge--" + status;
-    statusBadge.textContent = statusLabel(status);
-    badges.appendChild(statusBadge);
-    if (meetingType === "online") {
-      const meetingBadge = document.createElement("span");
-      meetingBadge.className = "tb-status-badge tb-status-badge--online";
-      meetingBadge.textContent = "Online";
-      badges.appendChild(meetingBadge);
-    }
-
-    const meta = document.createElement("div");
-    meta.className = "tb-meta";
-    const bookerName =
-      session.booker_name ||
-      session.reserved_by ||
-      session.reservedby ||
-      session.vendor ||
-      "";
-    const bookedAt = session.booked_at || session.bookedAt || "";
-    const bookedAtLabel = formatBookedAt(bookedAt);
-    card.setAttribute("data-booker-name", bookerName || "");
-    card.setAttribute("data-booked-at", bookedAt || "");
-    const reservedRow = createMetaRow("Reserved by", bookerName, {
-      allowBlank: true
-    });
-    reservedRow.classList.add("tb-meta-row--reserved");
-    meta.appendChild(reservedRow);
-
-    let seatsText = "n/a";
-    if (seats.capacity !== null && seats.remaining !== null) {
-      seatsText =
-        seats.remaining + " of " + seats.capacity + " spots remaining";
-    }
-    meta.appendChild(createMetaRow("Availability", seatsText));
-
-    const progress = document.createElement("div");
-    progress.className = "tb-progress";
-    const progressTrack = document.createElement("div");
-    progressTrack.className = "tb-progress__track";
-    const progressBar = document.createElement("div");
-    progressBar.className = "tb-progress__bar tb-progress__bar--" + status;
-    const progressRatio =
-      seats.capacity && seats.booked !== null && seats.capacity > 0
-        ? Math.min(seats.booked / seats.capacity, 1)
-        : 0;
-    progressBar.style.setProperty("--tb-progress", progressRatio);
-    progressTrack.appendChild(progressBar);
-    const progressLabel = document.createElement("span");
-    progressLabel.className = "tb-progress__label";
-    progressLabel.textContent =
-      seats.capacity !== null && seats.booked !== null
-        ? `${seats.booked} of ${seats.capacity} booked`
-        : "Availability pending";
-    progress.appendChild(progressTrack);
-    progress.appendChild(progressLabel);
-    meta.appendChild(progress);
-
-    const statusRow = createMetaRow("Status", statusLabel(status));
-    meta.appendChild(statusRow);
-
-    body.appendChild(topic);
-    body.appendChild(badges);
-    body.appendChild(meta);
-
-    const actions = document.createElement("div");
-    actions.className = "tb-card-actions";
-
-    if (status === "open" && session.slot_id) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "btn btn-primary";
-      button.textContent = "Book Now";
-      button.dataset.slotId = session.slot_id;
-      button.dataset.date = session.date || "";
-      button.dataset.startTime = session.start_time || "";
-      button.dataset.endTime = session.end_time || "";
-      button.addEventListener("click", function (event) {
-        const target = event.currentTarget;
-        openBookingModal({
-          slot_id: target.dataset.slotId,
-          date: target.dataset.date,
-          start_time: target.dataset.startTime,
-          end_time: target.dataset.endTime
-        });
-      });
-      actions.appendChild(button);
-    } else {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "btn btn-primary";
-      button.textContent = "Book Now";
-      button.disabled = true;
-      button.setAttribute("aria-disabled", "true");
-      actions.appendChild(button);
-    }
-
-    card.appendChild(header);
-    card.appendChild(body);
-    card.appendChild(actions);
-    const hasTooltipInfo =
-      !!bookerName || !!bookedAtLabel || attendeeEmails.length > 0;
-    if (isBooked && hasTooltipInfo) {
-      const tooltip = document.createElement("div");
-      tooltip.className = "slot-tooltip";
-
-      if (bookerName) {
-        const tooltipTitle = document.createElement("div");
-        tooltipTitle.className = "slot-tooltip-title";
-        tooltipTitle.textContent = "Reserved by";
-        tooltip.appendChild(tooltipTitle);
-
-        const tooltipName = document.createElement("div");
-        tooltipName.className = "slot-tooltip-name";
-        tooltipName.textContent = bookerName;
-        tooltip.appendChild(tooltipName);
-      }
-
-      if (bookedAtLabel) {
-        const tooltipTime = document.createElement("div");
-        tooltipTime.className = "slot-tooltip-time";
-        tooltipTime.textContent = bookedAtLabel;
-        tooltip.appendChild(tooltipTime);
-      }
-
-      if (attendeeEmails.length) {
-        const tooltipAtt = document.createElement("div");
-        tooltipAtt.className = "slot-tooltip-item";
-        tooltipAtt.textContent =
-          "Attendees: " + attendeeEmails.join(", ");
-        tooltip.appendChild(tooltipAtt);
-      }
-
-      card.appendChild(tooltip);
-    }
-    return card;
-  }
-
-  function renderSessions(sessions) {
-    if (!listWrap) {
-      return;
-    }
-
-    if (!sessions.length) {
-      renderPlaceholder("No sessions available for this date.");
-      return;
-    }
-
-    listWrap.innerHTML = "";
-    const grid = document.createElement("div");
-    grid.className = "tb-grid";
-    sessions.forEach(function (session, index) {
-      grid.appendChild(buildCard(session, index));
-    });
-    listWrap.appendChild(grid);
-  }
-
-  // Sessions flow
-  async function loadSessions(options) {
-    const preserveAlert = options && options.preserveAlert;
-    if (!preserveAlert) {
-      clearAlert();
-    }
-
-    try {
-      ensureConfig();
-    } catch (error) {
-      setAlert(error.message, "error");
-      return;
-    }
-
-    selectedDate = getSelectedDate();
-    if (!selectedDate) {
-      setAlert("Select a valid date.", "error");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const json = await jsonpRequest("sessions", {
-        from: selectedDate,
-        to: selectedDate
-      });
-      const apiError = apiErrorMessage(json);
-      if (apiError) {
-        throw new Error(apiError);
-      }
-      const sessionsSource =
-        json && json.data && Array.isArray(json.data.sessions)
-          ? json.data.sessions
-          : json && json.data && Array.isArray(json.data.slots)
-            ? json.data.slots
-            : [];
-      const normalizedSessions = sessionsSource
-        .map(normalizeSlot)
-        .filter(function (session) {
-          return session;
-        })
-        .map(function (session) {
-          const copy = Object.assign({}, session);
-          const reservedBy =
-            copy.booker_name ||
-            copy.reserved_by ||
-            copy.reservedby ||
-            copy.vendor ||
-            "";
-          if (reservedBy && !copy.booker_name) {
-            copy.booker_name = reservedBy;
-          }
-          if (reservedBy && !copy.reserved_by) {
-            copy.reserved_by = reservedBy;
-          }
-          if (reservedBy && !copy.vendor) {
-            copy.vendor = reservedBy;
-          }
-          return copy;
-        });
-      cachedSessions = normalizedSessions
-        .filter(function (session) {
-          return session && session.date === selectedDate;
-        })
-        .sort(function (a, b) {
-          const aKey = (a.start_time || "") + " " + (a.end_time || "");
-          const bKey = (b.start_time || "") + " " + (b.end_time || "");
-          return aKey.localeCompare(bKey);
-        });
-      renderSessions(cachedSessions);
-    } catch (error) {
-      if (preserveAlert) {
-        console.warn("[training_booking] Session refresh failed:", error);
-        return;
-      }
-      const message = friendlyErrorMessage(error, "Unable to load sessions.");
-      setAlert(message, "error", {
-        action: { label: "Retry", onClick: loadSessions }
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function openBookingModal(session) {
-    window.selectedSession = session;
-
-    // Reset submit button state before showing the modal.
-    resetSubmitButtonState();
-
-    if (!modal) {
-      return;
-    }
-    if (session && session.date && selectedDate && session.date !== selectedDate) {
-      setAlert("Select a session for the chosen date.", "error");
-      return;
-    }
-
-    resetBookingForm();
-    clearFormValidation(modalForm);
-
-    const normalizedSlot = normalizeSlot(session);
-    if (!normalizedSlot || !normalizedSlot.slot_id) {
-      setAlert("Please select a session.", "error");
-      return;
-    }
-    setSelectedSession(null);
-    setSelectedSession(normalizedSlot);
-    const selectedSession = window.selectedSession || {};
-
-    if (slotIdInput) {
-      slotIdInput.value = selectedSession.slot_id || "";
-    }
-    if (sessionSummary) {
-      const reservedByLabel =
-        (normalizedSlot && normalizedSlot.booker_name) ||
-        (normalizedSlot && normalizedSlot.reserved_by) ||
-        (normalizedSlot && normalizedSlot.reservedby) ||
-        (normalizedSlot && normalizedSlot.vendor) ||
-        "";
-      sessionSummary.textContent =
-        formatDateLabel(selectedSession.date) +
-        " | " +
-        formatTimeRange(selectedSession.start_time, selectedSession.end_time) +
-        " | " +
-        "Training Session" +
-        (reservedByLabel
-          ? " | Reserved by " + reservedByLabel
-          : "");
-    }
-
-    const currentUser = getCurrentUser();
-
-    console.log("[RoomBooking] Opening modal for user:", {
-      name: currentUser.name,
-      email: currentUser.email
-    });
-
-    if (requesterNameInput) {
-      requesterNameInput.value = currentUser.name;
-      requesterNameInput.setAttribute("readonly", true);
-      requesterNameInput.style.backgroundColor = "#f5f5f5";
-      requesterNameInput.style.cursor = "not-allowed";
-    }
-    if (requesterEmailInput) {
-      requesterEmailInput.value = currentUser.email;
-      requesterEmailInput.setAttribute("readonly", true);
-      requesterEmailInput.style.backgroundColor = "#f5f5f5";
-      requesterEmailInput.style.cursor = "not-allowed";
-    }
-    modal.hidden = false;
-    modal.setAttribute("aria-hidden", "false");
-    document.body.classList.add("tb-modal-open");
-  }
-
-  function showBookingConfirmation(requesterEmail) {
-    if (!modal || !modalForm) {
-      return;
-    }
-
-    modalForm.style.display = "none";
-
-    let confirmation = modal.querySelector(".tb-booking-confirmation");
-    if (!confirmation) {
-      confirmation = document.createElement("div");
-      confirmation.className = "tb-booking-confirmation";
-      modalForm.parentNode.insertBefore(confirmation, modalForm);
-    }
-
-    const emailText = requesterEmail || "your email";
-    confirmation.innerHTML =
-      '<div class="tb-booking-confirmation__body">' +
-      "<h2>You've Booked!</h2>" +
-      "<p>Your training room session has been confirmed.</p>" +
-      '<p class="tb-booking-confirmation__note">A confirmation email has been sent to <strong>' +
-      emailText +
-      "</strong>.</p>" +
-      "</div>";
-  }
-
-  function resetBookingForm() {
-    if (!modalForm) {
-      return;
-    }
-
-    modalForm.reset();
-    const confirmation = modal.querySelector(".tb-booking-confirmation");
-    if (confirmation) {
-      confirmation.remove();
-    }
-
-    modalForm.style.display = "";
-
-    if (slotIdInput) {
-      slotIdInput.value = "";
-    }
-    if (sessionSummary) {
-      sessionSummary.textContent = "";
-    }
-    if (notesInput) {
-      notesInput.value = "";
-    }
-    if (onlineToggle) {
-      onlineToggle.checked = false;
-    }
-    setAttendeeFieldsVisible(false);
-
-    const currentUser = getCurrentUser();
-    if (requesterNameInput) {
-      requesterNameInput.value = currentUser.name;
-      requesterNameInput.removeAttribute("disabled");
-      requesterNameInput.setAttribute("readonly", true);
-      requesterNameInput.style.backgroundColor = "#f5f5f5";
-      requesterNameInput.style.cursor = "not-allowed";
-    }
-    if (requesterEmailInput) {
-      requesterEmailInput.value = currentUser.email;
-      requesterEmailInput.removeAttribute("disabled");
-      requesterEmailInput.setAttribute("readonly", true);
-      requesterEmailInput.style.backgroundColor = "#f5f5f5";
-      requesterEmailInput.style.cursor = "not-allowed";
-    }
-    clearFormValidation(modalForm);
-    resetSubmitButtonState();
-  }
-
-  function closeBookingModal() {
-    resetSubmitButtonState();
-
-    if (!modal) {
-      window.selectedSession = null;
-      return;
-    }
-    modal.hidden = true;
-    modal.setAttribute("aria-hidden", "true");
-    document.body.classList.remove("tb-modal-open");
-    window.selectedSession = null;
-    resetBookingForm();
-  }
-
-  function buildBookingPayload() {
-    const currentUser = getCurrentUser();
-    const slotId = slotIdInput ? slotIdInput.value.trim() : "";
-    const requesterName =
-      (requesterNameInput && requesterNameInput.value.trim()) ||
-      currentUser.name ||
-      "Zendesk User";
-    const requesterEmail =
-      (requesterEmailInput && requesterEmailInput.value.trim()) ||
-      currentUser.email ||
-      "unknown@example.com";
-    const resolvedUserType = resolveUserType();
-    userType = resolvedUserType;
-    const rawNotes = notesInput ? notesInput.value.trim() : "";
-    const onlineMeeting = !!(onlineToggle && onlineToggle.checked);
-    const meetingType = onlineMeeting ? "online" : "in_person";
-    const attendeeEmails = onlineMeeting ? getAttendeeEmails() : [];
-    let combinedNotes = rawNotes
-      ? "Book Training Room - " + rawNotes
-      : "Book Training Room";
-    return {
-      slot_id: slotId,
-      requester_email: requesterEmail,
-      requester_name: requesterName,
-      notes: combinedNotes,
-      user_type: resolvedUserType,
-      meeting_type: meetingType,
-      attendee_emails: attendeeEmails
-    };
-  }
-
   function validatePayload(payload) {
-    if (!payload.slot_id) {
-      return "Please select a session.";
+    if (!payload.start_date || !payload.start_time || !payload.end_time) {
+      return "Please drag across the calendar to select a time range.";
     }
-    if (!payload.requester_name) {
-      return "Requester name is required.";
+    if (!payload.dept) return "Please choose a training room.";
+    if (!payload.requester_name || !payload.requester_email) {
+      return "Requester details are required.";
     }
-    if (!payload.requester_email) {
-      return "Requester email is required.";
-    }
-    if (!payload.user_type) {
-      return "User type is not available.";
-    }
-    if (payload.meeting_type === "online") {
-      if (
-        !Array.isArray(payload.attendee_emails) ||
-        payload.attendee_emails.length === 0
-      ) {
-        return "Please add at least one attendee email for online meetings.";
+    if (payload.meeting_type === "in_person_plus_online") {
+      if (!payload.attendee_emails.length) {
+        return "Please add at least one attendee email for remote participants.";
       }
-      const invalidEmail = payload.attendee_emails.find(function (email) {
-        return !isValidEmail(email);
+      const invalid = payload.attendee_emails.find(function (email) {
+        return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
       });
-      if (invalidEmail) {
-        return "Please enter valid attendee email addresses.";
-      }
+      if (invalid) return "Please enter valid attendee email addresses.";
     }
     return "";
   }
 
-  function markSessionBooked(slotId, requesterName, meetingType, attendeeEmails) {
-    if (!slotId) {
-      return;
-    }
-    const sessionIndex = cachedSessions.findIndex(function (item) {
-      return item && item.slot_id === slotId;
-    });
-    if (sessionIndex === -1) {
-      return;
-    }
-
-    const session = cachedSessions[sessionIndex];
-    const existingBookerName =
-      session.booker_name ||
-      session.reserved_by ||
-      session.reservedby ||
-      session.vendor ||
-      "";
-    const reservedBy = requesterName || existingBookerName || "";
-    const capacity = Number(session.capacity);
-    const bookedCount =
-      !Number.isNaN(capacity) && capacity > 0 ? capacity : 1;
-    const normalizedMeetingType = normalizeMeetingType(
-      meetingType ||
-        session.meeting_type ||
-        session.meetingType ||
-        session.meeting ||
-        (session.online_meeting === true ? "online" : "")
-    );
-    const attendeeSource =
-      Array.isArray(attendeeEmails) && attendeeEmails.length > 0
-        ? attendeeEmails
-        : session.attendee_emails ||
-          session.attendeeEmails ||
-          session.attendees ||
-          "";
-    const normalizedAttendees = normalizeAttendeeEmails(attendeeSource);
-    const updatedSession = Object.assign({}, session, {
-      booker_name: existingBookerName || reservedBy || "",
-      booked_at: session.booked_at || new Date().toISOString(),
-      booked: true,
-      vendor: session.vendor || reservedBy,
-      reserved_by: session.reserved_by || reservedBy,
-      reservedby: session.reservedby || reservedBy,
-      available: false,
-      status: "full",
-      capacity:
-        !Number.isNaN(capacity) && capacity > 0 ? session.capacity : session.capacity || 1,
-      booked_count: bookedCount,
-      meeting_type: normalizedMeetingType || session.meeting_type || "",
-      attendee_emails: normalizedAttendees
-    });
-
-    cachedSessions = cachedSessions.map(function (item, index) {
-      return index === sessionIndex ? updatedSession : item;
-    });
-
-    renderSessions(cachedSessions);
+  function bookingPayload() {
+    const online = !!ui.online.checked;
+    const room = ui.roomValue.value || state.room;
+    const notes = String(ui.notes.value || "").trim();
+    return {
+      slot_id: ui.slotId.value,
+      start_date: ui.startDate.value,
+      start_time: ui.startTime.value,
+      end_time: ui.endTime.value,
+      dept: room,
+      repeat_days: Number(ui.repeatDaysValue.value || 0),
+      requester_name: String(ui.requesterName.value || "").trim(),
+      requester_email: String(ui.requesterEmail.value || "").trim(),
+      user_type: resolveUserType(),
+      notes: notes ? "Book " + room + " - " + notes : "Book " + room,
+      meeting_type: online ? "in_person_plus_online" : "in_person_only",
+      attendee_emails: online ? attendeeEmails() : []
+    };
   }
 
-  function handleBookingResponse(response, payload) {
-    const apiError = apiErrorMessage(response);
-    if (apiError) {
-      setAlert(apiError, "error");
-      return { ok: false, message: apiError };
-    }
-
-    const bookingData = response && response.data ? response.data : response;
-    const bookingId = bookingData && bookingData.booking_id;
-    const isStaff = resolveUserType() === "staff";
-    const agentLink =
-      isStaff && bookingId
-        ? {
-            href: "/agent/search/1?query=" + encodeURIComponent(bookingId),
-            label: "Find ticket in Zendesk"
-          }
-        : null;
-    const message =
-      "Booking confirmed." +
-      (bookingId ? " Booking ID " + bookingId + "." : "") +
-      " Zendesk ticket will be created automatically shortly.";
-    setAlert(message, "success", agentLink ? { link: agentLink } : null);
-
-    if (submitButton) {
-      submitButton.disabled = true;
-      submitButton.textContent = "Booked";
-      submitButton.classList.add("tb-btn--booked");
-      submitButton.classList.remove("tb-btn--loading");
-    }
-
-    showBookingConfirmation(payload ? payload.requester_email : "");
-    return { ok: true, bookingId: bookingId };
+  function showConfirmation(email, count) {
+    ui.modalForm.style.display = "none";
+    const wrapper = document.createElement("div");
+    wrapper.className = "tb-booking-confirmation";
+    wrapper.innerHTML =
+      '<div class="tb-booking-confirmation__body"><h2>Booked</h2><p>' +
+      (count > 1
+        ? "Your training room bookings have been confirmed."
+        : "Your training room booking has been confirmed.") +
+      '</p><p class="tb-booking-confirmation__note">A confirmation email has been sent to <strong>' +
+      String(email || "your email") +
+      "</strong>.</p></div>";
+    ui.modalForm.parentNode.insertBefore(wrapper, ui.modalForm);
   }
 
-  // Booking flow
-  async function submitBooking(event) {
-    if (event) {
-      event.preventDefault();
-    }
-
-    clearAlert();
-    clearFormValidation(modalForm);
-    const nativeInvalidField = validateFormFields(modalForm);
-    if (nativeInvalidField) {
-      const message = "Please complete the highlighted required fields.";
+  function handleBookingResponse(json, payload) {
+    const message = apiError(json);
+    if (message) {
       setAlert(message, "error");
-      focusAndScrollToField(nativeInvalidField);
-      if (typeof nativeInvalidField.reportValidity === "function") {
-        nativeInvalidField.reportValidity();
-      }
+      return false;
+    }
+    const data = json && json.data ? json.data : {};
+    const bookingCount =
+      Number(data.booking_count) ||
+      (Array.isArray(data.bookings) ? data.bookings.length : 1);
+    const bookingId =
+      data.booking_id ||
+      (Array.isArray(data.booking_ids) && data.booking_ids.length
+        ? data.booking_ids[0]
+        : "");
+    setAlert(
+      (bookingCount > 1
+        ? "Booking confirmed for " + bookingCount + " days."
+        : "Booking confirmed.") +
+        (bookingId ? " Booking ID " + bookingId + "." : "") +
+        " Zendesk ticket creation will continue automatically.",
+      "success"
+    );
+    ui.submit.disabled = true;
+    ui.submit.textContent = "Booked";
+    ui.submit.classList.add("tb-btn--booked");
+    showConfirmation(payload.requester_email, bookingCount);
+    return true;
+  }
+
+  async function submitBooking(event) {
+    event.preventDefault();
+    clearAlert();
+    if (!ui.modalForm.checkValidity()) {
+      ui.modalForm.reportValidity();
       return;
     }
-
-    try {
-      ensureConfig();
-    } catch (error) {
-      setAlert(error.message, "error");
-      return;
-    }
-
-    const payload = buildBookingPayload();
-    console.log("[RoomBooking] Submitting booking:", {
-      slot_id: payload.slot_id,
-      requester_name: payload.requester_name,
-      requester_email: payload.requester_email
-    });
+    const payload = bookingPayload();
     const validation = validatePayload(payload);
     if (validation) {
-      const invalidFields = [];
-      if (!payload.requester_name && requesterNameInput) {
-        markFieldInvalid(requesterNameInput, "Requester name is required.");
-        invalidFields.push(requesterNameInput);
-      }
-      if (!payload.requester_email && requesterEmailInput) {
-        markFieldInvalid(requesterEmailInput, "Requester email is required.");
-        invalidFields.push(requesterEmailInput);
-      }
-      if (
-        payload.meeting_type === "online" &&
-        (!Array.isArray(payload.attendee_emails) ||
-          payload.attendee_emails.length === 0)
-      ) {
-        let attendeeInput = attendeesWrap
-          ? attendeesWrap.querySelector("input")
-          : null;
-        if (!attendeeInput) {
-          attendeeInput = addAttendeeInput();
-        }
-        if (attendeeInput) {
-          attendeeInput.required = true;
-          markFieldInvalid(
-            attendeeInput,
-            "Please add at least one attendee email."
-          );
-          invalidFields.push(attendeeInput);
-        }
-      }
-      if (
-        payload.meeting_type === "online" &&
-        Array.isArray(payload.attendee_emails)
-      ) {
-        const invalidInput = attendeesWrap
-          ? Array.from(attendeesWrap.querySelectorAll("input")).find(
-              function (input) {
-                const value = String(input.value || "").trim();
-                return value && !isValidEmail(value);
-              }
-            )
-          : null;
-        if (invalidInput) {
-          markFieldInvalid(
-            invalidInput,
-            "Please enter a valid attendee email address."
-          );
-          invalidFields.push(invalidInput);
-        }
-      }
-      const firstInvalidField = getTopMostField(invalidFields);
-      if (firstInvalidField) {
-        focusAndScrollToField(firstInvalidField);
-      }
       setAlert(validation, "error");
       return;
     }
 
     setBookingLoading(true);
     try {
-      const json = await jsonpRequest("book", {
+      const json = await jsonp("book", {
         slot_id: payload.slot_id,
+        start_date: payload.start_date,
+        start_time: payload.start_time,
+        end_time: payload.end_time,
         requester_name: payload.requester_name,
         requester_email: payload.requester_email,
         user_type: payload.user_type,
         notes: payload.notes,
         meeting_type: payload.meeting_type,
-        attendee_emails: Array.isArray(payload.attendee_emails)
-          ? payload.attendee_emails.join(",")
-          : payload.attendee_emails,
-        dept: ""
+        attendee_emails: payload.attendee_emails.join(","),
+        dept: payload.dept,
+        repeat_days: String(payload.repeat_days || 0)
       });
-      const result = handleBookingResponse(json, payload);
-      if (!result.ok) {
-        resetSubmitButtonState();
+      if (!handleBookingResponse(json, payload)) {
+        resetSubmitButton();
         return;
       }
       setTimeout(function () {
-        closeBookingModal();
-        markSessionBooked(
-          payload.slot_id,
-          payload.requester_name,
-          payload.meeting_type,
-          payload.attendee_emails
-        );
-        loadSessions({ preserveAlert: true });
-      }, 2000);
+        closeModal();
+        clearSelection();
+        loadCalendar({ preserveAlert: true });
+      }, 1800);
     } catch (error) {
-      const message = friendlyErrorMessage(error, "Booking failed.");
-      setAlert(message, "error", {
-        action: { label: "Retry", onClick: function () { submitBooking(); } }
+      setAlert(friendlyError(error, "Booking failed."), "error", {
+        action: { label: "Retry", onClick: submitBooking }
       });
-      resetSubmitButtonState();
+      resetSubmitButton();
     } finally {
       setBookingLoading(false);
     }
   }
 
-  function logUserDiagnostics() {
-    console.log("[RoomBooking] Checking user sources...");
-    console.log(
-      "  HelpCenter.user:",
-      typeof HelpCenter !== "undefined" ? HelpCenter.user : "undefined"
-    );
-    console.log("  window.currentUser:", window.currentUser);
-    console.log("  window.TRAINING_BOOKING_USER:", window.TRAINING_BOOKING_USER);
-    console.log("[RoomBooking] Resolved user:", getCurrentUser());
-  }
+  ui.date.value = ui.date.value || todayIsoInTz();
+  ui.room.value = ui.room.value || ROOMS[0];
+  ui.repeatDays.value = ui.repeatDays.value || "0";
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", logUserDiagnostics);
-  } else {
-    logUserDiagnostics();
-  }
+  const currentUser = getCurrentUser();
+  ui.requesterName.value = currentUser.name;
+  ui.requesterEmail.value = currentUser.email;
 
-  userType = resolveUserType();
-  setDefaultDates();
-  renderPlaceholder("Loading sessions...");
+  ui.filtersForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    loadCalendar();
+  });
+  ui.reset.addEventListener("click", function () {
+    ui.filtersForm.reset();
+    ui.date.value = todayIsoInTz();
+    ui.room.value = ROOMS[0];
+    ui.repeatDays.value = "0";
+    clearAlert();
+    clearSelection();
+    loadCalendar();
+  });
+  [ui.date, ui.room, ui.repeatDays].forEach(function (field) {
+    field.addEventListener("change", function () {
+      loadCalendar();
+    });
+  });
+  ui.online.addEventListener("change", function () {
+    setAttendeesVisible(ui.online.checked);
+  });
+  ui.addAttendee.addEventListener("click", function () {
+    if (ui.online.checked) addAttendeeInput();
+  });
+  ui.modalClose.addEventListener("click", closeModal);
+  ui.modalCancel.addEventListener("click", closeModal);
+  ui.modal.addEventListener("click", function (event) {
+    if (event.target === ui.modal) closeModal();
+  });
+  ui.modalForm.addEventListener("submit", submitBooking);
 
-  if (loadButton) {
-    loadButton.style.display = "none";
-  }
-
-  const initialUser = getCurrentUser();
-  if (requesterNameInput && initialUser.name) {
-    requesterNameInput.value = initialUser.name;
-  }
-  if (requesterEmailInput && initialUser.email) {
-    requesterEmailInput.value = initialUser.email;
-  }
-
-  if (filtersForm) {
-    getFormControls(filtersForm).forEach(bindFieldValidation);
-    filtersForm.addEventListener("submit", function (event) {
-      event.preventDefault();
-      clearAlert();
-      clearFormValidation(filtersForm);
-      const invalidField = validateFormFields(filtersForm);
-      if (invalidField) {
-        setAlert("Please select a date before refreshing sessions.", "error");
-        focusAndScrollToField(invalidField);
-        if (typeof invalidField.reportValidity === "function") {
-          invalidField.reportValidity();
-        }
-        return;
+  document.addEventListener("pointerup", finishDrag);
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      if (state.drag) {
+        clearDrag();
+        paintSelection();
+      } else if (!ui.modal.hidden) {
+        closeModal();
       }
-      loadSessions();
-    });
-  }
+    }
+  });
 
-  if (resetButton) {
-    resetButton.addEventListener("click", function () {
-      if (filtersForm) {
-        filtersForm.reset();
-      }
-      setDefaultDates();
-      cachedSessions = [];
-      clearAlert();
-      loadSessions();
-    });
-  }
-
-  if (dateInput) {
-    dateInput.addEventListener("change", function () {
-      selectedDate = getSelectedDate();
-      window.selectedDate = selectedDate;
-      loadSessions();
-    });
-  }
-
-  if (onlineToggle) {
-    onlineToggle.addEventListener("change", function () {
-      setAttendeeFieldsVisible(onlineToggle.checked);
-    });
-  }
-  if (addAttendeeButton) {
-    addAttendeeButton.addEventListener("click", function () {
-      if (!onlineToggle || !onlineToggle.checked) {
-        return;
-      }
-      addAttendeeInput();
-    });
-  }
-
-  if (modalClose) {
-    modalClose.addEventListener("click", closeBookingModal);
-  }
-  if (modalCancel) {
-    modalCancel.addEventListener("click", closeBookingModal);
-  }
-  if (modal) {
-    modal.addEventListener("click", function (event) {
-      if (event.target === modal) {
-        closeBookingModal();
-      }
-    });
-  }
-  if (modalForm && !modalForm.dataset.bound) {
-    getFormControls(modalForm).forEach(bindFieldValidation);
-    modalForm.addEventListener("submit", submitBooking);
-    modalForm.dataset.bound = "1";
-  }
-
-  loadSessions();
+  loadCalendar();
 })();

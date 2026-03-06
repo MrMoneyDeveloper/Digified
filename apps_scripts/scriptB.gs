@@ -454,6 +454,11 @@ function processPendingBookings(opts) {
         requesterName: String(safeCell_B_(row, idx.requester_name) || "").trim(),
         notes: String(safeCell_B_(row, idx.notes) || "").trim(),
         dept: String(safeCell_B_(row, idx.dept) || "").trim(),
+        startDate: String(safeCell_B_(row, idx.start_date) || "").trim(),
+        startTime: String(safeCell_B_(row, idx.start_time) || "").trim(),
+        endDate: String(safeCell_B_(row, idx.end_date) || "").trim(),
+        endTime: String(safeCell_B_(row, idx.end_time) || "").trim(),
+        durationMinutes: String(safeCell_B_(row, idx.duration_minutes) || "").trim(),
         bookedAt: String(safeCell_B_(row, idx.booked_at) || "").trim(),
         meetingType: normalizeMeetingTypeLabel_B_(safeCell_B_(row, idx.meeting_type)),
         attendeeEmails: parseAttendeeEmails_B_(safeCell_B_(row, idx.attendee_emails)),
@@ -463,8 +468,8 @@ function processPendingBookings(opts) {
         meetErrorDetails: String(safeCell_B_(row, idx.meet_error_details) || "").trim(),
       };
 
-      const parsed = parseSlotId_B_(slotId);
-      const slotString = parsed ? `${parsed.date} ${parsed.start_time}` : slotId;
+      const slotWindow = resolveBookingWindow_B_(booking);
+      const slotString = formatSlotWindow_B_(slotWindow, slotId);
 
       logInfo_B_(" Processing booking", {
         run_id: runId,
@@ -656,8 +661,9 @@ function createZendeskTicket_B_(creds, booking, slotString, runId, rowNum) {
   }
 
   const requesterEmail = (booking.requesterEmail || creds.email || "").trim();
-  const requesterName = (booking.requesterName || requesterEmail || "Training Booker").trim();
-  const subject = `Training Room Booking - ${slotString}`;
+  const requesterName = (booking.requesterName || requesterEmail || "Room Booker").trim();
+  const roomLabel = String(booking.dept || "Room").trim() || "Room";
+  const subject = `${roomLabel} Booking - ${slotString}`;
 
   const deptTag = booking.dept ? ("dept-" + slugifyTag_B_(booking.dept)) : "";
   const attendeeLine =
@@ -720,18 +726,18 @@ function createZendeskTicket_B_(creds, booking, slotString, runId, rowNum) {
     },
     comment: {
       body:
-        `Training Room Booking Confirmation\n` +
+        `Room Booking Confirmation\n` +
         `=====================================\n\n` +
         `Booking Reference: ${booking.bookingId}\n` +
+        `Room: ${roomLabel}\n` +
         `Session: ${slotString}\n` +
         `Requester: ${requesterName} (${requesterEmail})\n` +
-        `Department: ${booking.dept || "All"}\n` +
         `Meeting Mode: ${meetingModeLabel}\n` +
         meetDetailsBlock +
         `Booked At: ${booking.bookedAt || ""}\n\n` +
         (booking.notes ? `Notes:\n${booking.notes}\n\n` : "") +
         `---\n` +
-        `This ticket was auto-created via Training Room Booking API`,
+        `This ticket was auto-created via Room Booking API`,
     },
     tags,
     status: "open",
@@ -836,7 +842,7 @@ function createUrgentAlertTicket_B_(creds, context, runId, rowNum) {
   }
 
   const requesterEmail = (creds.alertRequesterEmail || creds.email || "").trim();
-  const subject = `URGENT: Training booking failed - ${context.booking_id}`;
+  const subject = `URGENT: Room booking failed - ${context.booking_id}`;
 
   //  Keep the same REQUIRED tag so your View can also catch alerts if you want
   const tags = uniqueTags_B_(
@@ -847,12 +853,12 @@ function createUrgentAlertTicket_B_(creds, context, runId, rowNum) {
 
   const ticket = {
     subject,
-    requester: { email: requesterEmail, name: "Training Booking Monitor" },
+    requester: { email: requesterEmail, name: "Room Booking Monitor" },
     comment: {
       body:
-        `URGENT: Training Room Booking Ticket Creation Failed\n` +
+        `URGENT: Room Booking Ticket Creation Failed\n` +
         `=========================================================\n\n` +
-        `A training room booking could not be processed automatically.\n` +
+        `A room booking could not be processed automatically.\n` +
         `IMMEDIATE ACTION REQUIRED: Please create a manual ticket.\n\n` +
         `--- Booking Details ---\n` +
         `Booking ID: ${context.booking_id || "N/A"}\n` +
@@ -865,7 +871,7 @@ function createUrgentAlertTicket_B_(creds, context, runId, rowNum) {
         `Error Code: ${context.error_code || "UNKNOWN"}\n` +
         `Error Details:\n${context.error_details || "No details available"}\n\n` +
         `Timestamp: ${new Date().toISOString()}\n` +
-        `Source: Training Booking Automation (Script B)`,
+        `Source: Room Booking Automation (Script B)`,
     },
     tags,
     priority: "urgent",
@@ -1034,6 +1040,11 @@ function indexMap_B_(header) {
     attendees: m["attendees"] !== undefined ? m["attendees"] : -1,
     notes: m["notes"] !== undefined ? m["notes"] : -1,
     dept: m["dept"] !== undefined ? m["dept"] : -1,
+    start_date: m["start_date"] !== undefined ? m["start_date"] : -1,
+    start_time: m["start_time"] !== undefined ? m["start_time"] : -1,
+    end_date: m["end_date"] !== undefined ? m["end_date"] : -1,
+    end_time: m["end_time"] !== undefined ? m["end_time"] : -1,
+    duration_minutes: m["duration_minutes"] !== undefined ? m["duration_minutes"] : -1,
     booked_at: m["booked_at"] !== undefined ? m["booked_at"] : -1,
     debug_json: m["debug_json"] !== undefined ? m["debug_json"] : -1,
     meeting_type: m["meeting_type"] !== undefined ? m["meeting_type"] : -1,
@@ -1090,6 +1101,63 @@ function parseSlotId_B_(slotId) {
   const hhmm = m[2];
   const start_time = hhmm.slice(0, 2) + ":" + hhmm.slice(2, 4);
   return { date, start_time };
+}
+
+function normalizeDateStr_B_(value) {
+  const s = String(value || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  if (/^\d{4}\/\d{2}\/\d{2}$/.test(s)) return s.replace(/\//g, "-");
+  return "";
+}
+
+function normalizeTimeStr_B_(value) {
+  const s = String(value || "").trim();
+  const m = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return "";
+  const hh = parseInt(m[1], 10);
+  const mm = parseInt(m[2], 10);
+  if (isNaN(hh) || isNaN(mm) || hh < 0 || hh > 23 || mm < 0 || mm > 59) return "";
+  return String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+}
+
+function addMinutesToTime_B_(startHHMM, minutes) {
+  const start = normalizeTimeStr_B_(startHHMM);
+  if (!start) return "";
+  const parts = start.split(":");
+  const total = (parseInt(parts[0], 10) * 60) + parseInt(parts[1], 10) + Math.max(0, parseInt(minutes, 10) || 0);
+  const normalized = ((total % 1440) + 1440) % 1440;
+  const hh = Math.floor(normalized / 60);
+  const mm = normalized % 60;
+  return String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+}
+
+function resolveBookingWindow_B_(booking) {
+  const slot = parseSlotId_B_(booking.slotId);
+  const startDate = normalizeDateStr_B_(booking.startDate) || (slot ? slot.date : "");
+  const startTime = normalizeTimeStr_B_(booking.startTime) || (slot ? slot.start_time : "");
+  const duration = parseInt(booking.durationMinutes, 10);
+  const endDate = normalizeDateStr_B_(booking.endDate) || startDate;
+  let endTime = normalizeTimeStr_B_(booking.endTime);
+
+  if (!startDate || !startTime) return null;
+  if (!endTime) {
+    endTime = addMinutesToTime_B_(startTime, (isNaN(duration) || duration <= 0) ? 60 : duration);
+  }
+
+  return {
+    start_date: startDate,
+    start_time: startTime,
+    end_date: endDate,
+    end_time: endTime,
+  };
+}
+
+function formatSlotWindow_B_(window, fallback) {
+  if (!window) return String(fallback || "").trim();
+  if (window.start_date === window.end_date) {
+    return `${window.start_date} ${window.start_time}-${window.end_time}`;
+  }
+  return `${window.start_date} ${window.start_time} -> ${window.end_date} ${window.end_time}`;
 }
 
 //  NEW: ticket-id helpers
@@ -1286,6 +1354,11 @@ function processOneBooking(bookingId) {
         requesterName: String(safeCell_B_(row, idx.requester_name)).trim(),
         notes: String(safeCell_B_(row, idx.notes)).trim(),
         dept: String(safeCell_B_(row, idx.dept)).trim(),
+        startDate: String(safeCell_B_(row, idx.start_date) || "").trim(),
+        startTime: String(safeCell_B_(row, idx.start_time) || "").trim(),
+        endDate: String(safeCell_B_(row, idx.end_date) || "").trim(),
+        endTime: String(safeCell_B_(row, idx.end_time) || "").trim(),
+        durationMinutes: String(safeCell_B_(row, idx.duration_minutes) || "").trim(),
         bookedAt: String(safeCell_B_(row, idx.booked_at)).trim(),
         meetingType: normalizeMeetingTypeLabel_B_(safeCell_B_(row, idx.meeting_type)),
         attendeeEmails: parseAttendeeEmails_B_(safeCell_B_(row, idx.attendee_emails)),
@@ -1295,8 +1368,8 @@ function processOneBooking(bookingId) {
         meetErrorDetails: String(safeCell_B_(row, idx.meet_error_details) || "").trim(),
       };
 
-      const parsed = parseSlotId_B_(booking.slotId);
-      const slotString = parsed ? `${parsed.date} ${parsed.start_time}` : booking.slotId;
+      const slotWindow = resolveBookingWindow_B_(booking);
+      const slotString = formatSlotWindow_B_(slotWindow, booking.slotId);
 
       const attemptedAt = new Date().toISOString();
       const result = createZendeskTicketWithRetry_B_(creds, booking, slotString, runId, r + 1);

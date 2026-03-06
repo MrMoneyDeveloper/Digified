@@ -63,8 +63,8 @@
   <div class="container">
     <p class="rb-build-tag" data-room-booking-build="2026-02-10-07">Room booking UI build 2026-02-10-07</p>
     <div class="rb-hero">
-      <h1>Book Meeting Room</h1>
-      <p class="rb-intro">Select a date to view availability. Each time slot is shown as a card with live status.</p>
+      <h1>Book Interview Room</h1>
+      <p class="rb-intro">Select a date to view interview room availability from 12:00 to 20:00.</p>
     </div>
 
     {{#if signed_in}}
@@ -113,7 +113,7 @@
         <div id="room-booking-modal" class="rb-modal" aria-hidden="true" inert hidden>
           <div class="rb-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="room-booking-modal-title">
             <div class="rb-modal-header">
-              <h2 class="rb-modal-title" id="room-booking-modal-title">Book Meeting Room</h2>
+              <h2 class="rb-modal-title" id="room-booking-modal-title">Book Interview Room</h2>
               <button class="rb-modal-close" type="button" id="room-booking-modal-close" aria-label="Close">&times;</button>
             </div>
             <div class="rb-modal-body">
@@ -157,7 +157,7 @@
       </div>
     {{else}}
       <div class="rb-signed-out">
-        <p>Please sign in to view and book meeting rooms.</p>
+        <p>Please sign in to view and book the interview room.</p>
         <a class="btn btn-primary" href="/hc/en-us/signin">Sign in</a>
       </div>
     {{/if}}

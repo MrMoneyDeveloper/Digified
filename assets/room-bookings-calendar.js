@@ -128,9 +128,10 @@
   let activeSlot = null;
   let lastFocusedElement = null;
   let bookingInProgress = false;
+  const ROOM_DEPT = "Interview Room";
 
-  // Business hours (8 AM to 8 PM)
-  const BUSINESS_START = 8;
+  // Business hours for interview room (12 PM to 8 PM)
+  const BUSINESS_START = 12;
   const BUSINESS_END = 20;
 
   // Alert functions
@@ -588,10 +589,11 @@
         action: "sessions",
         from: date,
         to: date,
+        dept: ROOM_DEPT,
         apiUrl: baseUrl
       });
 
-      const json = await jsonpRequest("sessions", { from: date, to: date });
+      const json = await jsonpRequest("sessions", { from: date, to: date, dept: ROOM_DEPT });
 
       if (json && json.success && Array.isArray(json.data.sessions)) {
         const sessions = json.data.sessions;
@@ -896,10 +898,13 @@
     const payload = {
       slot_id: slotIdInput ? slotIdInput.value : "",
       date: activeSlot ? activeSlot.date : "",
+      start_date: activeSlot ? activeSlot.date : "",
       start_time: activeSlot ? activeSlot.start_time : "",
+      end_time: activeSlot ? activeSlot.end_time : "",
       requester_name: currentUser.name || "",
       requester_email: currentUser.email || "",
       notes: notesInput ? notesInput.value.trim() : "",
+      dept: ROOM_DEPT,
       meeting_type: meetingType,
       attendee_emails: attendeeEmails.join(",")
     };
