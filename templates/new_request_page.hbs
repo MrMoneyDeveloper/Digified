@@ -46,8 +46,6 @@
 
   renderNewRequestForm(settings, props, container);
 
-  const homePath = {{json (page_path 'help_center')}};
-  const storageKey = "digifyRedirectAfterRequest";
   let generatedFieldKey = 0;
 
   const isGardenComboboxField = (field) => {
@@ -387,10 +385,6 @@
         return;
       }
 
-      sessionStorage.setItem(
-        storageKey,
-        JSON.stringify({ target: homePath, timestamp: Date.now() })
-      );
     }, true);
   };
 

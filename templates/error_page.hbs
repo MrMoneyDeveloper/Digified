@@ -11,8 +11,9 @@
   {{/is}}
 
   {{#is error 'not_found'}}
-    <h2>{{t 'nonexistent_page'}}</h2>
-    <p>{{t 'mistyped_address_or_moved_page'}}</p>
+    <h2>This page is a work in progress.</h2>
+    <p>If something is missing, please log a form so we can improve the site.</p>
+    <p>{{#link 'new_request'}}Log a request{{/link}}</p>
   {{/is}}
 
   {{#link 'help_center'}}
