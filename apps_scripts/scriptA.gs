@@ -225,8 +225,16 @@ function handleInit_(requestId, params) {
   // API key generate/rotate
   const props = PropertiesService.getScriptProperties();
   const rotate = String((params && params.rotate_key) ? params.rotate_key : "").trim() === "1";
+  const settingsApiKey = getSettingValue_(ss, "TRAINING_API_KEY");
 
   let apiKey = props.getProperty("TRAINING_API_KEY");
+  if (!rotate && settingsApiKey) {
+    // Keep the existing SETTINGS value authoritative during normal deployments.
+    apiKey = settingsApiKey;
+    if (props.getProperty("TRAINING_API_KEY") !== apiKey) {
+      props.setProperty("TRAINING_API_KEY", apiKey);
+    }
+  }
   if (!apiKey || rotate) {
     apiKey = Utilities.getUuid().replace(/-/g, "");
     props.setProperty("TRAINING_API_KEY", apiKey);
@@ -235,7 +243,9 @@ function handleInit_(requestId, params) {
   // Store settings in sheet (for visibility)
   upsertSetting_(ss, "DEPLOYMENT_ID", CFG.DEPLOYMENT.ID);
   upsertSetting_(ss, "WEBAPP_URL", CFG.DEPLOYMENT.WEBAPP_URL);
-  upsertSetting_(ss, "TRAINING_API_KEY", apiKey);
+  if (rotate || !settingsApiKey) {
+    upsertSetting_(ss, "TRAINING_API_KEY", apiKey);
+  }
   upsertSetting_(ss, "TIMEZONE", CFG.DEFAULT_TIMEZONE);
   upsertSetting_(ss, "ALLOW_GET_BOOKING", String(CFG.ALLOW_GET_BOOKING));
   upsertSetting_(ss, "RULES_ENABLED", String(CFG.RULES.ENABLED));
@@ -774,12 +784,28 @@ function upsertSetting_(ss, key, value) {
 
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][0]).trim() === key) {
+      if (String(rows[i][1] || "") === String(value || "")) {
+        return;
+      }
       sh.getRange(i + 1, 2).setValue(value);
       sh.getRange(i + 1, 3).setValue(now);
       return;
     }
   }
   sh.appendRow([key, value, now]);
+}
+
+function getSettingValue_(ss, key) {
+  const sh = ss.getSheetByName(CFG.SHEETS.SETTINGS);
+  if (!sh) return "";
+  const rows = sh.getDataRange().getValues();
+  if (!rows || rows.length < 2) return "";
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0] || "").trim() === String(key || "").trim()) {
+      return String(rows[i][1] || "").trim();
+    }
+  }
+  return "";
 }
 
 /**
