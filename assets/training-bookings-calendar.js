@@ -40,6 +40,7 @@
   const DEFAULT_ROOM = ROOM_ORDER[0];
   const MAX_REPEAT_DAYS = 5;
   const TZ = "Africa/Johannesburg";
+  const JSONP_TIMEOUT_MS = 25000;
   const SLOT_MODEL_CACHE = Object.create(null);
 
   const configProvider = window.DigifyBookingConfig;
@@ -251,7 +252,7 @@
       timeoutId = setTimeout(function () {
         cleanup();
         reject(new Error("JSONP request timed out."));
-      }, 10000);
+      }, JSONP_TIMEOUT_MS);
       script.src = url;
       (document.head || document.body).appendChild(script);
     });
@@ -271,7 +272,7 @@
   function friendlyError(error, fallback) {
     const message = error && error.message ? String(error.message) : "";
     if (message === "JSONP request failed." || message === "JSONP request timed out.") {
-      return "Unable to reach the training API. Please try again.";
+      return "Unable to reach the room booking API. Please try again.";
     }
     return message || fallback;
   }
