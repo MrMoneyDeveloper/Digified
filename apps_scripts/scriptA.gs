@@ -1493,10 +1493,10 @@ function extractRequestWindowFromDebugJson_(rawDebug) {
 function normalizeRequestWindow_(request) {
   if (!request) return null;
   const dept = normalizeDept_(request.dept || CFG.RULES.DEFAULT_DEPT);
-  const startDate = String(request.start_date || "").trim();
-  const startTime = normalizeHHMM_(request.start_time || "");
-  const endDate = String(request.end_date || startDate).trim();
-  const endTime = normalizeHHMM_(request.end_time || "");
+  const startDate = normaliseDateValue_(request.start_date || "");
+  const startTime = normalizeHHMM_(normaliseTimeValue_(request.start_time || ""));
+  const endDate = normaliseDateValue_(request.end_date || startDate);
+  const endTime = normalizeHHMM_(normaliseTimeValue_(request.end_time || ""));
   if (!isDateStr_(startDate) || !isDateStr_(endDate)) return null;
   if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) return null;
   const startMs = dateTimeToMs_(startDate, startTime);
@@ -1520,22 +1520,22 @@ function bookingRowWindow_(row, idx) {
   const slot = parseSlotId_(row[idx.slot_id] || "");
   const debugWindow = extractRequestWindowFromDebugJson_(idx.debug_json >= 0 ? row[idx.debug_json] : "");
 
-  let startDate = String(row[idx.start_date] || "").trim();
-  let startTime = normalizeHHMM_(row[idx.start_time] || "");
-  let endDate = String(row[idx.end_date] || "").trim();
-  let endTime = normalizeHHMM_(row[idx.end_time] || "");
+  let startDate = idx.start_date >= 0 ? normaliseDateValue_(row[idx.start_date]) : "";
+  let startTime = idx.start_time >= 0 ? normalizeHHMM_(normaliseTimeValue_(row[idx.start_time])) : "";
+  let endDate = idx.end_date >= 0 ? normaliseDateValue_(row[idx.end_date]) : "";
+  let endTime = idx.end_time >= 0 ? normalizeHHMM_(normaliseTimeValue_(row[idx.end_time])) : "";
   let durationMinutes = idx.duration_minutes >= 0 ? toInt_(row[idx.duration_minutes], 0) : 0;
 
-  if (!startDate && debugWindow && debugWindow.start_date) startDate = debugWindow.start_date;
-  if (!startDate && slot) startDate = slot.date;
+  if (!isDateStr_(startDate) && debugWindow && debugWindow.start_date) startDate = debugWindow.start_date;
+  if (!isDateStr_(startDate) && slot) startDate = slot.date;
 
-  if (!startTime && debugWindow && debugWindow.start_time) startTime = debugWindow.start_time;
-  if (!startTime && slot) startTime = slot.start_time;
+  if (!/^\d{2}:\d{2}$/.test(startTime) && debugWindow && debugWindow.start_time) startTime = debugWindow.start_time;
+  if (!/^\d{2}:\d{2}$/.test(startTime) && slot) startTime = slot.start_time;
 
-  if (!endDate && debugWindow && debugWindow.end_date) endDate = debugWindow.end_date;
-  if (!endDate) endDate = startDate;
+  if (!isDateStr_(endDate) && debugWindow && debugWindow.end_date) endDate = debugWindow.end_date;
+  if (!isDateStr_(endDate)) endDate = startDate;
 
-  if (!endTime && debugWindow && debugWindow.end_time) endTime = debugWindow.end_time;
+  if (!/^\d{2}:\d{2}$/.test(endTime) && debugWindow && debugWindow.end_time) endTime = debugWindow.end_time;
   if (!durationMinutes && debugWindow && debugWindow.duration_minutes) {
     durationMinutes = debugWindow.duration_minutes;
   }
@@ -1545,12 +1545,12 @@ function bookingRowWindow_(row, idx) {
     rules = getRoomRules_(dept);
   }
 
-  if (!startDate || !startTime) return null;
-  if (!endTime && durationMinutes > 0) {
+  if (!isDateStr_(startDate) || !/^\d{2}:\d{2}$/.test(startTime)) return null;
+  if (!/^\d{2}:\d{2}$/.test(endTime) && durationMinutes > 0) {
     endTime = addMinutesToHHMM_(startTime, durationMinutes);
   }
-  if (!endTime) endTime = addMinutesToHHMM_(startTime, rules.slot_minutes);
-  if (!endDate) endDate = startDate;
+  if (!/^\d{2}:\d{2}$/.test(endTime)) endTime = addMinutesToHHMM_(startTime, rules.slot_minutes);
+  if (!isDateStr_(endDate)) endDate = startDate;
 
   const window = normalizeRequestWindow_({
     dept,
