@@ -2,8 +2,10 @@
   "use strict";
 
   // Booking API config helper.
-  // Prioritizes per-page dataset + theme settings, then runtime window config.
-  // Falls back to the temporary values below if everything else is missing.
+  // Prioritizes explicit runtime window config first, then per-page dataset,
+  // then theme settings, and finally the hardcoded fallback below.
+  // This keeps repo-pinned API values authoritative even if Zendesk theme
+  // settings are stale.
   // NOTE: Remove these fallback values before any public release.
   const FALLBACK_BOOKING_CONFIG = {
     baseUrl:
@@ -66,16 +68,16 @@
         !fallback.apiKey);
 
     const baseUrl =
+      (useRuntimeBaseUrl ? runtimeBaseUrl : "") ||
       rootBaseUrl ||
       settingsBaseUrl ||
-      (useRuntimeBaseUrl ? runtimeBaseUrl : "") ||
       fallback.baseUrl ||
       "";
 
     const apiKey =
+      (useRuntimeApiKey ? runtimeApiKey : "") ||
       rootApiKey ||
       settingsApiKey ||
-      (useRuntimeApiKey ? runtimeApiKey : "") ||
       fallback.apiKey ||
       "";
 
