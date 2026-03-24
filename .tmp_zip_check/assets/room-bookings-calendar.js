@@ -128,10 +128,10 @@
   let activeSlot = null;
   let lastFocusedElement = null;
   let bookingInProgress = false;
-  const ROOM_DEPT = "Interview Room";
+  const ROOM_DEPT = "Training Room";
 
-  // Business hours for interview room (12 PM to 8 PM)
-  const BUSINESS_START = 12;
+  // Business hours for the training room (8 AM to 8 PM)
+  const BUSINESS_START = 8;
   const BUSINESS_END = 20;
 
   // Alert functions
