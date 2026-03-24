@@ -1,7 +1,7 @@
 {
   "name": "Copenhagen",
   "author": "Zendesk",
-  "version": "2027.0.7",
+  "version": "2027.0.8",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -762,7 +762,7 @@
           "type": "text",
           "label": "Training API URL",
           "description": "URL for the training booking Apps Script.",
-          "value": "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec"
+          "value": "https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
         },
         {
           "identifier": "training_api_key",

@@ -7,7 +7,7 @@
   // NOTE: Remove these fallback values before any public release.
   const FALLBACK_BOOKING_CONFIG = {
     baseUrl:
-      "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec",
+      "https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec",
     apiKey: "c8032a6a14e04710a701aadd27f8e5d5"
   };
 

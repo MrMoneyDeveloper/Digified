@@ -27,8 +27,8 @@ If Zendesk Guide is connected directly to GitHub (instead of ZIP upload), use th
 The room booking page relies on a Google Apps Script web app that returns available sessions and creates Zendesk tickets after a booking.
 
 Calendar_API deployment:
-- Deployment ID: `AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX`
-- Web App URL: `https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec`
+- Deployment ID: `AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU`
+- Web App URL: `https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec`
 
 Apps Script properties (Project Settings > Script properties):
 - `ZD_SUBDOMAIN`: Zendesk subdomain used for ticket creation.
@@ -41,7 +41,7 @@ Add session rows to the Apps Script `SESSIONS` sheet for the date range you want
 
 Zendesk theme settings (Guide Admin > Customize > Theme settings):
 - Set `room_booking_api_url` to the Apps Script web app URL.
-- Run `https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec?action=init` once, then copy `ROOM_BOOKING_API_KEY` from the Apps Script SETTINGS sheet.
+- Run `https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec?action=init` once, then copy `ROOM_BOOKING_API_KEY` from the Apps Script SETTINGS sheet.
 - Set `room_booking_api_key` to that key.
 - Set `room_booking_api_mode` to `jsonp` (default) or `fetch` depending on CORS support.
 - Optional: set `room_booking_iframe_url` if you want to embed a full booking UI instead of the API flow.
