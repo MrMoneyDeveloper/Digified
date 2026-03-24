@@ -1,0 +1,50 @@
+<div class="container-divider"></div>
+<div class="container">
+  <div class="sub-nav">
+    {{breadcrumbs}}
+    <div class="search-container">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" focusable="false" viewBox="0 0 12 12" class="search-icon" aria-hidden="true">
+        <circle cx="4.5" cy="4.5" r="4" fill="none" stroke="currentColor"/>
+        <path stroke="currentColor" stroke-linecap="round" d="M11 11L7.5 7.5"/>
+      </svg>
+      {{search scoped=settings.scoped_kb_search submit=false}}
+    </div>
+  </div>
+
+  <div class="category-container">
+    <div class="category-content">
+      <header class="page-header">
+        <h1>{{category.name}}</h1>
+        {{#if category.description}}
+          <p class="page-header-description">{{category.description}}</p>
+        {{/if}}
+      </header>
+
+      <div id="main-content">
+        {{#if sections}}
+          <div class="policy-cards-grid">
+            {{#each sections}}
+              <article class="policy-card">
+                <div class="policy-card__icon" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                </div>
+                <h2 class="policy-card__title">{{name}}</h2>
+                {{#if description}}
+                  <p class="policy-card__description">{{description}}</p>
+                {{/if}}
+                <a href="{{url}}" class="policy-card__link">View Policy &rarr;</a>
+              </article>
+            {{/each}}
+          </div>
+        {{else}}
+          <i class="category-empty">
+            <a href="{{category.url}}">{{t 'empty'}}</a>
+          </i>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+</div>

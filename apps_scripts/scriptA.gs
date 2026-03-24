@@ -1448,6 +1448,48 @@ function logBookingFailure_(ss, params) {
   }));
 }
 
+function safeJsonParse_(value) {
+  const s = String(value || "").trim();
+  if (!s) return null;
+  try {
+    return JSON.parse(s);
+  } catch (ignore) {
+    return null;
+  }
+}
+
+function extractRequestWindowFromDebugJson_(rawDebug) {
+  const parsed = safeJsonParse_(rawDebug);
+  if (!parsed || typeof parsed !== "object") return null;
+  const request = parsed.request && typeof parsed.request === "object"
+    ? parsed.request
+    : parsed;
+  const startDate = String(request.start_date || request.date || "").trim();
+  const startTime = normalizeHHMM_(request.start_time || "");
+  const endDate = String(request.end_date || startDate || "").trim();
+  let endTime = normalizeHHMM_(request.end_time || "");
+  const durationMinutes = toInt_(request.duration_minutes, 0);
+  const dept = normalizeDept_(request.dept || CFG.RULES.DEFAULT_DEPT);
+  const rules = getRoomRules_(dept);
+
+  if (!startDate || !startTime) return null;
+  if (!endTime && durationMinutes > 0) {
+    endTime = addMinutesToHHMM_(startTime, durationMinutes);
+  }
+  if (!endTime) {
+    endTime = addMinutesToHHMM_(startTime, rules.slot_minutes);
+  }
+
+  return {
+    dept: dept,
+    start_date: startDate,
+    start_time: startTime,
+    end_date: endDate || startDate,
+    end_time: endTime,
+    duration_minutes: durationMinutes > 0 ? durationMinutes : durationBetweenHHMM_(startTime, endTime),
+  };
+}
+
 function normalizeRequestWindow_(request) {
   if (!request) return null;
   const dept = normalizeDept_(request.dept || CFG.RULES.DEFAULT_DEPT);
@@ -1472,16 +1514,41 @@ function normalizeRequestWindow_(request) {
 }
 
 function bookingRowWindow_(row, idx) {
-  const dept = normalizeDept_(row[idx.dept] || CFG.RULES.DEFAULT_DEPT);
-  const rules = getRoomRules_(dept);
+  const explicitDept = normalizeDept_(row[idx.dept] || CFG.RULES.DEFAULT_DEPT);
+  let dept = explicitDept;
+  let rules = getRoomRules_(dept);
   const slot = parseSlotId_(row[idx.slot_id] || "");
+  const debugWindow = extractRequestWindowFromDebugJson_(idx.debug_json >= 0 ? row[idx.debug_json] : "");
 
-  const startDate = String(row[idx.start_date] || (slot ? slot.date : "")).trim();
-  const startTime = normalizeHHMM_(row[idx.start_time] || (slot ? slot.start_time : ""));
-  let endDate = String(row[idx.end_date] || startDate).trim();
+  let startDate = String(row[idx.start_date] || "").trim();
+  let startTime = normalizeHHMM_(row[idx.start_time] || "");
+  let endDate = String(row[idx.end_date] || "").trim();
   let endTime = normalizeHHMM_(row[idx.end_time] || "");
+  let durationMinutes = idx.duration_minutes >= 0 ? toInt_(row[idx.duration_minutes], 0) : 0;
+
+  if (!startDate && debugWindow && debugWindow.start_date) startDate = debugWindow.start_date;
+  if (!startDate && slot) startDate = slot.date;
+
+  if (!startTime && debugWindow && debugWindow.start_time) startTime = debugWindow.start_time;
+  if (!startTime && slot) startTime = slot.start_time;
+
+  if (!endDate && debugWindow && debugWindow.end_date) endDate = debugWindow.end_date;
+  if (!endDate) endDate = startDate;
+
+  if (!endTime && debugWindow && debugWindow.end_time) endTime = debugWindow.end_time;
+  if (!durationMinutes && debugWindow && debugWindow.duration_minutes) {
+    durationMinutes = debugWindow.duration_minutes;
+  }
+
+  if ((!row[idx.dept] || !String(row[idx.dept]).trim()) && debugWindow && debugWindow.dept) {
+    dept = normalizeDept_(debugWindow.dept);
+    rules = getRoomRules_(dept);
+  }
 
   if (!startDate || !startTime) return null;
+  if (!endTime && durationMinutes > 0) {
+    endTime = addMinutesToHHMM_(startTime, durationMinutes);
+  }
   if (!endTime) endTime = addMinutesToHHMM_(startTime, rules.slot_minutes);
   if (!endDate) endDate = startDate;
 
@@ -1493,6 +1560,53 @@ function bookingRowWindow_(row, idx) {
     end_time: endTime,
   });
   return window;
+}
+
+function repairBookingWindowFields_() {
+  const ss = getSS_();
+  const sh = ss.getSheetByName(CFG.SHEETS.BOOKINGS);
+  if (!sh) return { ok: false, error: "BOOKINGS_NOT_FOUND" };
+
+  const values = sh.getDataRange().getValues();
+  if (values.length < 2) return { ok: true, scanned: 0, repaired: 0 };
+
+  const idx = indexMap_(values[0].map(String));
+  let repaired = 0;
+
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    const derived = bookingRowWindow_(row, idx);
+    if (!derived) continue;
+
+    let changed = false;
+    if (idx.dept >= 0 && !String(row[idx.dept] || "").trim()) {
+      sh.getRange(i + 1, idx.dept + 1).setValue(derived.dept);
+      changed = true;
+    }
+    if (idx.start_date >= 0 && !String(row[idx.start_date] || "").trim()) {
+      sh.getRange(i + 1, idx.start_date + 1).setValue(derived.start_date);
+      changed = true;
+    }
+    if (idx.start_time >= 0 && !String(row[idx.start_time] || "").trim()) {
+      sh.getRange(i + 1, idx.start_time + 1).setValue(derived.start_time);
+      changed = true;
+    }
+    if (idx.end_date >= 0 && !String(row[idx.end_date] || "").trim()) {
+      sh.getRange(i + 1, idx.end_date + 1).setValue(derived.end_date);
+      changed = true;
+    }
+    if (idx.end_time >= 0 && !String(row[idx.end_time] || "").trim()) {
+      sh.getRange(i + 1, idx.end_time + 1).setValue(derived.end_time);
+      changed = true;
+    }
+    if (idx.duration_minutes >= 0 && !String(row[idx.duration_minutes] || "").trim()) {
+      sh.getRange(i + 1, idx.duration_minutes + 1).setValue(durationBetweenHHMM_(derived.start_time, derived.end_time));
+      changed = true;
+    }
+    if (changed) repaired++;
+  }
+
+  return { ok: true, scanned: values.length - 1, repaired: repaired };
 }
 
 function rangesOverlap_(aStart, aEnd, bStart, bEnd) {
@@ -1909,5 +2023,9 @@ function indexMap_(header) {
     meet_error_details: m["meet_error_details"] ?? 17,
     meet_created_at: m["meet_created_at"] ?? 18,
   };
+}
+
+function repairBookingWindowFields() {
+  return repairBookingWindowFields_();
 }
 
