@@ -1,0 +1,146 @@
+<div class="policies-page">
+  <div class="container py-5">
+    <header class="policies-header text-center mb-5">
+      <h1 class="policies-title">Policies</h1>
+      <p class="policies-lead">
+        Review Digify BPO workplace policies in one place. Choose any card to open the full article.
+      </p>
+    </header>
+
+    <section class="policy-card-grid" aria-label="Key workplace policies">
+      <div class="row row-cols-1 row-cols-md-2 g-4">
+        <div class="col">
+          <article class="policy-card cxi-policy-card h-100">
+            <div class="cxi-card-icon-wrap">
+              {{#if settings.clean_desk_policy_icon_url}}
+                <img class="policy-card-icon cxi-card-icon-img" src="{{settings.clean_desk_policy_icon_url}}" alt="" role="presentation">
+              {{else}}
+                <i class="fa-solid fa-broom cxi-card-icon" aria-hidden="true"></i>
+              {{/if}}
+            </div>
+            <h3>Clean Desk Policy</h3>
+            <p>Keep workstations free of unsecured printouts, badges, or devices to guard customer data around the clock.</p>
+            <ul>
+              <li>Lock your screen any time you step away.</li>
+              <li>Shred or store sensitive notes before leaving.</li>
+            </ul>
+            <a class="link-cta cxi-card-btn" href="{{settings.clean_desk_policy_url}}">
+              Read policy
+              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+            </a>
+          </article>
+        </div>
+
+        <div class="col">
+          <article class="policy-card cxi-policy-card h-100">
+            <div class="cxi-card-icon-wrap">
+              {{#if settings.pci_policy_icon_url}}
+                <img class="policy-card-icon cxi-card-icon-img" src="{{settings.pci_policy_icon_url}}" alt="" role="presentation">
+              {{else}}
+                <i class="fa-solid fa-shield-halved cxi-card-icon" aria-hidden="true"></i>
+              {{/if}}
+            </div>
+            <h3>PCI Compliance Policy</h3>
+            <p>Safeguard cardholder data with segmented tools, approved devices, and immediate incident reporting.</p>
+            <ul>
+              <li>Never store payment data in tickets or chats.</li>
+              <li>Escalate suspected exposure within 15 minutes.</li>
+            </ul>
+            <a class="link-cta cxi-card-btn" href="{{settings.pci_policy_url}}">
+              View PCI standard
+              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+            </a>
+          </article>
+        </div>
+
+        <div class="col">
+          <article class="policy-card cxi-policy-card h-100">
+            <div class="cxi-card-icon-wrap">
+              {{#if settings.harassment_policy_icon_url}}
+                <img class="policy-card-icon cxi-card-icon-img" src="{{settings.harassment_policy_icon_url}}" alt="" role="presentation">
+              {{else}}
+                <i class="fa-solid fa-people-roof cxi-card-icon" aria-hidden="true"></i>
+              {{/if}}
+            </div>
+            <h3>Sexual Harassment Policy</h3>
+            <p>Digify BPO has zero tolerance for harassment; raise concerns immediately and without fear of retaliation.</p>
+            <ul>
+              <li>Report via HR, your leader, or the hotline.</li>
+              <li>Retaliation for reporting is prohibited.</li>
+            </ul>
+            <a class="link-cta cxi-card-btn" href="{{settings.harassment_policy_url}}">
+              Report or review
+              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+            </a>
+          </article>
+        </div>
+
+        <div class="col">
+          <article class="policy-card cxi-policy-card h-100">
+            <div class="cxi-card-icon-wrap">
+              {{#if settings.smoking_policy_icon_url}}
+                <img class="policy-card-icon cxi-card-icon-img" src="{{settings.smoking_policy_icon_url}}" alt="" role="presentation">
+              {{else}}
+                <i class="fa-solid fa-smoking cxi-card-icon" aria-hidden="true"></i>
+              {{/if}}
+            </div>
+            <h3>Smoking Policy</h3>
+            <p>Maintain clean indoor air by limiting smoking and vaping to approved spaces and schedules.</p>
+            <ul>
+              <li>Smoke only in the designated outdoor zones.</li>
+              <li>Dispose of waste to avoid citations.</li>
+            </ul>
+            <a class="link-cta cxi-card-btn" href="{{settings.smoking_policy_url}}">
+              See smoking rules
+              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+            </a>
+          </article>
+        </div>
+
+        <div class="col">
+          <article class="policy-card cxi-policy-card h-100">
+            <div class="cxi-card-icon-wrap">
+              {{#if settings.drug_policy_icon_url}}
+                <img class="policy-card-icon cxi-card-icon-img" src="{{settings.drug_policy_icon_url}}" alt="" role="presentation">
+              {{else}}
+                <i class="fa-solid fa-wine-bottle cxi-card-icon" aria-hidden="true"></i>
+              {{/if}}
+            </div>
+            <h3>Drug and Alcohol Policy</h3>
+            <p>Arrive fit for duty and remain substance-free during every shift, including breaks.</p>
+            <ul>
+              <li>Random or for-cause screening protects teammates.</li>
+              <li>Possession or sale onsite triggers immediate action.</li>
+            </ul>
+            <a class="link-cta cxi-card-btn" href="{{settings.drug_policy_url}}">
+              Review sobriety rules
+              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+            </a>
+          </article>
+        </div>
+
+        <div class="col">
+          <article class="policy-card cxi-policy-card h-100">
+            <div class="cxi-card-icon-wrap">
+              {{#if settings.locker_policy_icon_url}}
+                <img class="policy-card-icon cxi-card-icon-img" src="{{settings.locker_policy_icon_url}}" alt="" role="presentation">
+              {{else}}
+                <i class="fa-solid fa-door-closed cxi-card-icon" aria-hidden="true"></i>
+              {{/if}}
+            </div>
+            <h3>Locker Policy</h3>
+            <p>Secure personal items and sensitive materials inside assigned lockers to keep operations protected.</p>
+            <ul>
+              <li>Only company-approved locks are permitted.</li>
+              <li>Report lost keys or access issues immediately.</li>
+            </ul>
+            <a class="link-cta cxi-card-btn" href="{{settings.locker_policy_url}}">
+              View locker guidance
+              <i class="fa-solid fa-arrow-right cxi-btn-icon" aria-hidden="true"></i>
+            </a>
+          </article>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

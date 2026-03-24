@@ -1,0 +1,100 @@
+<footer class="footer dbpo-footer" id="contact">
+  <div class="container py-5 dbpo-footer-inner">
+    <div class="row gy-4">
+    <div class="col-lg-4 footer-column footer-brand footer__brand">
+      <h4>Digify BPO Help Centre</h4>
+      <p>Fast answers, clear policies, and direct access to Digify specialists.</p>
+    </div>
+
+    <div class="col-sm-6 col-lg-4 footer-column footer-contact">
+        <h3 class="mb-3">Contact</h3>
+        <ul class="footer-list list-unstyled mb-0">
+          {{#if settings.service_desk_phone_link}}
+            <li>
+              <span class="footer-label">Service Desk</span>
+              <a href="tel:{{settings.service_desk_phone_link}}">{{#if settings.service_desk_phone_display}}{{settings.service_desk_phone_display}}{{else}}{{settings.service_desk_phone_link}}{{/if}}</a>
+            </li>
+          {{/if}}
+          {{#if settings.service_desk_email}}
+            <li>
+              <span class="footer-label">Email</span>
+              <a href="mailto:{{settings.service_desk_email}}">{{settings.service_desk_email}}</a>
+            </li>
+          {{/if}}
+          {{#if settings.service_desk_hours}}
+            <li>
+              <span class="footer-label">Hours</span>
+              <span>{{settings.service_desk_hours}}</span>
+            </li>
+          {{/if}}
+        </ul>
+      </div>
+
+    <div class="col-sm-6 col-lg-4 footer-column footer-links quick-links">
+      <h3 class="mb-3">Quick Links</h3>
+      <ul class="footer-list list-unstyled mb-0 footer__links">
+        <li><a href="{{page_path 'help_center'}}">Home</a></li>
+        <li><a href="{{#if settings.policies_root_url}}{{settings.policies_root_url}}{{else}}{{page_path 'section' id=23441547733404}}{{/if}}">Policies</a></li>
+        <li><a href="{{page_path 'new_request'}}?ticket_form_id={{#if settings.external_support_form_id}}{{settings.external_support_form_id}}{{else}}23381214703004{{/if}}">Request Support</a></li>
+      </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom row align-items-center pt-4 mt-4">
+      <div class="col-md-6">
+        <p class="mb-0">&copy; {{date 'now' format='YYYY'}} Digify BPO Help Centre. All rights reserved.</p>
+      </div>
+      <div class="col-md-6 text-md-end mt-3 mt-md-0">
+        {{#if alternative_locales}}
+          <div class="footer-language-selector d-inline-block">
+            <div class="dropdown language-selector">
+              <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                {{current_locale.name}}
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                {{#each alternative_locales}}
+                  <li><a class="dropdown-item" href="{{url}}" dir="{{direction}}" rel="nofollow">{{name}}</a></li>
+                {{/each}}
+              </ul>
+            </div>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+<script src="{{asset 'bootstrap.bundle.min.js'}}"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/tsparticles@3/tsparticles.bundle.min.js"></script>
+<script>
+  (function () {
+    function initParticles() {
+      if (!window.tsParticles) {
+        window.setTimeout(initParticles, 120);
+        return;
+      }
+      if (!document.getElementById("tsparticles")) {
+        return;
+      }
+      window.tsParticles.load("tsparticles", {
+        fullScreen: { enable: true },
+        detectRetina: true,
+        particles: {
+          number: { value: 60, density: { enable: true, area: 800 } },
+          move: { enable: true, speed: 1.2 },
+          size: { value: { min: 1, max: 3 } },
+          links: { enable: true, distance: 140, opacity: 0.4 }
+        }
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initParticles);
+    } else {
+      initParticles();
+    }
+  })();
+</script>
+
