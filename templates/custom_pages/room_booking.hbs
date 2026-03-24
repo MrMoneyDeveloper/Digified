@@ -1,4 +1,4 @@
-<!-- ROOM_BOOKING_VERSION: 2026-03-24-03 -->
+<!-- ROOM_BOOKING_VERSION: 2026-03-24-04 -->
 <link rel="stylesheet" href="{{asset 'training-bookings.css'}}">
 <script>
   window.ROOM_BOOKING_CFG = {
@@ -9,23 +9,23 @@
 
 <section class="training-bookings training-bookings--room-page">
   <div class="container">
-    <p class="tb-build-tag" data-room-booking-build="2026-03-24-03">Room booking UI build 2026-03-24-03</p>
+    <p class="tb-build-tag" data-room-booking-build="2026-03-24-04">Room booking UI build 2026-03-24-04</p>
     <div class="tb-hero">
-      <h1>Book Training Rooms</h1>
+      <h1>Book Rooms</h1>
       <p class="tb-intro">
-        Choose a room, then drag across the calendar to select the exact training window you need.
-        Training rooms use separate availability and 30-minute booking steps between 08:00 and 20:00.
+        Training Room 1 and Training Room 2 are available from 08:00 to 20:00 in 30-minute steps.
+        The Interview Room (Meeting Room) is available from 12:00 to 20:00 in 60-minute slots.
       </p>
     </div>
 
     <div class="tb-guide" aria-label="How training room booking works">
       <div class="tb-guide__card">
         <span class="tb-guide__eyebrow">1. Choose the room</span>
-        <p>Training Room 1 and Training Room 2 have separate calendars. Switching rooms loads that room's own availability.</p>
+        <p>Each room has its own calendar. Training Room 1, Training Room 2, and the Interview Room load separate availability.</p>
       </div>
       <div class="tb-guide__card">
         <span class="tb-guide__eyebrow">2. Drag to set the time</span>
-        <p>Drag on the first day column to choose a continuous time range. Each block is 30 minutes, from 08:00 to 20:00.</p>
+        <p>Training rooms let you drag across 30-minute blocks. The Interview Room uses fixed 60-minute slots from 12:00 onward.</p>
       </div>
       <div class="tb-guide__card">
         <span class="tb-guide__eyebrow">3. Repeat days if needed</span>
@@ -57,6 +57,7 @@
             <select class="form-control" id="training-room" name="room" required>
               <option value="Training Room 1">Training Room 1</option>
               <option value="Training Room 2">Training Room 2</option>
+              <option value="Interview Room">Interview Room (Meeting Room)</option>
             </select>
           </div>
           <div class="tb-field">
@@ -92,7 +93,7 @@
         <div id="training-booking-modal" class="tb-modal" aria-hidden="true" hidden>
           <div class="tb-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="training-booking-modal-title">
             <div class="tb-modal-header">
-              <h2 class="tb-modal-title" id="training-booking-modal-title">Book Training Room</h2>
+              <h2 class="tb-modal-title" id="training-booking-modal-title">Book Room</h2>
               <button class="tb-modal-close" type="button" id="training-booking-modal-close" aria-label="Close">x</button>
             </div>
             <div class="tb-modal-body">

@@ -820,7 +820,7 @@
    * Updated: 2026-01-04
    */
   window.TRAINING_BOOKING_CFG = {
-    baseUrl: "https://script.google.com/macros/s/AKfycbxZUHO8KiN6-oawtgTnXJy9yf2OPU1hpnRgcrnyaAB8SzMv3J5EylrhC4_Dgv0_dX/exec",
+    baseUrl: "https://script.google.com/macros/s/AKfycbxKZUHO8KiN6-oawtgTnXJy9yf2OPUT1hpnRgcrnygAB8SzMv3J5EylrhC4_Dgv0_dX/exec",
     apiKey: "c8032a6a14e04710a701aadd27f8e5d5"
   };
 
@@ -843,8 +843,8 @@
 <section class="training-bookings">
   <div class="container">
     <div class="tb-hero">
-      <h1>Book Training Room</h1>
-      <p class="tb-intro">Choose a room, then drag across the half-hour calendar on your start date to set the exact training window you need.</p>
+      <h1>Book Rooms</h1>
+      <p class="tb-intro">Choose a room, then select the exact booking window you need. Training rooms use 30-minute steps from 08:00 to 20:00, while the Interview Room runs from 12:00 to 20:00 in 60-minute slots.</p>
     </div>
 
     {{#if signed_in}}
@@ -867,6 +867,7 @@
             <select class="form-control" id="training-room" name="room" required>
               <option value="Training Room 1">Training Room 1</option>
               <option value="Training Room 2">Training Room 2</option>
+              <option value="Interview Room">Interview Room (Meeting Room)</option>
             </select>
           </div>
           <div class="tb-field">
@@ -902,7 +903,7 @@
         <div id="training-booking-modal" class="tb-modal" aria-hidden="true" hidden>
           <div class="tb-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="training-booking-modal-title">
             <div class="tb-modal-header">
-              <h2 class="tb-modal-title" id="training-booking-modal-title">Book Training Room</h2>
+              <h2 class="tb-modal-title" id="training-booking-modal-title">Book Room</h2>
               <button class="tb-modal-close" type="button" id="training-booking-modal-close" aria-label="Close">x</button>
             </div>
             <div class="tb-modal-body">
@@ -950,8 +951,8 @@
       </div>
     {{else}}
       <div class="tb-signed-out">
-        <p>Please sign in to view and book training sessions.</p>
-        <a class="btn btn-primary" href="/hc/en-us/signin">Sign in</a>
+        <p>Please sign in to view and book rooms.</p>
+        <a class="btn btn-primary" href="/hc/{{help_center.locale}}/signin">Sign in</a>
       </div>
     {{/if}}
   </div>

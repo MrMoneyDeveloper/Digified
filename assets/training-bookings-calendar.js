@@ -7,12 +7,40 @@
   const root = document.getElementById("training-booking-root");
   if (!root) return;
 
-  const ROOMS = ["Training Room 1", "Training Room 2"];
-  const SLOT_MINUTES = 30;
-  const DAY_START = 8 * 60;
-  const DAY_END = 20 * 60;
+  const ROOM_CONFIGS = {
+    "Training Room 1": {
+      value: "Training Room 1",
+      label: "Training Room 1",
+      dayStart: 8 * 60,
+      dayEnd: 20 * 60,
+      slotMinutes: 30,
+      footnote:
+        "Training rooms are bookable Monday to Friday between 08:00 and 20:00 in 30-minute steps."
+    },
+    "Training Room 2": {
+      value: "Training Room 2",
+      label: "Training Room 2",
+      dayStart: 8 * 60,
+      dayEnd: 20 * 60,
+      slotMinutes: 30,
+      footnote:
+        "Training rooms are bookable Monday to Friday between 08:00 and 20:00 in 30-minute steps."
+    },
+    "Interview Room": {
+      value: "Interview Room",
+      label: "Interview Room (Meeting Room)",
+      dayStart: 12 * 60,
+      dayEnd: 20 * 60,
+      slotMinutes: 60,
+      footnote:
+        "The interview room is bookable Monday to Friday between 12:00 and 20:00 in 60-minute steps."
+    }
+  };
+  const ROOM_ORDER = Object.keys(ROOM_CONFIGS);
+  const DEFAULT_ROOM = ROOM_ORDER[0];
   const MAX_REPEAT_DAYS = 5;
   const TZ = "Africa/Johannesburg";
+  const SLOT_MODEL_CACHE = Object.create(null);
 
   const configProvider = window.DigifyBookingConfig;
   const config =
@@ -81,20 +109,8 @@
     timeZone: TZ
   });
 
-  const TIME_SLOTS = [];
-  const SLOT_INDEX = Object.create(null);
-  for (let m = DAY_START; m < DAY_END; m += SLOT_MINUTES) {
-    const slot = {
-      index: TIME_SLOTS.length,
-      start_time: minutesToHHMM(m),
-      end_time: minutesToHHMM(m + SLOT_MINUTES)
-    };
-    TIME_SLOTS.push(slot);
-    SLOT_INDEX[slot.start_time] = slot.index;
-  }
-
   const state = {
-    room: ROOMS[0],
+    room: DEFAULT_ROOM,
     startDate: "",
     repeatDays: 0,
     dates: [],
@@ -342,14 +358,50 @@
     );
   }
 
+  function hhmmToMinutes(value) {
+    const parts = String(value || "").split(":");
+    if (parts.length !== 2) return NaN;
+    const hours = Number(parts[0]);
+    const minutes = Number(parts[1]);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return NaN;
+    return (hours * 60) + minutes;
+  }
+
   function slotId(date, startTime) {
     return ("SLOT_" + date + "_" + String(startTime).replace(":", "")).toUpperCase();
   }
 
+  function getRoomConfig(value) {
+    return ROOM_CONFIGS[normalizeRoom(value)] || ROOM_CONFIGS[DEFAULT_ROOM];
+  }
+
+  function roomLabel(value) {
+    return getRoomConfig(value).label;
+  }
+
+  function timeSlotsForRoom(value) {
+    const room = normalizeRoom(value);
+    if (!SLOT_MODEL_CACHE[room]) {
+      const config = getRoomConfig(room);
+      const slots = [];
+      for (let m = config.dayStart; m < config.dayEnd; m += config.slotMinutes) {
+        slots.push({
+          index: slots.length,
+          start_time: minutesToHHMM(m),
+          end_time: minutesToHHMM(m + config.slotMinutes)
+        });
+      }
+      SLOT_MODEL_CACHE[room] = slots;
+    }
+    return SLOT_MODEL_CACHE[room];
+  }
+
   function normalizeRoom(value) {
-    return ROOMS.indexOf(String(value || "").trim()) >= 0
-      ? String(value || "").trim()
-      : ROOMS[0];
+    const raw = String(value || "").trim();
+    if (!raw) return DEFAULT_ROOM;
+    if (ROOM_CONFIGS[raw]) return raw;
+    if (raw.toLowerCase() === "meeting room") return "Interview Room";
+    return DEFAULT_ROOM;
   }
 
   function displayDates(startDate, repeatDays) {
@@ -397,7 +449,7 @@
   }
 
   function availability(date, slotIndex) {
-    const slot = TIME_SLOTS[slotIndex];
+    const slot = timeSlotsForRoom(state.room)[slotIndex];
     const session =
       state.lookup[date] && slot ? state.lookup[date][slot.start_time] : null;
     if (!session) {
@@ -411,13 +463,21 @@
   }
 
   function buildRange(anchorIndex, currentIndex) {
-    const startIndex = Math.min(anchorIndex, currentIndex);
-    const endIndex = Math.max(anchorIndex, currentIndex);
+    const slots = timeSlotsForRoom(state.room);
+    const config = getRoomConfig(state.room);
+    const startIndex =
+      config.slotMinutes === 60
+        ? currentIndex
+        : Math.min(anchorIndex, currentIndex);
+    const endIndex =
+      config.slotMinutes === 60
+        ? currentIndex
+        : Math.max(anchorIndex, currentIndex);
     return {
-      slot_id: slotId(state.startDate, TIME_SLOTS[startIndex].start_time),
+      slot_id: slotId(state.startDate, slots[startIndex].start_time),
       start_date: state.startDate,
-      start_time: TIME_SLOTS[startIndex].start_time,
-      end_time: TIME_SLOTS[endIndex].end_time,
+      start_time: slots[startIndex].start_time,
+      end_time: slots[endIndex].end_time,
       room: state.room,
       repeat_days: state.repeatDays,
       dates: state.dates.slice(),
@@ -502,7 +562,7 @@
     ui.selection.innerHTML =
       '<span class="tb-selection-summary__label">Selected window</span>' +
       '<p class="tb-selection-summary__text">' +
-      state.selected.room +
+      roomLabel(state.selected.room) +
       " on " +
       formatDate(state.selected.start_date, false) +
       " from " +
@@ -570,7 +630,11 @@
 
   function cellTitle(date, slot, info, primary) {
     const label = formatDate(date, true) + " " + timeRange(slot.start_time, slot.end_time);
-    if (info.available && primary) return "Drag to select " + label + ".";
+    if (info.available && primary) {
+      return getRoomConfig(state.room).slotMinutes === 60
+        ? "Select " + label + "."
+        : "Drag to select " + label + ".";
+    }
     if (info.available) return "Repeat-day preview for " + label + ".";
     if (info.reserved_by) return label + " is booked by " + info.reserved_by + ".";
     return label + " is unavailable.";
@@ -584,22 +648,28 @@
   function renderCalendar() {
     state.cells = new Map();
     if (!state.dates.length) {
-      renderPlaceholder("Select a weekday to load the training calendar.");
+      renderPlaceholder("Select a weekday to load the room calendar.");
       return;
     }
 
+    const roomConfig = getRoomConfig(state.room);
+    const slots = timeSlotsForRoom(state.room);
     const wrapper = document.createElement("section");
     wrapper.className = "tb-calendar";
     wrapper.innerHTML =
       '<div class="tb-calendar__header"><div><h2 class="tb-calendar__title">' +
-      state.room +
+      roomLabel(state.room) +
       ' availability</h2><p class="tb-calendar__subtitle">' +
       (state.repeatDays
         ? "Drag on the first day column. The same time span will be checked against the next " +
           state.repeatDays +
           " weekday(s)."
-        : "Drag on the first day column to choose a continuous time range.") +
-      '</p></div><div class="tb-legend"></div></div><div class="tb-calendar__body"><div class="tb-calendar__shell"><div class="tb-calendar-grid"></div></div><p class="tb-calendar__footnote">Training rooms are bookable Monday to Friday between 08:00 and 20:00 in 30-minute steps.</p></div>';
+        : roomConfig.slotMinutes === 60
+          ? "Select a single interview slot on the first day column."
+          : "Drag on the first day column to choose a continuous time range.") +
+      '</p></div><div class="tb-legend"></div></div><div class="tb-calendar__body"><div class="tb-calendar__shell"><div class="tb-calendar-grid"></div></div><p class="tb-calendar__footnote">' +
+      roomConfig.footnote +
+      "</p></div>";
 
     const legend = wrapper.querySelector(".tb-legend");
     [
@@ -640,7 +710,7 @@
       grid.appendChild(day);
     });
 
-    TIME_SLOTS.forEach(function (slot) {
+    slots.forEach(function (slot) {
       const label = document.createElement("div");
       label.className = "tb-time-label";
       label.textContent = timeLabel(slot.start_time);
@@ -691,6 +761,7 @@
 
   async function loadCalendar(options) {
     const preserveAlert = options && options.preserveAlert === true;
+    const preserveViewOnError = options && options.preserveViewOnError === true;
     if (!preserveAlert) clearAlert();
     try {
       ensureConfig();
@@ -703,13 +774,13 @@
     clearSelection();
 
     if (!state.startDate) {
-      renderPlaceholder("Select a date to load the training calendar.");
+      renderPlaceholder("Select a date to load the room calendar.");
       setAlert("Select a valid date.", "error");
       return;
     }
     if (!state.dates.length) {
-      renderPlaceholder("Training rooms can only be booked on weekdays.");
-      setAlert("Training rooms are available Monday to Friday only.", "error");
+      renderPlaceholder("Rooms can only be booked on weekdays.");
+      setAlert("Rooms are available Monday to Friday only.", "error");
       return;
     }
 
@@ -737,7 +808,9 @@
       );
       renderCalendar();
     } catch (error) {
-      renderPlaceholder("Unable to load the training calendar right now.");
+      if (!preserveViewOnError || !ui.list.querySelector(".tb-calendar")) {
+        renderPlaceholder("Unable to load the room calendar right now.");
+      }
       if (!preserveAlert) {
         setAlert(friendlyError(error, "Unable to load availability."), "error", {
           action: { label: "Retry", onClick: loadCalendar }
@@ -761,7 +834,7 @@
       .join(", ");
     ui.sessionSummary.textContent =
       "Room: " +
-      state.selected.room +
+      roomLabel(state.selected.room) +
       " | Date: " +
       formatDate(state.selected.start_date, false) +
       " | Time: " +
@@ -831,9 +904,11 @@
 
   function validatePayload(payload) {
     if (!payload.start_date || !payload.start_time || !payload.end_time) {
-      return "Please drag across the calendar to select a time range.";
+      return getRoomConfig(state.room).slotMinutes === 60
+        ? "Please select an interview room slot."
+        : "Please drag across the calendar to select a time range.";
     }
-    if (!payload.dept) return "Please choose a training room.";
+    if (!payload.dept) return "Please choose a room.";
     if (!payload.requester_name || !payload.requester_email) {
       return "Requester details are required.";
     }
@@ -876,12 +951,42 @@
     wrapper.innerHTML =
       '<div class="tb-booking-confirmation__body"><h2>Booked</h2><p>' +
       (count > 1
-        ? "Your training room bookings have been confirmed."
-        : "Your training room booking has been confirmed.") +
+        ? "Your room bookings have been confirmed."
+        : "Your room booking has been confirmed.") +
       '</p><p class="tb-booking-confirmation__note">A confirmation email has been sent to <strong>' +
       String(email || "your email") +
       "</strong>.</p></div>";
     ui.modalForm.parentNode.insertBefore(wrapper, ui.modalForm);
+  }
+
+  function applyOptimisticBooking(payload) {
+    const room = normalizeRoom(payload.dept || state.room);
+    const dates = displayDates(payload.start_date, Number(payload.repeat_days || 0));
+    const slots = timeSlotsForRoom(room);
+    const startMinutes = hhmmToMinutes(payload.start_time);
+    const endMinutes = hhmmToMinutes(payload.end_time);
+    if (!dates.length || Number.isNaN(startMinutes) || Number.isNaN(endMinutes)) {
+      return;
+    }
+
+    dates.forEach(function (date) {
+      if (!state.lookup[date]) state.lookup[date] = Object.create(null);
+      slots.forEach(function (slot) {
+        const slotStart = hhmmToMinutes(slot.start_time);
+        const slotEnd = hhmmToMinutes(slot.end_time);
+        if (slotStart >= startMinutes && slotEnd <= endMinutes) {
+          state.lookup[date][slot.start_time] = {
+            date: date,
+            start_time: slot.start_time,
+            end_time: slot.end_time,
+            dept: room,
+            available: false,
+            status: "full",
+            reserved_by: String(payload.requester_name || "").trim()
+          };
+        }
+      });
+    });
   }
 
   function handleBookingResponse(json, payload) {
@@ -948,10 +1053,12 @@
         resetSubmitButton();
         return;
       }
+      applyOptimisticBooking(payload);
       setTimeout(function () {
         closeModal();
         clearSelection();
-        loadCalendar({ preserveAlert: true });
+        renderCalendar();
+        loadCalendar({ preserveAlert: true, preserveViewOnError: true });
       }, 1800);
     } catch (error) {
       setAlert(friendlyError(error, "Booking failed."), "error", {
@@ -964,7 +1071,7 @@
   }
 
   ui.date.value = ui.date.value || todayIsoInTz();
-  ui.room.value = ui.room.value || ROOMS[0];
+  ui.room.value = ui.room.value || DEFAULT_ROOM;
   ui.repeatDays.value = ui.repeatDays.value || "0";
 
   const currentUser = getCurrentUser();
@@ -978,7 +1085,7 @@
   ui.reset.addEventListener("click", function () {
     ui.filtersForm.reset();
     ui.date.value = todayIsoInTz();
-    ui.room.value = ROOMS[0];
+    ui.room.value = DEFAULT_ROOM;
     ui.repeatDays.value = "0";
     clearAlert();
     clearSelection();
