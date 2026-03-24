@@ -13,6 +13,21 @@
   margin-bottom: 24px;
 }
 
+.tb-build-tag {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 16px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(18, 35, 63, 0.1);
+  color: #3f5673;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .tb-hero h1 {
   margin: 0 0 10px;
   font-size: clamp(2rem, 3vw, 2.9rem);
@@ -25,6 +40,38 @@
   color: #48607e;
   font-size: 1.02rem;
   line-height: 1.6;
+}
+
+.tb-guide {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.tb-guide__card {
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(18, 35, 63, 0.1);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 12px 28px rgba(17, 35, 63, 0.06);
+}
+
+.tb-guide__eyebrow {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #2456d6;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tb-guide__card p {
+  margin: 0;
+  color: #425a76;
+  font-size: 0.92rem;
+  line-height: 1.55;
 }
 
 .tb-alert {
@@ -599,6 +646,14 @@ body.tb-dragging {
 @media (max-width: 768px) {
   .training-bookings {
     padding: 28px 0 48px;
+  }
+
+  .tb-build-tag {
+    margin-bottom: 14px;
+  }
+
+  .tb-guide {
+    grid-template-columns: 1fr;
   }
 
   .tb-filters {

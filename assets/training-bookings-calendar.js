@@ -2,7 +2,7 @@
   "use strict";
 
   const path = window.location.pathname || "";
-  if (!/\/hc\/[^/]+\/p\/training_booking/.test(path)) return;
+  if (!/\/hc\/[^/]+\/p\/(?:training_booking|room_booking)/.test(path)) return;
 
   const root = document.getElementById("training-booking-root");
   if (!root) return;
