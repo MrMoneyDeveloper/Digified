@@ -1565,7 +1565,7 @@ function logFailure(img, phase) {
       timeoutId = setTimeout(function () {
         cleanup();
         reject(new Error("JSONP request timed out."));
-      }, 15000);
+      }, 60000);
 
       script.src = url;
       (document.head || document.body).appendChild(script);
@@ -2107,7 +2107,7 @@ function logFailure(img, phase) {
       timeoutId = setTimeout(() => {
         cleanup();
         reject(new Error("JSONP request timed out."));
-      }, 15000);
+      }, 60000);
 
       script.src = url;
       (document.head || document.body).appendChild(script);

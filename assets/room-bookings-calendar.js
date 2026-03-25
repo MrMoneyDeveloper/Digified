@@ -551,11 +551,11 @@
           requestId: requestId,
           action: action,
           duration: `${duration}ms`,
-          timeout: "15000ms"
+          timeout: "60000ms"
         });
 
         reject(new Error("JSONP request timed out."));
-      }, 15000);
+      }, 60000);
 
       script.src = requestUrl;
       (document.head || document.body).appendChild(script);
