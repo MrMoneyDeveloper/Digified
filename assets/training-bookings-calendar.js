@@ -119,7 +119,8 @@
     lookup: Object.create(null),
     selected: null,
     drag: null,
-    cells: new Map()
+    cells: new Map(),
+    loadRequestId: 0
   };
 
   function getCurrentUser() {
@@ -775,12 +776,17 @@
     syncState();
     clearSelection();
 
-    if (!state.startDate) {
+    const requestId = ++state.loadRequestId;
+    const requestStartDate = state.startDate;
+    const requestRoom = state.room;
+    const requestDates = state.dates.slice();
+
+    if (!requestStartDate) {
       renderPlaceholder("Select a date to load the room calendar.");
       setAlert("Select a valid date.", "error");
       return;
     }
-    if (!state.dates.length) {
+    if (!requestDates.length) {
       renderPlaceholder("Rooms can only be booked on weekdays.");
       setAlert("Rooms are available Monday to Friday only.", "error");
       return;
@@ -789,10 +795,11 @@
     setLoading(true);
     try {
       const json = await jsonp("sessions", {
-        from: state.startDate,
-        to: state.dates[state.dates.length - 1],
-        dept: state.room
+        from: requestStartDate,
+        to: requestDates[requestDates.length - 1],
+        dept: requestRoom
       });
+      if (requestId !== state.loadRequestId) return;
       const message = apiError(json);
       if (message) throw new Error(message);
       const source =
@@ -805,11 +812,12 @@
         source
           .map(normalizeSession)
           .filter(function (session) {
-            return session && session.dept === state.room;
+            return session && session.dept === requestRoom;
           })
       );
       renderCalendar();
     } catch (error) {
+      if (requestId !== state.loadRequestId) return;
       if (!preserveViewOnError || !ui.list.querySelector(".tb-calendar")) {
         renderPlaceholder("Unable to load the room calendar right now.");
       }
@@ -819,7 +827,7 @@
         });
       }
     } finally {
-      setLoading(false);
+      if (requestId === state.loadRequestId) setLoading(false);
     }
   }
 
@@ -1063,7 +1071,6 @@
         closeModal();
         clearSelection();
         renderCalendar();
-        loadCalendar({ preserveAlert: true, preserveViewOnError: true });
       }, 1800);
     } catch (error) {
       setAlert(friendlyError(error, "Booking failed."), "error", {

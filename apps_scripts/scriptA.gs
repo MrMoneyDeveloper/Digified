@@ -325,6 +325,12 @@ function handleSessions_(params, requestId) {
 
   // 2) Overrides (SESSIONS)
   const overrides = readSessionsAsOverrideMap_(ss);
+  const bookedWindows = getBookedWindowsContext_(ss, {
+    dept: dept,
+    from_date: fromDate,
+    to_date: toDate
+  }).windows;
+  const bookingStats = buildSessionBookingStats_(slots, bookedWindows);
 
   // 3) Merge + compute availability from BOOKINGS
   const sessions = slots.map(s => {
@@ -343,27 +349,14 @@ function handleSessions_(params, requestId) {
       status: (o && o.status) ? String(o.status).toLowerCase() : "open",
     };
 
-    const bookedCount = countBookedForRange_(ss, {
-      dept: merged.dept,
-      start_date: merged.date,
-      start_time: merged.start_time,
-      end_date: merged.date,
-      end_time: merged.end_time,
-    });
+    const stats = bookingStats[merged.slot_id] || { booked_count: 0, latest_booker: "" };
+    const bookedCount = stats.booked_count;
     const cap = toInt_(merged.capacity, 0);
     const isFull = cap > 0 && bookedCount >= cap;
     const isCancelled = String(merged.status || "open").toLowerCase() === "cancelled";
 
     // vendor output = reserved by (latest booker if booked, else manual reserve if any)
-    const latestBooker = bookedCount > 0
-      ? getLatestBookerNameForRange_(ss, {
-          dept: merged.dept,
-          start_date: merged.date,
-          start_time: merged.start_time,
-          end_date: merged.date,
-          end_time: merged.end_time,
-        })
-      : "";
+    const latestBooker = bookedCount > 0 ? stats.latest_booker : "";
     const reservedBy = latestBooker ? latestBooker : (merged.vendor || "");
 
     return {
@@ -478,9 +471,17 @@ function handleBook_(body, requestId) {
   try {
     ensureBookingSheet_(ss);
     const prepared = [];
+    const bookingContext = {
+      overrides: readSessionsAsOverrideMap_(ss),
+      bookedWindows: getBookedWindowsContext_(ss, {
+        dept: resolved.request.dept,
+        from_date: bookingRequests[0].start_date,
+        to_date: bookingRequests[bookingRequests.length - 1].start_date
+      }).windows
+    };
 
     for (let i = 0; i < bookingRequests.length; i++) {
-      const validation = validateBookingRequest_(ss, bookingRequests[i], requesterEmail);
+      const validation = validateBookingRequest_(ss, bookingRequests[i], requesterEmail, bookingContext);
       if (!validation.ok) {
         const failCode = i > 0 ? "FAIL_REPEAT_CONFLICT" : validation.code;
         const failMessage = i > 0
@@ -516,6 +517,13 @@ function handleBook_(body, requestId) {
         );
       }
       prepared.push(validation);
+      const provisionalWindow = normalizeRequestWindow_(bookingRequests[i]);
+      if (provisionalWindow) {
+        bookingContext.bookedWindows.push(Object.assign({}, provisionalWindow, {
+          requester_name: requesterName || requesterEmail,
+          requester_email: requesterEmail
+        }));
+      }
     }
 
     for (let i = 0; i < bookingRequests.length; i++) {
@@ -1199,22 +1207,47 @@ function getLatestBookerNameForSlot_(ss, slotId, dept) {
   });
 }
 
-function countBookedForRange_(ss, request) {
+function getBookedWindowsContext_(ss, filters) {
   const sh = ss.getSheetByName(CFG.SHEETS.BOOKINGS);
-  if (!sh) return 0;
+  if (!sh) return { windows: [] };
+
   const values = sh.getDataRange().getValues();
-  if (values.length < 2) return 0;
+  if (values.length < 2) return { windows: [] };
+
   const idx = indexMap_(values[0].map(String));
+  const filterDept = filters && filters.dept ? normalizeDept_(filters.dept) : "";
+  const fromDate = filters && filters.from_date ? normaliseDateValue_(filters.from_date) : "";
+  const toDate = filters && filters.to_date ? normaliseDateValue_(filters.to_date) : "";
+  const windows = [];
+
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i];
+    if (lower_(row[idx.booking_status]) !== "booked") continue;
+
+    const window = bookingRowWindow_(row, idx);
+    if (!window) continue;
+    if (filterDept && window.dept !== filterDept) continue;
+    if (fromDate && isDateStr_(window.end_date) && window.end_date < fromDate) continue;
+    if (toDate && isDateStr_(window.start_date) && window.start_date > toDate) continue;
+
+    windows.push(Object.assign({}, window, {
+      requester_email: lower_(row[idx.requester_email]),
+      requester_name: String(row[idx.requester_name] || "").trim()
+    }));
+  }
+
+  return { windows: windows };
+}
+
+function countBookedWindowsInRange_(bookedWindows, request) {
   const normalized = normalizeRequestWindow_(request);
   if (!normalized) return 0;
 
   let count = 0;
-  for (let i = 1; i < values.length; i++) {
-    const row = values[i];
-    if (lower_(row[idx.booking_status]) !== "booked") continue;
-    const window = bookingRowWindow_(row, idx);
-    if (!window) continue;
-    if (window.dept !== normalized.dept) continue;
+  const windows = Array.isArray(bookedWindows) ? bookedWindows : [];
+  for (let i = 0; i < windows.length; i++) {
+    const window = windows[i];
+    if (!window || window.dept !== normalized.dept) continue;
     if (rangesOverlap_(normalized.start_ms, normalized.end_ms, window.start_ms, window.end_ms)) {
       count++;
     }
@@ -1222,24 +1255,18 @@ function countBookedForRange_(ss, request) {
   return count;
 }
 
-function hasActiveBookingForEmailInRange_(ss, email, request) {
-  const sh = ss.getSheetByName(CFG.SHEETS.BOOKINGS);
-  if (!sh) return false;
-  const values = sh.getDataRange().getValues();
-  if (values.length < 2) return false;
-  const idx = indexMap_(values[0].map(String));
+function hasActiveBookedWindowForEmail_(bookedWindows, email, request) {
   const normalized = normalizeRequestWindow_(request);
   if (!normalized) return false;
+
   const targetEmail = lower_(email);
   if (!targetEmail) return false;
 
-  for (let i = 1; i < values.length; i++) {
-    const row = values[i];
-    if (lower_(row[idx.booking_status]) !== "booked") continue;
-    if (lower_(row[idx.requester_email]) !== targetEmail) continue;
-    const window = bookingRowWindow_(row, idx);
-    if (!window) continue;
-    if (window.dept !== normalized.dept) continue;
+  const windows = Array.isArray(bookedWindows) ? bookedWindows : [];
+  for (let i = 0; i < windows.length; i++) {
+    const window = windows[i];
+    if (!window || window.dept !== normalized.dept) continue;
+    if (window.requester_email !== targetEmail) continue;
     if (rangesOverlap_(normalized.start_ms, normalized.end_ms, window.start_ms, window.end_ms)) {
       return true;
     }
@@ -1247,26 +1274,92 @@ function hasActiveBookingForEmailInRange_(ss, email, request) {
   return false;
 }
 
-function getLatestBookerNameForRange_(ss, request) {
-  const sh = ss.getSheetByName(CFG.SHEETS.BOOKINGS);
-  if (!sh) return "";
-  const values = sh.getDataRange().getValues();
-  if (values.length < 2) return "";
-  const idx = indexMap_(values[0].map(String));
+function getLatestBookerNameFromWindows_(bookedWindows, request) {
   const normalized = normalizeRequestWindow_(request);
   if (!normalized) return "";
 
-  for (let i = values.length - 1; i >= 1; i--) {
-    const row = values[i];
-    if (lower_(row[idx.booking_status]) !== "booked") continue;
-    const window = bookingRowWindow_(row, idx);
-    if (!window) continue;
-    if (window.dept !== normalized.dept) continue;
+  const windows = Array.isArray(bookedWindows) ? bookedWindows : [];
+  for (let i = windows.length - 1; i >= 0; i--) {
+    const window = windows[i];
+    if (!window || window.dept !== normalized.dept) continue;
     if (!rangesOverlap_(normalized.start_ms, normalized.end_ms, window.start_ms, window.end_ms)) continue;
-    const name = String(row[idx.requester_name] || "").trim();
-    return name || String(row[idx.requester_email] || "").trim();
+    return window.requester_name || window.requester_email || "";
   }
   return "";
+}
+
+function buildSessionBookingStats_(slots, bookedWindows) {
+  const stats = Object.create(null);
+  const windowsByDate = Object.create(null);
+  const windows = Array.isArray(bookedWindows) ? bookedWindows : [];
+
+  for (let i = 0; i < windows.length; i++) {
+    const window = windows[i];
+    if (!window || !window.start_date) continue;
+    if (!windowsByDate[window.start_date]) windowsByDate[window.start_date] = [];
+    windowsByDate[window.start_date].push(window);
+  }
+
+  for (let i = 0; i < slots.length; i++) {
+    const slot = slots[i];
+    const slotWindow = normalizeRequestWindow_({
+      dept: slot.dept,
+      start_date: slot.date,
+      start_time: slot.start_time,
+      end_date: slot.date,
+      end_time: slot.end_time
+    });
+    if (!slotWindow) {
+      stats[slot.slot_id] = { booked_count: 0, latest_booker: "" };
+      continue;
+    }
+
+    const dayWindows = windowsByDate[slot.date] || [];
+    let bookedCount = 0;
+    let latestBooker = "";
+
+    for (let j = 0; j < dayWindows.length; j++) {
+      const window = dayWindows[j];
+      if (!window || window.dept !== slotWindow.dept) continue;
+      if (!rangesOverlap_(slotWindow.start_ms, slotWindow.end_ms, window.start_ms, window.end_ms)) continue;
+      bookedCount++;
+      latestBooker = window.requester_name || window.requester_email || latestBooker;
+    }
+
+    stats[slot.slot_id] = {
+      booked_count: bookedCount,
+      latest_booker: latestBooker
+    };
+  }
+
+  return stats;
+}
+
+function countBookedForRange_(ss, request) {
+  const context = getBookedWindowsContext_(ss, {
+    dept: request && request.dept,
+    from_date: request && request.start_date,
+    to_date: request && request.end_date
+  });
+  return countBookedWindowsInRange_(context.windows, request);
+}
+
+function hasActiveBookingForEmailInRange_(ss, email, request) {
+  const context = getBookedWindowsContext_(ss, {
+    dept: request && request.dept,
+    from_date: request && request.start_date,
+    to_date: request && request.end_date
+  });
+  return hasActiveBookedWindowForEmail_(context.windows, email, request);
+}
+
+function getLatestBookerNameForRange_(ss, request) {
+  const context = getBookedWindowsContext_(ss, {
+    dept: request && request.dept,
+    from_date: request && request.start_date,
+    to_date: request && request.end_date
+  });
+  return getLatestBookerNameFromWindows_(context.windows, request);
 }
 
 function resolveBookingWindow_(body, dept) {
@@ -1364,7 +1457,7 @@ function expandBookingRequests_(baseRequest, repeatDays) {
   return out;
 }
 
-function validateBookingRequest_(ss, request, requesterEmail) {
+function validateBookingRequest_(ss, request, requesterEmail, context) {
   const room = normalizeDept_(request.dept);
   const rules = getRoomRules_(room);
   if (!isBookingWithinRules_(request, rules)) {
@@ -1378,7 +1471,15 @@ function validateBookingRequest_(ss, request, requesterEmail) {
   }
 
   const sessions = [];
-  const overrides = readSessionsAsOverrideMap_(ss);
+  const bookingContext = context || {};
+  const overrides = bookingContext.overrides || readSessionsAsOverrideMap_(ss);
+  const bookedWindows = Array.isArray(bookingContext.bookedWindows)
+    ? bookingContext.bookedWindows
+    : getBookedWindowsContext_(ss, {
+        dept: room,
+        from_date: request.start_date,
+        to_date: request.end_date
+      }).windows;
   for (let m = startMin; m < endMin; m += rules.slot_minutes) {
     const slotStart = minutesToHHMM_(m);
     const slotEnd = minutesToHHMM_(m + rules.slot_minutes);
@@ -1389,7 +1490,7 @@ function validateBookingRequest_(ss, request, requesterEmail) {
     if (String(slot.status || "open").toLowerCase() === "cancelled") {
       return { ok: false, code: "FAIL_CANCELLED", message: messageForFailCode_("FAIL_CANCELLED"), statusCode: 409 };
     }
-    const bookedCount = countBookedForRange_(ss, {
+    const bookedCount = countBookedWindowsInRange_(bookedWindows, {
       dept: room,
       start_date: request.start_date,
       start_time: slotStart,
@@ -1409,11 +1510,11 @@ function validateBookingRequest_(ss, request, requesterEmail) {
     sessions.push(slot);
   }
 
-  if (hasActiveBookingForEmailInRange_(ss, requesterEmail, request)) {
+  if (hasActiveBookedWindowForEmail_(bookedWindows, requesterEmail, request)) {
     return { ok: false, code: "FAIL_ALREADY_BOOKED", message: messageForFailCode_("FAIL_ALREADY_BOOKED"), statusCode: 409 };
   }
 
-  if (countBookedForRange_(ss, request) > 0) {
+  if (countBookedWindowsInRange_(bookedWindows, request) > 0) {
     return { ok: false, code: "FAIL_RANGE_OVERLAP", message: messageForFailCode_("FAIL_RANGE_OVERLAP"), statusCode: 409 };
   }
 
