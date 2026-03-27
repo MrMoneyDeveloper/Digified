@@ -182,6 +182,21 @@
     if (ui.roomPreviewCaption) ui.roomPreviewCaption.textContent = cfg.footnote || "";
 
     if (ui.roomPreviewImage) {
+      ui.roomPreviewImage.onload = function () {
+        ui.roomPreviewImage.hidden = false;
+        if (ui.roomPreviewPlaceholder) {
+          ui.roomPreviewPlaceholder.hidden = true;
+        }
+      };
+      ui.roomPreviewImage.onerror = function () {
+        ui.roomPreviewImage.hidden = true;
+        ui.roomPreviewImage.removeAttribute("src");
+        ui.roomPreviewImage.alt = "";
+        if (ui.roomPreviewPlaceholder) {
+          ui.roomPreviewPlaceholder.hidden = false;
+          ui.roomPreviewPlaceholder.textContent = title;
+        }
+      };
       if (imageUrl) {
         ui.roomPreviewImage.src = imageUrl;
         ui.roomPreviewImage.alt = title + " preview";

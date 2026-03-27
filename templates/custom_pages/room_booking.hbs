@@ -1,4 +1,4 @@
-<!-- ROOM_BOOKING_VERSION: 2026-03-27-06 -->
+<!-- ROOM_BOOKING_VERSION: 2026-03-27-07 -->
 <link rel="stylesheet" href="{{asset 'training-bookings.css'}}">
 <script>
   window.ROOM_BOOKING_CFG = {
@@ -9,7 +9,7 @@
 
 <section class="training-bookings training-bookings--room-page">
   <div class="container">
-    <p class="tb-build-tag" data-room-booking-build="2026-03-27-06">Room booking UI build 2026-03-27-06</p>
+    <p class="tb-build-tag" data-room-booking-build="2026-03-27-07">Room booking UI build 2026-03-27-07</p>
     <div class="tb-hero">
       <h1>Book Rooms</h1>
       <p class="tb-intro">
@@ -82,8 +82,13 @@
 
         <section id="training-room-preview" class="tb-room-preview" aria-live="polite">
           <div class="tb-room-preview__media">
-            <img id="training-room-preview-image" class="tb-room-preview__image" alt="" hidden>
-            <div id="training-room-preview-placeholder" class="tb-room-preview__placeholder"></div>
+            <img
+              id="training-room-preview-image"
+              class="tb-room-preview__image"
+              src="{{asset 'room-preview-training-room-1.jpeg'}}"
+              alt="Training Room 1 preview"
+            >
+            <div id="training-room-preview-placeholder" class="tb-room-preview__placeholder" hidden></div>
           </div>
           <div class="tb-room-preview__body">
             <span class="tb-room-preview__eyebrow">Selected room</span>
