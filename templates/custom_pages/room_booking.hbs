@@ -1,4 +1,4 @@
-<!-- ROOM_BOOKING_VERSION: 2026-03-27-03 -->
+<!-- ROOM_BOOKING_VERSION: 2026-03-27-06 -->
 <link rel="stylesheet" href="{{asset 'training-bookings.css'}}">
 <script>
   window.ROOM_BOOKING_CFG = {
@@ -9,7 +9,7 @@
 
 <section class="training-bookings training-bookings--room-page">
   <div class="container">
-    <p class="tb-build-tag" data-room-booking-build="2026-03-27-03">Room booking UI build 2026-03-27-03</p>
+    <p class="tb-build-tag" data-room-booking-build="2026-03-27-06">Room booking UI build 2026-03-27-06</p>
     <div class="tb-hero">
       <h1>Book Rooms</h1>
       <p class="tb-intro">
@@ -44,9 +44,9 @@
         data-room-booking-version="v3"
         data-room-base-url="https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
         data-room-api-key="c8032a6a14e04710a701aadd27f8e5d5"
-        data-room-image-training-1="{{#if settings.room_booking_training_room_1_image_url}}{{settings.room_booking_training_room_1_image_url}}{{else}}{{asset 'room-preview-training-room-1.jpeg'}}{{/if}}"
-        data-room-image-training-2="{{#if settings.room_booking_training_room_2_image_url}}{{settings.room_booking_training_room_2_image_url}}{{else}}{{asset 'room-preview-training-room-2.jpeg'}}{{/if}}"
-        data-room-image-interview="{{#if settings.room_booking_interview_room_image_url}}{{settings.room_booking_interview_room_image_url}}{{else}}{{asset 'room-preview-interview-room.jpeg'}}{{/if}}"
+        data-room-image-training-1="{{asset 'room-preview-training-room-1.jpeg'}}"
+        data-room-image-training-2="{{asset 'room-preview-training-room-2.jpeg'}}"
+        data-room-image-interview="{{asset 'room-preview-interview-room.jpeg'}}"
       >
         <div id="training-booking-alert" class="tb-alert" role="status" aria-live="polite" hidden></div>
 
