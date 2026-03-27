@@ -1,6 +1,7 @@
 # Zendesk theme
 *.zip
 digified-theme.zip
+.tmp*/
 node_modules/
 dist/
 .DS_Store
