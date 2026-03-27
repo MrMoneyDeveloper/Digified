@@ -18,11 +18,20 @@ const CFG_D = {
     LIMIT_PER_RUN: 100,
   },
 
+  HELP_CENTER: {
+    DEFAULT_SECTION_ID: "26400549254812", // Learning Material > IT Support Tier 1
+    DEFAULT_CATEGORY_ID: "26400425185692", // Learning Material
+  },
+
   ZENDESK: {
     SUBDOMAIN_PROP: "ZD_SUBDOMAIN",
     EMAIL_PROP: "ZD_EMAIL",
     TOKEN_PROP: "ZD_TOKEN",
     DEFAULT_LOCALE_PROP: "HC_DEFAULT_LOCALE",
+    DEFAULT_SUBDOMAIN: "cxsupporthub",
+    DEFAULT_EMAIL: "mohammed@cxexperts.co.za",
+    DEFAULT_LOCALE: "en-us",
+    DEFAULT_TOKEN: "7zB3NB6vMdOyV6riWS7SDdAJCSbMYP1Rm5D27pqG",
   },
 };
 
@@ -70,10 +79,83 @@ function setupScriptDArticleSheet_() {
     notes: [
       "Leave article_id blank to create a new article.",
       "Fill article_id to update an existing article.",
-      "section_id is required for new articles.",
+      "section_id can be left blank to use the default Learning Material section.",
       "body accepts HTML or plain text.",
       "label_names_csv and content_tag_ids_csv accept comma-separated values.",
+      "Run setupScriptDZendeskConfig() once before the first import.",
     ],
+    defaults: {
+      section_id: CFG_D.HELP_CENTER.DEFAULT_SECTION_ID,
+      category_id: CFG_D.HELP_CENTER.DEFAULT_CATEGORY_ID,
+      locale: CFG_D.ZENDESK.DEFAULT_LOCALE,
+    },
+  };
+}
+
+function setupScriptDZendeskConfig_() {
+  const props = PropertiesService.getScriptProperties();
+  const updates = {};
+
+  const currentSubdomain = String(props.getProperty(CFG_D.ZENDESK.SUBDOMAIN_PROP) || "").trim();
+  const currentEmail = String(props.getProperty(CFG_D.ZENDESK.EMAIL_PROP) || "").trim();
+  const currentLocale = String(props.getProperty(CFG_D.ZENDESK.DEFAULT_LOCALE_PROP) || "").trim();
+  const currentToken = String(props.getProperty(CFG_D.ZENDESK.TOKEN_PROP) || "").trim();
+
+  if (!currentSubdomain) {
+    updates[CFG_D.ZENDESK.SUBDOMAIN_PROP] = CFG_D.ZENDESK.DEFAULT_SUBDOMAIN;
+  }
+  if (!currentEmail) {
+    updates[CFG_D.ZENDESK.EMAIL_PROP] = CFG_D.ZENDESK.DEFAULT_EMAIL;
+  }
+  if (!currentLocale) {
+    updates[CFG_D.ZENDESK.DEFAULT_LOCALE_PROP] = CFG_D.ZENDESK.DEFAULT_LOCALE;
+  }
+  if (!currentToken) {
+    updates[CFG_D.ZENDESK.TOKEN_PROP] = CFG_D.ZENDESK.DEFAULT_TOKEN;
+  }
+
+  if (Object.keys(updates).length) {
+    props.setProperties(updates, false);
+  }
+
+  return {
+    ok: true,
+    added_keys: Object.keys(updates),
+    configured: {
+      subdomain: String(props.getProperty(CFG_D.ZENDESK.SUBDOMAIN_PROP) || updates[CFG_D.ZENDESK.SUBDOMAIN_PROP] || "").trim(),
+      email: String(props.getProperty(CFG_D.ZENDESK.EMAIL_PROP) || updates[CFG_D.ZENDESK.EMAIL_PROP] || "").trim(),
+      default_locale: String(props.getProperty(CFG_D.ZENDESK.DEFAULT_LOCALE_PROP) || updates[CFG_D.ZENDESK.DEFAULT_LOCALE_PROP] || "").trim(),
+      token_present: !!String(props.getProperty(CFG_D.ZENDESK.TOKEN_PROP) || updates[CFG_D.ZENDESK.TOKEN_PROP] || "").trim(),
+      default_section_id: CFG_D.HELP_CENTER.DEFAULT_SECTION_ID,
+    },
+    note: "Zendesk article import defaults have been written. Remove the hardcoded token after this once-off import.",
+  };
+}
+
+function getScriptDSetupStatus_() {
+  const props = PropertiesService.getScriptProperties();
+  const subdomain = String(props.getProperty(CFG_D.ZENDESK.SUBDOMAIN_PROP) || CFG_D.ZENDESK.DEFAULT_SUBDOMAIN).trim();
+  const email = String(props.getProperty(CFG_D.ZENDESK.EMAIL_PROP) || CFG_D.ZENDESK.DEFAULT_EMAIL).trim();
+  const token = String(props.getProperty(CFG_D.ZENDESK.TOKEN_PROP) || CFG_D.ZENDESK.DEFAULT_TOKEN).trim();
+  const locale = String(props.getProperty(CFG_D.ZENDESK.DEFAULT_LOCALE_PROP) || "").trim() || CFG_D.ZENDESK.DEFAULT_LOCALE;
+
+  const missing = [];
+  if (!subdomain) missing.push(CFG_D.ZENDESK.SUBDOMAIN_PROP);
+  if (!email) missing.push(CFG_D.ZENDESK.EMAIL_PROP);
+  if (!token) missing.push(CFG_D.ZENDESK.TOKEN_PROP);
+
+  return {
+    ok: missing.length === 0,
+    configured: {
+      subdomain: subdomain,
+      email: email,
+      default_locale: locale,
+      token_present: !!token,
+      default_section_id: CFG_D.HELP_CENTER.DEFAULT_SECTION_ID,
+    },
+    missing: missing,
+    article_sheet: CFG_D.SHEETS.ARTICLES,
+    log_sheet: CFG_D.SHEETS.LOGS,
   };
 }
 
@@ -187,9 +269,10 @@ function pushScriptDArticles_(opts) {
 }
 
 function articleFromRow_D_(row, idx, defaultLocale) {
+  const rawSectionId = String(safeCell_D_(row, idx.section_id) || "").trim();
   return {
     enabled: toBool_D_(safeCell_D_(row, idx.enabled), true),
-    sectionId: String(safeCell_D_(row, idx.section_id) || "").trim(),
+    sectionId: rawSectionId || CFG_D.HELP_CENTER.DEFAULT_SECTION_ID,
     articleId: String(safeCell_D_(row, idx.article_id) || "").trim(),
     locale: String(safeCell_D_(row, idx.locale) || defaultLocale || "en-us").trim() || "en-us",
     title: String(safeCell_D_(row, idx.title) || "").trim(),
@@ -319,10 +402,10 @@ function getSS_D_() {
 function getZendeskCreds_D_() {
   const props = PropertiesService.getScriptProperties();
   return {
-    subdomain: String(props.getProperty(CFG_D.ZENDESK.SUBDOMAIN_PROP) || "").trim(),
-    email: String(props.getProperty(CFG_D.ZENDESK.EMAIL_PROP) || "").trim(),
-    token: String(props.getProperty(CFG_D.ZENDESK.TOKEN_PROP) || "").trim(),
-    defaultLocale: String(props.getProperty(CFG_D.ZENDESK.DEFAULT_LOCALE_PROP) || "en-us").trim() || "en-us",
+    subdomain: String(props.getProperty(CFG_D.ZENDESK.SUBDOMAIN_PROP) || CFG_D.ZENDESK.DEFAULT_SUBDOMAIN).trim(),
+    email: String(props.getProperty(CFG_D.ZENDESK.EMAIL_PROP) || CFG_D.ZENDESK.DEFAULT_EMAIL).trim(),
+    token: String(props.getProperty(CFG_D.ZENDESK.TOKEN_PROP) || CFG_D.ZENDESK.DEFAULT_TOKEN).trim(),
+    defaultLocale: String(props.getProperty(CFG_D.ZENDESK.DEFAULT_LOCALE_PROP) || CFG_D.ZENDESK.DEFAULT_LOCALE).trim() || CFG_D.ZENDESK.DEFAULT_LOCALE,
   };
 }
 
@@ -480,6 +563,14 @@ function log_D_(level, message, meta) {
 
 function setupScriptDArticleSheet() {
   return setupScriptDArticleSheet_();
+}
+
+function setupScriptDZendeskConfig() {
+  return setupScriptDZendeskConfig_();
+}
+
+function getScriptDSetupStatus() {
+  return getScriptDSetupStatus_();
 }
 
 function pushScriptDArticles() {
