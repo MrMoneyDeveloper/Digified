@@ -68,13 +68,8 @@
   position: fixed;
   inset: 0;
   z-index: 99999;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.9rem;
-  background: rgba(255, 255, 255, 0.97);
-  color: var(--digify-space-cadet);
+  overflow: hidden;
+  background: #000000;
   opacity: 1;
   visibility: visible;
   pointer-events: all;
@@ -87,27 +82,32 @@
   pointer-events: none;
 }
 
-.digify-global-loader__spinner {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  border: 4px solid rgba(31, 30, 58, 0.18);
-  border-top-color: var(--digify-space-cadet);
-  animation: digify-loader-spin 0.75s linear infinite;
+.digify-global-loader__video,
+.digify-global-loader__overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.digify-global-loader__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.digify-global-loader__overlay {
+  background: rgba(0, 0, 0, 0.06);
 }
 
 .digify-global-loader__text {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-@keyframes digify-loader-spin {
-  to {
-    transform: rotate(360deg);
-  }
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .is-hidden {
@@ -2770,6 +2770,20 @@ ol.breadcrumbs li::before {
   list-style: none;
   padding: 0;
   margin: 0;
+}
+
+.dropdown-menu__label {
+  padding: 0.55rem 1.25rem 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.dropdown-menu__divider {
+  margin: 0.35rem 0 0.25rem;
+  border-top: 1px solid #e5e7eb;
 }
 
 .dropdown-menu a {

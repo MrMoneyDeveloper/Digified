@@ -146,11 +146,11 @@
           <div class="digify-brand-carousel">
             <div class="digify-brand-carousel__track">
               <img src="{{settings.home_logo_digify_bpo}}" alt="Digify BPO" class="digify-brand-carousel__logo" data-digify-check="home-brand-digify-bpo">
-              <img src="{{settings.home_logo_cx_leads}}" alt="CX Leads" class="digify-brand-carousel__logo" data-digify-check="home-brand-leads">
+              <img src="{{asset 'home-logo-cx-leads.png'}}" alt="CX Leads" class="digify-brand-carousel__logo" data-digify-check="home-brand-leads">
               <img src="{{settings.home_logo_outbound_cx}}" alt="Outbound CX" class="digify-brand-carousel__logo" data-digify-check="home-brand-outbound">
               <img src="{{settings.home_logo_cx_experts}}" alt="CX Experts" class="digify-brand-carousel__logo" data-digify-check="home-brand-experts">
               <img src="{{settings.home_logo_digify_bpo}}" alt="Digify BPO" class="digify-brand-carousel__logo">
-              <img src="{{settings.home_logo_cx_leads}}" alt="CX Leads" class="digify-brand-carousel__logo">
+              <img src="{{asset 'home-logo-cx-leads.png'}}" alt="CX Leads" class="digify-brand-carousel__logo">
               <img src="{{settings.home_logo_outbound_cx}}" alt="Outbound CX" class="digify-brand-carousel__logo">
               <img src="{{settings.home_logo_cx_experts}}" alt="CX Experts" class="digify-brand-carousel__logo">
             </div>
@@ -233,13 +233,13 @@
               </div>
             </article>
 
-            <!-- Card 3: Internal policies -->
+            <!-- Card 3: Room booking -->
             <article class="landing-card landing-card--accent">
               <div class="landing-card__content">
-                <h3>Internal staff policies</h3>
-                <p>Access HR policies, IT guidelines, and staff resources.</p>
-                <a href="/hc/{{help_center.locale}}/categories/23700078037148" class="btn btn-accent">
-                  View internal policies
+                <h3>Book rooms</h3>
+                <p>Reserve shared meeting spaces without leaving the Help Centre.</p>
+                <a href="/hc/{{help_center.locale}}/p/room_booking" class="btn btn-accent">
+                  Book rooms
                 </a>
               </div>
             </article>
@@ -286,9 +286,9 @@
 
             <article class="landing-card landing-card--accent">
               <div class="landing-card__content">
-                <h3>Tenant-specific policies</h3>
-                <p>Access tenant SLAs, building rules, and facilities information.</p>
-                <a href="/hc/{{help_center.locale}}/categories/23700120243740" class="btn btn-accent">View tenant policies</a>
+                <h3>Learning</h3>
+                <p>Use the shared policy and learning library for the live content set.</p>
+                <a href="{{page_path 'section' id=26400542556316}}" class="btn btn-accent">Open learning</a>
               </div>
             </article>
 

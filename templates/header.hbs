@@ -1,6 +1,9 @@
 <div id="digify-global-loader" class="digify-global-loader" role="status" aria-live="polite" aria-label="Loading page">
-  <div class="digify-global-loader__spinner" aria-hidden="true"></div>
-  <p class="digify-global-loader__text">Loading...</p>
+  <video class="digify-global-loader__video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
+    <source src="{{asset 'digify-cx-looped-loader.mp4'}}" type="video/mp4">
+  </video>
+  <div class="digify-global-loader__overlay" aria-hidden="true"></div>
+  <p class="digify-global-loader__text">Loading Digify CX</p>
 </div>
 
 <header class="digify-header">
@@ -27,37 +30,43 @@
             </button>
             <ul class="dropdown-menu" role="menu">
               <!-- INTERNAL USERS -->
+              <li class="dropdown-menu__label nav-internal" role="presentation">Actions</li>
               <li class="nav-link-item nav-internal" role="menuitem">
                 <a href="/hc/{{help_center.locale}}/p/home_internal">Internal Home</a>
               </li>
               <li class="nav-link-item nav-internal" role="menuitem">
                 <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=22989127409436">Request Support</a>
               </li>
-              <li class="nav-link-item nav-internal" role="menuitem">
-                <a href="/hc/{{help_center.locale}}/sections/23700658599580">Shared Policies</a>
-              </li>
-              <li class="nav-link-item nav-internal" role="menuitem">
-                <a href="/hc/{{help_center.locale}}/categories/23700078037148">Internal Policies</a>
-              </li>
               <li class="nav-link-item nav-internal nav-room-booking" role="menuitem">
                 <a href="/hc/{{help_center.locale}}/p/room_booking">Book Rooms</a>
               </li>
+              <li class="dropdown-menu__divider nav-internal" role="presentation"></li>
+              <li class="dropdown-menu__label nav-internal" role="presentation">Resources</li>
+              <li class="nav-link-item nav-internal" role="menuitem">
+                <a href="{{page_path 'section' id=23700658599580}}">Policies</a>
+              </li>
+              <li class="nav-link-item nav-internal" role="menuitem">
+                <a href="{{page_path 'section' id=26400542556316}}">Learning</a>
+              </li>
 
               <!-- TENANT USERS -->
+              <li class="dropdown-menu__label nav-tenant" role="presentation">Actions</li>
               <li class="nav-link-item nav-tenant" role="menuitem">
                 <a href="/hc/{{help_center.locale}}/p/home_tenant">Tenant Home</a>
               </li>
               <li class="nav-link-item nav-tenant" role="menuitem">
                 <a href="/hc/{{help_center.locale}}/requests/new?ticket_form_id=23381214703004">Request Support</a>
               </li>
-              <li class="nav-link-item nav-tenant" role="menuitem">
-                <a href="/hc/{{help_center.locale}}/sections/23700658599580">Shared Policies</a>
-              </li>
-              <li class="nav-link-item nav-tenant" role="menuitem">
-                <a href="/hc/{{help_center.locale}}/categories/23700120243740">Tenant Policies</a>
-              </li>
               <li class="nav-link-item nav-tenant nav-room-booking" role="menuitem">
                 <a href="/hc/{{help_center.locale}}/p/room_booking">Book Rooms</a>
+              </li>
+              <li class="dropdown-menu__divider nav-tenant" role="presentation"></li>
+              <li class="dropdown-menu__label nav-tenant" role="presentation">Resources</li>
+              <li class="nav-link-item nav-tenant" role="menuitem">
+                <a href="{{page_path 'section' id=23700658599580}}">Policies</a>
+              </li>
+              <li class="nav-link-item nav-tenant" role="menuitem">
+                <a href="{{page_path 'section' id=26400542556316}}">Learning</a>
               </li>
               
               <!-- UNTAGGED USERS (pending approval) -->

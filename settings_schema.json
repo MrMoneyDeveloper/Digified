@@ -42,6 +42,24 @@
         "type": "text",
         "label": "Room booking internal tag",
         "default": ""
+      },
+      {
+        "id": "room_booking_training_room_1_image_url",
+        "type": "text",
+        "label": "Training Room 1 image URL",
+        "default": ""
+      },
+      {
+        "id": "room_booking_training_room_2_image_url",
+        "type": "text",
+        "label": "Training Room 2 image URL",
+        "default": ""
+      },
+      {
+        "id": "room_booking_interview_room_image_url",
+        "type": "text",
+        "label": "Interview Room image URL",
+        "default": ""
       }
     ]
   },

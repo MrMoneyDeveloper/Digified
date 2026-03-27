@@ -51,6 +51,11 @@
       : { baseUrl: "", apiKey: "" };
   const baseUrl = String(config.baseUrl || "").trim();
   const apiKey = String(config.apiKey || "").trim();
+  const roomPreviewImages = {
+    "Training Room 1": String(root.dataset.roomImageTraining1 || "").trim(),
+    "Training Room 2": String(root.dataset.roomImageTraining2 || "").trim(),
+    "Interview Room": String(root.dataset.roomImageInterview || "").trim()
+  };
 
   const ui = {
     alert: document.getElementById("training-booking-alert"),
@@ -81,7 +86,12 @@
     attendeesField: document.getElementById("training-booking-attendees-field"),
     attendees: document.getElementById("training-booking-attendees"),
     addAttendee: document.getElementById("training-booking-add-attendee"),
-    submit: document.getElementById("training-booking-submit")
+    submit: document.getElementById("training-booking-submit"),
+    roomPreview: document.getElementById("training-room-preview"),
+    roomPreviewImage: document.getElementById("training-room-preview-image"),
+    roomPreviewPlaceholder: document.getElementById("training-room-preview-placeholder"),
+    roomPreviewTitle: document.getElementById("training-room-preview-title"),
+    roomPreviewCaption: document.getElementById("training-room-preview-caption")
   };
 
   const errorMessages = {
@@ -157,6 +167,35 @@
   function ensureConfig() {
     if (!baseUrl || !apiKey) {
       throw new Error("Training booking is not configured. Please contact an admin.");
+    }
+  }
+
+  function updateRoomPreview() {
+    if (!ui.roomPreview) return;
+
+    const room = normalizeRoom(ui.room.value || state.room || DEFAULT_ROOM);
+    const cfg = getRoomConfig(room);
+    const imageUrl = String(roomPreviewImages[room] || "").trim();
+    const title = roomLabel(room);
+
+    if (ui.roomPreviewTitle) ui.roomPreviewTitle.textContent = title;
+    if (ui.roomPreviewCaption) ui.roomPreviewCaption.textContent = cfg.footnote || "";
+
+    if (ui.roomPreviewImage) {
+      if (imageUrl) {
+        ui.roomPreviewImage.src = imageUrl;
+        ui.roomPreviewImage.alt = title + " preview";
+        ui.roomPreviewImage.hidden = false;
+      } else {
+        ui.roomPreviewImage.hidden = true;
+        ui.roomPreviewImage.removeAttribute("src");
+        ui.roomPreviewImage.alt = "";
+      }
+    }
+
+    if (ui.roomPreviewPlaceholder) {
+      ui.roomPreviewPlaceholder.hidden = !!imageUrl;
+      ui.roomPreviewPlaceholder.textContent = title;
     }
   }
 
@@ -760,6 +799,7 @@
       MAX_REPEAT_DAYS
     );
     state.dates = displayDates(state.startDate, state.repeatDays);
+    updateRoomPreview();
   }
 
   async function loadCalendar(options) {
