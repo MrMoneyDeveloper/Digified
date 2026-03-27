@@ -1,4 +1,4 @@
-<!-- ROOM_BOOKING_VERSION: 2026-03-27-07 -->
+<!-- ROOM_BOOKING_VERSION: 2026-03-27-08 -->
 <link rel="stylesheet" href="{{asset 'training-bookings.css'}}">
 <script>
   window.ROOM_BOOKING_CFG = {
@@ -9,7 +9,7 @@
 
 <section class="training-bookings training-bookings--room-page">
   <div class="container">
-    <p class="tb-build-tag" data-room-booking-build="2026-03-27-07">Room booking UI build 2026-03-27-07</p>
+    <p class="tb-build-tag" data-room-booking-build="2026-03-27-08">Room booking UI build 2026-03-27-08</p>
     <div class="tb-hero">
       <h1>Book Rooms</h1>
       <p class="tb-intro">
@@ -44,8 +44,8 @@
         data-room-booking-version="v3"
         data-room-base-url="https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
         data-room-api-key="c8032a6a14e04710a701aadd27f8e5d5"
-        data-room-image-training-1="{{asset 'room-preview-training-room-1.jpeg'}}"
-        data-room-image-training-2="{{asset 'room-preview-training-room-2.jpeg'}}"
+        data-room-image-training-1="{{asset 'room-preview-training-room-1.png'}}"
+        data-room-image-training-2="{{asset 'room-preview-training-room-2.png'}}"
         data-room-image-interview="{{asset 'room-preview-interview-room.jpeg'}}"
       >
         <div id="training-booking-alert" class="tb-alert" role="status" aria-live="polite" hidden></div>
@@ -85,7 +85,7 @@
             <img
               id="training-room-preview-image"
               class="tb-room-preview__image"
-              src="{{asset 'room-preview-training-room-1.jpeg'}}"
+              src="{{asset 'room-preview-training-room-1.png'}}"
               alt="Training Room 1 preview"
             >
             <div id="training-room-preview-placeholder" class="tb-room-preview__placeholder" hidden></div>
@@ -143,6 +143,7 @@
                       <input id="training-booking-online" name="online_meeting" type="checkbox" value="1">
                       <span>Include remote participants (create Google Meet link)</span>
                     </label>
+                    <p id="training-booking-meet-note" class="tb-inline-note" hidden></p>
                   </div>
                   <div class="tb-field" id="training-booking-attendees-field" hidden>
                     <label id="training-booking-attendees-label">Attendee emails</label>

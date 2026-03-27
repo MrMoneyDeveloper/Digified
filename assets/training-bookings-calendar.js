@@ -41,6 +41,7 @@
   const MAX_REPEAT_DAYS = 5;
   const TZ = "Africa/Johannesburg";
   const JSONP_TIMEOUT_MS = 60000;
+  const MEET_MAX_DURATION_MINUTES = 60;
   const ATTENDEE_LABEL_ID = "training-booking-attendees-label";
   const SLOT_MODEL_CACHE = Object.create(null);
 
@@ -83,6 +84,7 @@
     requesterEmail: document.getElementById("training-booking-requester-email"),
     notes: document.getElementById("training-booking-notes"),
     online: document.getElementById("training-booking-online"),
+    meetNote: document.getElementById("training-booking-meet-note"),
     attendeesField: document.getElementById("training-booking-attendees-field"),
     attendees: document.getElementById("training-booking-attendees"),
     addAttendee: document.getElementById("training-booking-add-attendee"),
@@ -104,6 +106,8 @@
     FAIL_INVALID_TIME_RANGE: "Select a valid continuous time range.",
     FAIL_RANGE_OVERLAP: "The selected range overlaps an existing booking.",
     FAIL_REPEAT_CONFLICT: "One or more repeat days are unavailable.",
+    FAIL_MEET_DURATION_LIMIT:
+      "Google Meet is limited to 1 hour on the current plan. Shorten the booking to 1 hour or keep it in-person only.",
     UNAUTHORIZED: "API key not accepted."
   };
 
@@ -535,6 +539,9 @@
       start_date: state.startDate,
       start_time: slots[startIndex].start_time,
       end_time: slots[endIndex].end_time,
+      duration_minutes:
+        hhmmToMinutes(slots[endIndex].end_time) -
+        hhmmToMinutes(slots[startIndex].start_time),
       room: state.room,
       repeat_days: state.repeatDays,
       dates: state.dates.slice(),
@@ -889,6 +896,7 @@
   function updateModalSummary() {
     if (!state.selected) {
       ui.sessionSummary.textContent = "";
+      refreshMeetOptions();
       return;
     }
     const repeated = state.selected.dates
@@ -897,6 +905,7 @@
         return formatDate(date, true);
       })
       .join(", ");
+    const duration = formatDuration(state.selected.duration_minutes);
     ui.sessionSummary.textContent =
       "Room: " +
       roomLabel(state.selected.room) +
@@ -904,13 +913,71 @@
       formatDate(state.selected.start_date, false) +
       " | Time: " +
       timeRange(state.selected.start_time, state.selected.end_time) +
+      (duration ? " | Duration: " + duration : "") +
       (repeated ? " | Repeats: " + repeated : "");
+    refreshMeetOptions();
   }
 
   function setAttendeesVisible(show) {
     ui.attendeesField.hidden = !show;
     if (!show) ui.attendees.innerHTML = "";
     if (show && !ui.attendees.querySelector("input")) addAttendeeInput();
+  }
+
+  function formatDuration(minutes) {
+    const total = Number(minutes || 0);
+    if (!total || total < 0) return "";
+    const hours = Math.floor(total / 60);
+    const remaining = total % 60;
+    if (hours && remaining) return hours + " hour " + remaining + " min";
+    if (hours) return hours + " hour" + (hours === 1 ? "" : "s");
+    return remaining + " min";
+  }
+
+  function selectionDurationMinutes() {
+    if (state.selected && state.selected.duration_minutes) {
+      return Number(state.selected.duration_minutes || 0);
+    }
+    const start = hhmmToMinutes(ui.startTime ? ui.startTime.value : "");
+    const end = hhmmToMinutes(ui.endTime ? ui.endTime.value : "");
+    if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return 0;
+    return end - start;
+  }
+
+  function refreshMeetOptions() {
+    const duration = selectionDurationMinutes();
+    const overLimit = duration > MEET_MAX_DURATION_MINUTES;
+    const baseMessage =
+      "Google Meet is limited to 1 hour on the current plan.";
+
+    if (ui.meetNote) {
+      if (!duration) {
+        ui.meetNote.hidden = true;
+        ui.meetNote.textContent = "";
+        ui.meetNote.className = "tb-inline-note";
+      } else if (overLimit) {
+        ui.meetNote.hidden = false;
+        ui.meetNote.className = "tb-inline-note tb-inline-note--warning";
+        ui.meetNote.textContent =
+          baseMessage +
+          " This selection is " +
+          formatDuration(duration) +
+          ", so online meetings are unavailable. Shorten it to 1 hour or keep it in-person only.";
+      } else {
+        ui.meetNote.hidden = false;
+        ui.meetNote.className = "tb-inline-note";
+        ui.meetNote.textContent =
+          baseMessage +
+          " Only bookings up to 1 hour can include remote participants.";
+      }
+    }
+
+    if (!ui.online) return;
+    ui.online.disabled = overLimit;
+    if (overLimit) {
+      ui.online.checked = false;
+    }
+    setAttendeesVisible(ui.online.checked && !overLimit);
   }
 
   function addAttendeeInput(value) {
@@ -981,6 +1048,9 @@
       return "Requester details are required.";
     }
     if (payload.meeting_type === "in_person_plus_online") {
+      if (payload.duration_minutes > MEET_MAX_DURATION_MINUTES) {
+        return errorMessages.FAIL_MEET_DURATION_LIMIT;
+      }
       if (!payload.attendee_emails.length) {
         return "Please add at least one attendee email for remote participants.";
       }
@@ -1008,6 +1078,7 @@
       user_type: resolveUserType(),
       notes: notes ? "Book " + room + " - " + notes : "Book " + room,
       meeting_type: online ? "in_person_plus_online" : "in_person_only",
+      duration_minutes: selectionDurationMinutes(),
       attendee_emails: online ? attendeeEmails() : []
     };
   }
@@ -1164,7 +1235,7 @@
     });
   });
   ui.online.addEventListener("change", function () {
-    setAttendeesVisible(ui.online.checked);
+    refreshMeetOptions();
   });
   ui.addAttendee.addEventListener("click", function () {
     if (ui.online.checked) addAttendeeInput();

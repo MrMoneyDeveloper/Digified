@@ -36,6 +36,7 @@ const CFG = {
     END_HHMM: "20:00",
     SLOT_MINUTES: 60,
     TRAINING_SLOT_MINUTES: 30,
+    MEET_MAX_DURATION_MINUTES: 60,
     INTERVIEW_START_HHMM: "12:00",
     INTERVIEW_ROOM: "Interview Room",
     INTERVIEW_ALIASES: ["Meeting Room"],
@@ -254,6 +255,7 @@ function handleInit_(requestId, params) {
   upsertSetting_(ss, "WORKING_WEEKDAYS", CFG.RULES.WEEKDAYS.join(","));
   upsertSetting_(ss, "SLOT_MINUTES", String(CFG.RULES.SLOT_MINUTES));
   upsertSetting_(ss, "TRAINING_SLOT_MINUTES", String(CFG.RULES.TRAINING_SLOT_MINUTES));
+  upsertSetting_(ss, "MEET_MAX_DURATION_MINUTES", String(CFG.RULES.MEET_MAX_DURATION_MINUTES));
 
   return ok_(
     requestId,
@@ -267,9 +269,10 @@ function handleInit_(requestId, params) {
         working_hours: `${CFG.RULES.START_HHMM}-${CFG.RULES.END_HHMM}`,
         slot_minutes: CFG.RULES.SLOT_MINUTES,
         training_slot_minutes: CFG.RULES.TRAINING_SLOT_MINUTES,
+        meet_max_duration_minutes: CFG.RULES.MEET_MAX_DURATION_MINUTES,
         interview_working_hours: `${CFG.RULES.INTERVIEW_START_HHMM}-${CFG.RULES.END_HHMM}`,
         example_slot_id: buildSlotId_("2026-01-15", "08:00"),
-        note: "Training rooms use 30-minute slots from 08:00-20:00. Interview room uses 60-minute slots from 12:00-20:00.",
+        note: "Training rooms use 30-minute slots from 08:00-20:00. Interview room uses 60-minute slots from 12:00-20:00. Google Meet bookings are limited to 60 minutes.",
       },
       next_steps: [
         "1) Test sessions: ?action=sessions&from=2026-01-01&to=2026-01-31&dept=Training%20Room%201&api_key=YOUR_KEY",
@@ -444,6 +447,18 @@ function handleBook_(body, requestId) {
   }
 
   if (meetingType === "in_person_plus_online") {
+    if (toInt_(resolved.request.duration_minutes, 0) > toInt_(CFG.RULES.MEET_MAX_DURATION_MINUTES, 60)) {
+      return fail_(
+        requestId,
+        "FAIL_MEET_DURATION_LIMIT",
+        messageForFailCode_("FAIL_MEET_DURATION_LIMIT"),
+        400,
+        {
+          duration_minutes: resolved.request.duration_minutes,
+          max_minutes: CFG.RULES.MEET_MAX_DURATION_MINUTES,
+        }
+      );
+    }
     if (attendeeParse.invalid.length) {
       return fail_(requestId, "FAIL_INVALID_ATTENDEE_EMAIL", "One or more attendee emails are invalid.", 400, {
         invalid_attendees: attendeeParse.invalid,
@@ -1821,6 +1836,7 @@ function messageForFailCode_(code) {
     FAIL_INVALID_TIME_RANGE: "Please choose a valid start and end time.",
     FAIL_RANGE_OVERLAP: "This booking overlaps an existing booking.",
     FAIL_REPEAT_CONFLICT: "One or more repeat days are unavailable.",
+    FAIL_MEET_DURATION_LIMIT: "Google Meet is limited to 1 hour on the current plan. Shorten the booking to 1 hour or keep it in-person only.",
   };
   return map[code] || "Booking request could not be completed.";
 }
