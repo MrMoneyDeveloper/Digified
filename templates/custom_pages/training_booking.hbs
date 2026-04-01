@@ -854,6 +854,9 @@
         data-training-booking-version="v2"
         data-training-base-url="https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
         data-training-api-key="c8032a6a14e04710a701aadd27f8e5d5"
+        data-room-image-training-1="{{asset 'room-preview-training-room-1.jpeg'}}"
+        data-room-image-training-2="{{asset 'room-preview-training-room-2.jpeg'}}"
+        data-room-image-interview="{{asset 'room-preview-interview-room.jpeg'}}"
       >
         <div id="training-booking-alert" class="tb-alert" role="status" aria-live="polite" hidden></div>
 
@@ -886,6 +889,18 @@
             <button class="btn btn-secondary" id="training-reset" type="button">Reset</button>
           </div>
         </form>
+
+        <section id="training-room-preview" class="tb-room-preview" aria-live="polite">
+          <div class="tb-room-preview__media">
+            <img id="training-room-preview-image" class="tb-room-preview__image" alt="" loading="lazy" hidden>
+            <div id="training-room-preview-placeholder" class="tb-room-preview__placeholder">Training Room 1</div>
+          </div>
+          <div class="tb-room-preview__body">
+            <span class="tb-room-preview__eyebrow">Selected room</span>
+            <h2 id="training-room-preview-title" class="tb-room-preview__title">Training Room 1</h2>
+            <p id="training-room-preview-caption" class="tb-room-preview__caption">Choose a room to see its preview.</p>
+          </div>
+        </section>
 
         <div id="training-booking-loading" class="tb-loading" hidden>
           <span class="tb-spinner" aria-hidden="true"></span>
