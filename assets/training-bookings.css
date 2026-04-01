@@ -449,8 +449,12 @@
 }
 
 .tb-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   min-height: 42px;
-  padding: 0;
+  padding: 0 4px;
   border: 1px solid rgba(38, 88, 216, 0.15);
   background: #edf5ff;
   color: #12233f;
@@ -460,6 +464,25 @@
     box-shadow 0.12s ease,
     background 0.12s ease,
     border-color 0.12s ease;
+}
+
+.tb-cell__status-text {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.tb-cell__status-text--booked {
+  color: #7c1f17;
+}
+
+.tb-cell--cancelled .tb-cell__status-text {
+  color: #43546d;
 }
 
 .tb-cell:focus-visible {

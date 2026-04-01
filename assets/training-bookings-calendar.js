@@ -768,6 +768,13 @@
     return label + " is unavailable.";
   }
 
+  function cellInlineStatus(info) {
+    if (!info || info.available) return "";
+    if (info.reserved_by) return "Booked: " + info.reserved_by;
+    if (String(info.status || "").toLowerCase() === "cancelled") return "Cancelled";
+    return "Unavailable";
+  }
+
   function renderPlaceholder(message) {
     state.cells = new Map();
     ui.list.innerHTML = '<div class="tb-placeholder">' + message + "</div>";
@@ -862,6 +869,14 @@
         } else {
           cell.classList.add("tb-cell--blocked");
           if (info.status === "cancelled") cell.classList.add("tb-cell--cancelled");
+          const inlineStatus = cellInlineStatus(info);
+          if (inlineStatus) {
+            const statusText = document.createElement("span");
+            statusText.className = "tb-cell__status-text";
+            if (info.reserved_by) statusText.classList.add("tb-cell__status-text--booked");
+            statusText.textContent = inlineStatus;
+            cell.appendChild(statusText);
+          }
         }
         if (primary) {
           cell.addEventListener("pointerdown", handleCellDown);
