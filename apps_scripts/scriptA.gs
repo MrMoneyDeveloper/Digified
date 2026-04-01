@@ -370,6 +370,8 @@ function handleSessions_(params, requestId) {
 
       vendor: reservedBy,         // back-compat
       reserved_by: reservedBy,    // explicit for new UI
+      booker_name: reservedBy,    // alias used by legacy UI scripts
+      reservedby: reservedBy,     // legacy snake/camel variant
 
       topic: merged.topic,
       dept: merged.dept,

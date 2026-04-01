@@ -396,6 +396,25 @@
     return `SLOT_${safeDate}_${safeTime.replace(":", "")}`.toUpperCase();
   }
 
+  function resolveBookerName(session) {
+    const source = session || {};
+    const candidates = [
+      source.reserved_by,
+      source.booker_name,
+      source.reservedby,
+      source.requester_name,
+      source.requesterName,
+      source.vendor,
+      source.requester_email,
+      source.requesterEmail
+    ];
+    for (let i = 0; i < candidates.length; i += 1) {
+      const value = String(candidates[i] || "").trim();
+      if (value) return value;
+    }
+    return "";
+  }
+
   function upsertCachedBookedSlot(slotId, requesterName) {
     const normalizedSlotId = String(slotId || "").trim().toUpperCase();
     if (!normalizedSlotId) return;
@@ -623,7 +642,7 @@
             start_time: session.start_time || "",
             end_time: session.end_time || "",
             booked: booked,
-            booker_name: session.reserved_by || session.vendor || session.booker_name || null
+            booker_name: resolveBookerName(session) || null
           };
         });
 
@@ -695,7 +714,7 @@
         ? String(booking.slot_id).trim()
         : buildSlotIdForDateTime(selectedDate, slot.startTime);
       const isBooked = !!(booking && booking.booked);
-      const bookerName = booking && booking.booker_name ? String(booking.booker_name).trim() : "";
+      const bookerName = resolveBookerName(booking);
       const bookedByLabel = bookerName ? `Booked by: ${bookerName}` : "Booked by: Unknown";
 
       const card = document.createElement("article");

@@ -486,6 +486,25 @@
     return lookup;
   }
 
+  function resolveSessionBookerName(session) {
+    const source = session || {};
+    const candidates = [
+      source.reserved_by,
+      source.booker_name,
+      source.reservedby,
+      source.requester_name,
+      source.requesterName,
+      source.vendor,
+      source.requester_email,
+      source.requesterEmail
+    ];
+    for (let i = 0; i < candidates.length; i += 1) {
+      const value = String(candidates[i] || "").trim();
+      if (value) return value;
+    }
+    return "";
+  }
+
   function normalizeSession(session) {
     const date = String(session.date || "").trim();
     const start = String(session.start_time || "").trim();
@@ -503,9 +522,7 @@
         status !== "cancelled" &&
         session.booked !== true,
       status: status || "open",
-      reserved_by: String(
-        session.reserved_by || session.vendor || session.booker_name || ""
-      ).trim()
+      reserved_by: resolveSessionBookerName(session)
     };
   }
 
@@ -550,16 +567,64 @@
     };
   }
 
-  function rangeIssues(range) {
-    const issues = [];
+  function rangeConflicts(range) {
+    const issues = new Set();
+    const details = [];
+    const slots = timeSlotsForRoom(range.room);
     range.dates.forEach(function (date) {
       for (let i = range.start_index; i <= range.end_index; i += 1) {
-        if (!availability(date, i).available) {
-          issues.push(cellKey(date, i));
-        }
+        const info = availability(date, i);
+        if (info.available) continue;
+        const slot = slots[i] || { start_time: "", end_time: "" };
+        const key = cellKey(date, i);
+        issues.add(key);
+        details.push({
+          key: key,
+          date: date,
+          start_time: slot.start_time,
+          end_time: slot.end_time,
+          status: String(info.status || "").trim().toLowerCase(),
+          reserved_by: String(info.reserved_by || "").trim()
+        });
       }
     });
-    return new Set(issues);
+    return { issues: issues, details: details };
+  }
+
+  function rangeConflictMessage(details) {
+    if (!Array.isArray(details) || !details.length) {
+      return "Some selected slots are unavailable for the chosen room or repeat days.";
+    }
+
+    const bySlot = Object.create(null);
+    const unique = [];
+    details.forEach(function (detail) {
+      const key = detail.date + "|" + detail.start_time + "|" + detail.end_time;
+      if (bySlot[key]) return;
+      bySlot[key] = true;
+      unique.push(detail);
+    });
+
+    const preview = unique.slice(0, 3).map(function (detail) {
+      const when =
+        formatDate(detail.date, true) +
+        (detail.start_time && detail.end_time
+          ? " " + timeRange(detail.start_time, detail.end_time)
+          : "");
+      if (detail.reserved_by) {
+        return when + " (booked by " + detail.reserved_by + ")";
+      }
+      if (detail.status === "cancelled") {
+        return when + " (cancelled)";
+      }
+      return when + " (unavailable)";
+    });
+    const extra = unique.length - preview.length;
+    return (
+      "Some selected slots are unavailable for the chosen room or repeat days. Conflicts: " +
+      preview.join("; ") +
+      (extra > 0 ? "; +" + extra + " more." : ".")
+    );
   }
 
   function paintSelection() {
@@ -576,7 +641,8 @@
       ? buildRange(state.drag.anchor, state.drag.current)
       : state.selected;
     if (!active) return;
-    const issues = rangeIssues(active);
+    const conflicts = rangeConflicts(active);
+    const issues = conflicts.issues;
     active.dates.forEach(function (date) {
       for (let i = active.start_index; i <= active.end_index; i += 1) {
         const cell = state.cells.get(cellKey(date, i));
@@ -659,14 +725,12 @@
   function finishDrag() {
     if (!state.drag) return;
     const range = buildRange(state.drag.anchor, state.drag.current);
-    const issues = rangeIssues(range);
+    const conflicts = rangeConflicts(range);
+    const issues = conflicts.issues;
     clearDrag();
     if (issues.size) {
       paintSelection();
-      setAlert(
-        "Some selected slots are unavailable for the chosen room or repeat days.",
-        "error"
-      );
+      setAlert(rangeConflictMessage(conflicts.details), "error");
       return;
     }
     clearAlert();
