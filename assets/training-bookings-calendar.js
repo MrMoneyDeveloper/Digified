@@ -64,10 +64,11 @@
   function deriveRoom2Url(url) {
     const value = String(url || "").trim();
     if (!value) return "";
-    return value
+    const derived = value
       .replace(/room-preview-training-room-1/gi, "room-preview-training-room-2")
       .replace(/room%201/gi, "room%202")
       .replace(/room_1/gi, "room_2");
+    return derived !== value ? derived : "";
   }
 
   function buildPreviewCandidates(primary, fallback, extra) {
