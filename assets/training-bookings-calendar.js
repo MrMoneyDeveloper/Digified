@@ -52,10 +52,58 @@
       : { baseUrl: "", apiKey: "" };
   const baseUrl = String(config.baseUrl || "").trim();
   const apiKey = String(config.apiKey || "").trim();
+
+  function swapPreviewExtension(url) {
+    const value = String(url || "").trim();
+    if (!value) return "";
+    if (/\.png(\?|$)/i.test(value)) return value.replace(/\.png(\?|$)/i, ".jpeg$1");
+    if (/\.jpe?g(\?|$)/i.test(value)) return value.replace(/\.jpe?g(\?|$)/i, ".png$1");
+    return "";
+  }
+
+  function deriveRoom2Url(url) {
+    const value = String(url || "").trim();
+    if (!value) return "";
+    return value
+      .replace(/room-preview-training-room-1/gi, "room-preview-training-room-2")
+      .replace(/room%201/gi, "room%202")
+      .replace(/room_1/gi, "room_2");
+  }
+
+  function buildPreviewCandidates(primary, fallback, extra) {
+    const out = [];
+    [primary, fallback, extra].forEach(function (candidate) {
+      const value = String(candidate || "").trim();
+      if (!value) return;
+      if (out.indexOf(value) < 0) out.push(value);
+      const swapped = swapPreviewExtension(value);
+      if (swapped && out.indexOf(swapped) < 0) out.push(swapped);
+    });
+    return out;
+  }
+
+  const initialPreviewImage =
+    root.querySelector("#training-room-preview-image") || null;
+  const initialPreviewSrc = initialPreviewImage
+    ? String(initialPreviewImage.getAttribute("src") || "").trim()
+    : "";
+
   const roomPreviewImages = {
-    "Training Room 1": String(root.dataset.roomImageTraining1 || "").trim(),
-    "Training Room 2": String(root.dataset.roomImageTraining2 || "").trim(),
-    "Interview Room": String(root.dataset.roomImageInterview || "").trim()
+    "Training Room 1": buildPreviewCandidates(
+      root.dataset.roomImageTraining1,
+      root.dataset.roomImageTraining1Fallback,
+      initialPreviewSrc
+    ),
+    "Training Room 2": buildPreviewCandidates(
+      root.dataset.roomImageTraining2,
+      root.dataset.roomImageTraining2Fallback,
+      deriveRoom2Url(initialPreviewSrc)
+    ),
+    "Interview Room": buildPreviewCandidates(
+      root.dataset.roomImageInterview,
+      root.dataset.roomImageInterviewFallback,
+      root.dataset.roomImageInterview
+    )
   };
 
   const ui = {
@@ -179,20 +227,16 @@
 
     const room = normalizeRoom(ui.room.value || state.room || DEFAULT_ROOM);
     const cfg = getRoomConfig(room);
-    const imageUrl = String(roomPreviewImages[room] || "").trim();
+    const imageCandidates = Array.isArray(roomPreviewImages[room])
+      ? roomPreviewImages[room].filter(Boolean)
+      : [];
     const title = roomLabel(room);
 
     if (ui.roomPreviewTitle) ui.roomPreviewTitle.textContent = title;
     if (ui.roomPreviewCaption) ui.roomPreviewCaption.textContent = cfg.footnote || "";
 
     if (ui.roomPreviewImage) {
-      ui.roomPreviewImage.onload = function () {
-        ui.roomPreviewImage.hidden = false;
-        if (ui.roomPreviewPlaceholder) {
-          ui.roomPreviewPlaceholder.hidden = true;
-        }
-      };
-      ui.roomPreviewImage.onerror = function () {
+      const showPlaceholder = function () {
         ui.roomPreviewImage.hidden = true;
         ui.roomPreviewImage.removeAttribute("src");
         ui.roomPreviewImage.alt = "";
@@ -201,19 +245,36 @@
           ui.roomPreviewPlaceholder.textContent = title;
         }
       };
-      if (imageUrl) {
-        ui.roomPreviewImage.src = imageUrl;
+
+      const loadCandidate = function (index) {
+        if (index >= imageCandidates.length) {
+          showPlaceholder();
+          return;
+        }
+        const candidate = imageCandidates[index];
+        ui.roomPreviewImage.onload = function () {
+          ui.roomPreviewImage.hidden = false;
+          if (ui.roomPreviewPlaceholder) {
+            ui.roomPreviewPlaceholder.hidden = true;
+          }
+        };
+        ui.roomPreviewImage.onerror = function () {
+          loadCandidate(index + 1);
+        };
+        ui.roomPreviewImage.src = candidate;
         ui.roomPreviewImage.alt = title + " preview";
         ui.roomPreviewImage.hidden = false;
+      };
+
+      if (imageCandidates.length) {
+        if (ui.roomPreviewPlaceholder) ui.roomPreviewPlaceholder.hidden = true;
+        loadCandidate(0);
       } else {
-        ui.roomPreviewImage.hidden = true;
-        ui.roomPreviewImage.removeAttribute("src");
-        ui.roomPreviewImage.alt = "";
+        showPlaceholder();
       }
     }
 
     if (ui.roomPreviewPlaceholder) {
-      ui.roomPreviewPlaceholder.hidden = !!imageUrl;
       ui.roomPreviewPlaceholder.textContent = title;
     }
   }
