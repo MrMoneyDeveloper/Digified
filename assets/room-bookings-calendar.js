@@ -343,6 +343,12 @@
     }
     if (value) input.value = value;
     attendeesWrap.appendChild(input);
+    const attendeeLabel = attendeesField
+      ? attendeesField.querySelector("#training-booking-attendees-label, #room-booking-attendees-label")
+      : null;
+    if (attendeeLabel && attendeeLabel.id) {
+      input.setAttribute("aria-labelledby", attendeeLabel.id);
+    }
     bindFieldValidation(input);
   }
 

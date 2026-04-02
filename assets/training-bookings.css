@@ -124,6 +124,16 @@
   color: #4f6380;
 }
 
+.tb-field .tb-field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #4f6380;
+}
+
 .tb-field .form-control {
   width: 100%;
   min-height: 46px;
@@ -141,6 +151,10 @@
 }
 
 .tb-field--invalid label {
+  color: #a33224;
+}
+
+.tb-field--invalid .tb-field-label {
   color: #a33224;
 }
 
