@@ -71,9 +71,9 @@
     return derived !== value ? derived : "";
   }
 
-  function buildPreviewCandidates(primary, fallback, extra) {
+  function buildPreviewCandidates() {
     const out = [];
-    [primary, fallback, extra].forEach(function (candidate) {
+    Array.prototype.slice.call(arguments).forEach(function (candidate) {
       const value = String(candidate || "").trim();
       if (!value) return;
       if (out.indexOf(value) < 0) out.push(value);
@@ -88,22 +88,29 @@
   const initialPreviewSrc = initialPreviewImage
     ? String(initialPreviewImage.getAttribute("src") || "").trim()
     : "";
+  const inlinePreviewImages =
+    window.ROOM_PREVIEW_INLINE && typeof window.ROOM_PREVIEW_INLINE === "object"
+      ? window.ROOM_PREVIEW_INLINE
+      : {};
 
   const roomPreviewImages = {
     "Training Room 1": buildPreviewCandidates(
       root.dataset.roomImageTraining1,
       root.dataset.roomImageTraining1Fallback,
-      initialPreviewSrc
+      initialPreviewSrc,
+      inlinePreviewImages["Training Room 1"]
     ),
     "Training Room 2": buildPreviewCandidates(
       root.dataset.roomImageTraining2,
       root.dataset.roomImageTraining2Fallback,
-      deriveRoom2Url(initialPreviewSrc)
+      deriveRoom2Url(initialPreviewSrc),
+      inlinePreviewImages["Training Room 2"]
     ),
     "Interview Room": buildPreviewCandidates(
       root.dataset.roomImageInterview,
       root.dataset.roomImageInterviewFallback,
-      root.dataset.roomImageInterview
+      root.dataset.roomImageInterview,
+      inlinePreviewImages["Interview Room"]
     )
   };
 
