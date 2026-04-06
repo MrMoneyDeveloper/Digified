@@ -27,25 +27,6 @@
         </article>
       {{/each}}
     </div>
-  {{else}}
-    {{#if sections}}
-      <div class="policy-cards-grid policy-cards-grid--sections">
-        {{#each sections}}
-          <article class="policy-card policy-card--section policy-card--{{@index}}">
-            <div class="policy-card__icon" aria-hidden="true">
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path>
-              </svg>
-            </div>
-            <h2 class="policy-card__title">{{name}}</h2>
-            {{#if description}}
-              <p class="policy-card__description">{{description}}</p>
-            {{/if}}
-            <a href="{{url}}" class="policy-card__link">Open section &rarr;</a>
-          </article>
-        {{/each}}
-      </div>
-    {{/if}}
   {{/if}}
 
   {{#if section.articles}}
@@ -69,10 +50,8 @@
   {{/if}}
 
   {{#unless section.sections}}
-    {{#unless sections}}
-      {{#unless section.articles}}
-        <p class="section-description">No content is available in this section yet.</p>
-      {{/unless}}
+    {{#unless section.articles}}
+      <p class="section-description">No content is available in this section yet.</p>
     {{/unless}}
   {{/unless}}
 </div>
