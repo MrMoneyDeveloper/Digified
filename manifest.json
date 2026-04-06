@@ -1,7 +1,7 @@
 {
   "name": "Digified",
   "author": "Zendesk",
-  "version": "2027.0.29",
+  "version": "2027.0.30",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -738,7 +738,7 @@
           "type": "text",
           "label": "Policies root URL",
           "description": "Destination used for Policies navigation and CTAs.",
-          "value": "/hc/en-us/sections/23441547733404-Policies"
+          "value": "/hc/en-us/sections/23700658599580-Policies"
         },
         {
           "identifier": "kb_roadmap_url",
@@ -752,7 +752,7 @@
           "type": "text",
           "label": "Policies page URL",
           "description": "Optional link to a consolidated policies page.",
-          "value": "/hc/en-us/sections/23441547733404-Policies"
+          "value": "/hc/en-us/sections/23700658599580-Policies"
         }
       ]
     },
