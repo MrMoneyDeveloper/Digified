@@ -6,6 +6,7 @@
  *   setupScriptDZendeskConfig()
  *   getScriptDSetupStatus()
  *   checkScriptDSectionTargets()
+ *   listScriptDPermissionGroups()
  *   configureScriptDSpreadsheetTargets(googleSuiteSpreadsheetId, itSupportSpreadsheetId)
  *   configureScriptDZendeskHost(helpCenterHost)
  *   configureScriptDDefaultPermissionGroup(permissionGroupId)
@@ -58,6 +59,8 @@ const CFG_D = {
   VISIBILITY_DEFAULTS: {
     TENANT_SEGMENT_PROP: "HC_TENANT_SEGMENT_ID",
     LEARNER_CONTENT_TAG_IDS_PROP: "HC_LEARNER_CONTENT_TAG_IDS_CSV",
+    DEFAULT_TENANT_SEGMENT_ID: "23574118518300",
+    DEFAULT_TENANT_SEGMENT_NAME: "CXI - Tenants",
   },
 
   PERMISSIONS: {
@@ -135,7 +138,7 @@ function setupScriptDArticleSheet_() {
       "section_id can be left blank to use the bucket default section.",
       "If section_id is invalid, Script D falls back to bucket section name lookup.",
       "If permission_group_id is blank, Script D will try section-level permission group fallback.",
-      "If user_segment_id is blank, HC_TENANT_SEGMENT_ID is applied when configured.",
+      "If user_segment_id is blank or invalid, Script D applies the tenant user segment fallback.",
       "If content_tag_ids_csv is blank, HC_LEARNER_CONTENT_TAG_IDS_CSV is applied when configured.",
       "Run setupScriptDZendeskConfig() once before the first import.",
     ],
@@ -147,6 +150,8 @@ function setupScriptDArticleSheet_() {
       google_suite_section_name: CFG_D.BUCKETS.GOOGLE_SUITE.defaultSectionName,
       it_support_section_id: CFG_D.BUCKETS.IT_SUPPORT.defaultSectionId,
       it_support_section_name: CFG_D.BUCKETS.IT_SUPPORT.defaultSectionName,
+      tenant_user_segment_id: CFG_D.VISIBILITY_DEFAULTS.DEFAULT_TENANT_SEGMENT_ID,
+      tenant_user_segment_name: CFG_D.VISIBILITY_DEFAULTS.DEFAULT_TENANT_SEGMENT_NAME,
     },
   };
 }
@@ -160,6 +165,9 @@ function setupScriptDZendeskConfig_() {
   const currentLocale = String(props.getProperty(CFG_D.ZENDESK.DEFAULT_LOCALE_PROP) || "").trim();
   const currentToken = String(props.getProperty(CFG_D.ZENDESK.TOKEN_PROP) || "").trim();
   const currentBrandId = String(props.getProperty(CFG_D.ZENDESK.BRAND_ID_PROP) || "").trim();
+  const currentTenantSegmentId = String(
+    props.getProperty(CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP) || ""
+  ).trim();
   const currentHelpCenterHost = String(
     props.getProperty(CFG_D.ZENDESK.HELP_CENTER_HOST_PROP) || ""
   ).trim();
@@ -173,6 +181,10 @@ function setupScriptDZendeskConfig_() {
   if (!currentToken) updates[CFG_D.ZENDESK.TOKEN_PROP] = CFG_D.ZENDESK.DEFAULT_TOKEN;
   if (!currentBrandId && CFG_D.ZENDESK.DEFAULT_BRAND_ID) {
     updates[CFG_D.ZENDESK.BRAND_ID_PROP] = CFG_D.ZENDESK.DEFAULT_BRAND_ID;
+  }
+  if (!currentTenantSegmentId && CFG_D.VISIBILITY_DEFAULTS.DEFAULT_TENANT_SEGMENT_ID) {
+    updates[CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP] =
+      CFG_D.VISIBILITY_DEFAULTS.DEFAULT_TENANT_SEGMENT_ID;
   }
 
   if (Object.keys(updates).length) {
@@ -257,6 +269,10 @@ function getScriptDSetupStatus_() {
       tenant_segment_id_default: String(
         props.getProperty(CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP) || ""
       ).trim(),
+      tenant_segment_id_effective:
+        parseNumericCell_D_(props.getProperty(CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP)) ||
+        parseNumericCell_D_(CFG_D.VISIBILITY_DEFAULTS.DEFAULT_TENANT_SEGMENT_ID),
+      tenant_segment_name_default: CFG_D.VISIBILITY_DEFAULTS.DEFAULT_TENANT_SEGMENT_NAME,
       learner_content_tag_ids_default: String(
         props.getProperty(CFG_D.VISIBILITY_DEFAULTS.LEARNER_CONTENT_TAG_IDS_PROP) || ""
       ).trim(),
@@ -313,6 +329,11 @@ function pushScriptDBucket_(bucket, opts) {
   const effectiveDefaultSectionId = bucketSectionResolution.ok
     ? String(bucketSectionResolution.section_id || "").trim()
     : String(getConfiguredBucketSectionId_D_(bucket) || bucket.defaultSectionId || "").trim();
+  const userSegmentCache = {};
+  const tenantSegmentResolution = resolveTenantSegmentId_D_(defaults, creds, userSegmentCache);
+  const effectiveTenantSegmentId = tenantSegmentResolution.ok
+    ? tenantSegmentResolution.user_segment_id
+    : defaults.tenantSegmentId;
 
   const values = sh.getDataRange().getValues();
   if (values.length < 2) {
@@ -329,6 +350,7 @@ function pushScriptDBucket_(bucket, opts) {
       sheet_name: bucket.sheetName,
       default_section_id: effectiveDefaultSectionId,
       default_section_resolution: bucketSectionResolution,
+      tenant_segment_resolution: tenantSegmentResolution,
     };
   }
 
@@ -353,6 +375,7 @@ function pushScriptDBucket_(bucket, opts) {
   let skipped = 0;
   const sectionResolutionCache = {};
   const permissionGroupCache = {};
+  userSegmentCache["__tenant_default__"] = tenantSegmentResolution;
 
   for (let i = 1; i < values.length && processed < limit; i++) {
     const rowNum = i + 1;
@@ -360,7 +383,7 @@ function pushScriptDBucket_(bucket, opts) {
     const article = articleFromRow_D_(row, idx, {
       defaultSectionId: effectiveDefaultSectionId,
       defaultLocale: creds.defaultLocale,
-      tenantSegmentId: defaults.tenantSegmentId,
+      tenantSegmentId: effectiveTenantSegmentId,
       learnerContentTagIds: defaults.learnerContentTagIds,
     });
 
@@ -384,6 +407,40 @@ function pushScriptDBucket_(bucket, opts) {
       failed++;
       processed++;
       continue;
+    }
+
+    const userSegmentResolution = resolveUserSegmentIdForArticle_D_(
+      article.userSegmentId,
+      effectiveTenantSegmentId,
+      defaults.tenantSegmentName,
+      creds,
+      userSegmentCache
+    );
+    if (!userSegmentResolution.ok) {
+      const userSegmentErrorDetails =
+        String(userSegmentResolution.error_details || "Unable to resolve user_segment_id.") +
+        (userSegmentResolution.attempts && userSegmentResolution.attempts.length
+          ? " | attempts=" + JSON.stringify(userSegmentResolution.attempts)
+          : "");
+      writeArticleResult_D_(sh, rowNum, idx, {
+        sync_status: "failed",
+        error_code: String(userSegmentResolution.error_code || "MISSING_USER_SEGMENT_ID"),
+        error_details: truncate_D_(userSegmentErrorDetails, 1800),
+      });
+      logError_D_(bucket, "User segment resolution failed", {
+        row: rowNum,
+        error_code: String(userSegmentResolution.error_code || "MISSING_USER_SEGMENT_ID"),
+        error_details: truncate_D_(userSegmentErrorDetails, 800),
+        requested_user_segment_id: article.userSegmentId,
+      });
+      failed++;
+      processed++;
+      continue;
+    }
+    article.userSegmentId = userSegmentResolution.user_segment_id;
+    const rowUserSegmentId = parseNumericCell_D_(safeCell_D_(row, idx.user_segment_id));
+    if (rowUserSegmentId !== article.userSegmentId) {
+      setCellIf_D_(sh, rowNum, idx.user_segment_id, article.userSegmentId);
     }
 
     if (!article.articleId) {
@@ -515,6 +572,7 @@ function pushScriptDBucket_(bucket, opts) {
     sheet_name: bucket.sheetName,
     default_section_id: effectiveDefaultSectionId,
     default_section_resolution: bucketSectionResolution,
+    tenant_segment_resolution: tenantSegmentResolution,
   };
 }
 
@@ -857,10 +915,16 @@ function getSpreadsheetForBucket_D_(bucket) {
 
 function getVisibilityDefaults_D_() {
   const props = PropertiesService.getScriptProperties();
+  const configuredTenantSegmentId = parseNumericCell_D_(
+    props.getProperty(CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP)
+  );
+  const defaultTenantSegmentId = parseNumericCell_D_(
+    CFG_D.VISIBILITY_DEFAULTS.DEFAULT_TENANT_SEGMENT_ID
+  );
   return {
-    tenantSegmentId: parseNumericCell_D_(
-      props.getProperty(CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP)
-    ),
+    tenantSegmentId:
+      configuredTenantSegmentId !== null ? configuredTenantSegmentId : defaultTenantSegmentId,
+    tenantSegmentName: String(CFG_D.VISIBILITY_DEFAULTS.DEFAULT_TENANT_SEGMENT_NAME || "").trim(),
     learnerContentTagIds: splitCsv_D_(
       props.getProperty(CFG_D.VISIBILITY_DEFAULTS.LEARNER_CONTENT_TAG_IDS_PROP)
     ),
@@ -1028,6 +1092,227 @@ function resolveSectionIdForCreate_D_(requestedSectionId, locale, bucket, creds,
   return result;
 }
 
+function resolveTenantSegmentId_D_(defaults, creds, cache) {
+  const configuredId = parseNumericCell_D_(defaults && defaults.tenantSegmentId);
+  const preferredName = String(
+    (defaults && defaults.tenantSegmentName) || CFG_D.VISIBILITY_DEFAULTS.DEFAULT_TENANT_SEGMENT_NAME
+  ).trim();
+  return resolveUserSegmentIdForArticle_D_(configuredId, configuredId, preferredName, creds, cache);
+}
+
+function resolveUserSegmentIdForArticle_D_(requestedUserSegmentId, fallbackUserSegmentId, preferredName, creds, cache) {
+  const requestedId = parseNumericCell_D_(requestedUserSegmentId);
+  const fallbackId = parseNumericCell_D_(fallbackUserSegmentId);
+  const cacheKey = String(requestedId !== null ? requestedId : "__blank__") + "::user_segment";
+  if (cache && cache[cacheKey]) return cache[cacheKey];
+
+  let result;
+  if (requestedId !== null) {
+    const probe = probeUserSegmentId_D_(creds, requestedId);
+    if (probe.ok) {
+      result = {
+        ok: true,
+        user_segment_id: requestedId,
+        source: "requested_user_segment_id",
+        attempts: probe.attempts || [],
+      };
+    } else {
+      result = resolveFallbackUserSegmentId_D_(creds, fallbackId, preferredName, probe.attempts || [], cache);
+    }
+  } else {
+    result = resolveFallbackUserSegmentId_D_(creds, fallbackId, preferredName, [], cache);
+  }
+
+  if (cache) cache[cacheKey] = result;
+  return result;
+}
+
+function resolveFallbackUserSegmentId_D_(creds, fallbackId, preferredName, seedAttempts, cache) {
+  const attempts = (seedAttempts || []).slice();
+
+  if (fallbackId !== null) {
+    const fallbackProbe = probeUserSegmentId_D_(creds, fallbackId);
+    attempts.push.apply(attempts, fallbackProbe.attempts || []);
+    if (fallbackProbe.ok) {
+      try {
+        PropertiesService.getScriptProperties().setProperty(
+          CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP,
+          String(fallbackId)
+        );
+      } catch (ignore) {}
+      return {
+        ok: true,
+        user_segment_id: fallbackId,
+        source: "fallback_user_segment_id",
+        attempts: attempts,
+      };
+    }
+  }
+
+  const list = fetchUserSegments_D_(creds);
+  attempts.push.apply(attempts, list.attempts || []);
+  if (!list.ok) {
+    return {
+      ok: false,
+      error_code: list.error_code || "USER_SEGMENT_LOOKUP_FAILED",
+      error_details: list.error_details || "Failed to fetch user segments.",
+      attempts: attempts,
+    };
+  }
+
+  const segment = findUserSegmentByName_D_(list.user_segments || [], preferredName);
+  if (!segment) {
+    return {
+      ok: false,
+      error_code: "USER_SEGMENT_NOT_FOUND",
+      error_details:
+        "Could not resolve tenant user segment. Preferred name '" +
+        preferredName +
+        "' not found.",
+      attempts: attempts,
+    };
+  }
+
+  try {
+    PropertiesService.getScriptProperties().setProperty(
+      CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP,
+      String(segment.id)
+    );
+  } catch (ignore) {}
+
+  const resolved = {
+    ok: true,
+    user_segment_id: segment.id,
+    source: "user_segment_name_lookup",
+    user_segment_name: segment.name,
+    attempts: attempts,
+  };
+  if (cache) cache["__tenant_default__"] = resolved;
+  return resolved;
+}
+
+function probeUserSegmentId_D_(creds, userSegmentId) {
+  const safeId = parseNumericCell_D_(userSegmentId);
+  const attempts = [];
+  if (safeId === null) {
+    return {
+      ok: false,
+      error_code: "MISSING_USER_SEGMENT_ID",
+      error_details: "user_segment_id is missing.",
+      attempts: attempts,
+    };
+  }
+
+  const basePath = "/api/v2/help_center/user_segments/" + encodeURIComponent(String(safeId)) + ".json";
+  const paths = [{ label: "primary", path: basePath }];
+  if (creds.brandId) {
+    paths.push({ label: "primary+brand", path: appendBrandIdToPath_D_(basePath, creds.brandId) });
+  }
+
+  let lastErrorCode = "";
+  let lastErrorDetails = "";
+  for (let i = 0; i < paths.length; i++) {
+    const attempt = paths[i];
+    const response = zendeskRequest_D_(creds, "get", attempt.path, null);
+    attempts.push({
+      label: attempt.label,
+      path: attempt.path,
+      ok: response.ok,
+      status_code: response.status_code,
+      error_code: response.error_code || "",
+    });
+    if (response.ok) {
+      return {
+        ok: true,
+        user_segment_id: safeId,
+        attempts: attempts,
+      };
+    }
+    lastErrorCode = response.error_code || "";
+    lastErrorDetails = response.error_details || "";
+  }
+
+  return {
+    ok: false,
+    error_code: lastErrorCode || "USER_SEGMENT_PROBE_FAILED",
+    error_details: lastErrorDetails || "User segment probe failed.",
+    attempts: attempts,
+  };
+}
+
+function fetchUserSegments_D_(creds) {
+  const attempts = [];
+  const paths = [
+    { label: "primary", path: "/api/v2/help_center/user_segments.json" },
+    { label: "primary+brand", path: appendBrandIdToPath_D_("/api/v2/help_center/user_segments.json", creds.brandId) },
+  ];
+
+  for (let i = 0; i < paths.length; i++) {
+    const attempt = paths[i];
+    const response = zendeskRequest_D_(creds, "get", attempt.path, null);
+    attempts.push({
+      label: attempt.label,
+      path: attempt.path,
+      ok: response.ok,
+      status_code: response.status_code,
+      error_code: response.error_code || "",
+    });
+    if (!response.ok) continue;
+
+    const parsed = response.response_json || {};
+    const segments = Array.isArray(parsed.user_segments) ? parsed.user_segments : [];
+    if (segments.length) {
+      return {
+        ok: true,
+        user_segments: segments
+          .map(function (segment) {
+            return {
+              id: parseNumericCell_D_(segment && segment.id),
+              name: String(segment && segment.name || "").trim(),
+            };
+          })
+          .filter(function (segment) {
+            return segment.id !== null;
+          }),
+        attempts: attempts,
+      };
+    }
+  }
+
+  const lastAttempt = attempts.length ? attempts[attempts.length - 1] : null;
+  return {
+    ok: false,
+    error_code: lastAttempt && lastAttempt.error_code ? lastAttempt.error_code : "USER_SEGMENT_LOOKUP_FAILED",
+    error_details: "User segments endpoint returned no usable segments.",
+    attempts: attempts,
+  };
+}
+
+function normalizeForMatch_D_(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[\u2012\u2013\u2014\u2015]/g, "-")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function findUserSegmentByName_D_(segments, preferredName) {
+  const target = normalizeForMatch_D_(preferredName);
+  if (!target) return null;
+
+  const exact = (segments || []).find(function (segment) {
+    return normalizeForMatch_D_(segment && segment.name) === target;
+  });
+  if (exact) return exact;
+
+  const contains = (segments || []).find(function (segment) {
+    return normalizeForMatch_D_(segment && segment.name).indexOf(target) >= 0;
+  });
+  if (contains) return contains;
+
+  return null;
+}
+
 function resolvePermissionGroupIdForArticle_D_(article, creds, cache) {
   if (article.permissionGroupId !== null) {
     return {
@@ -1079,17 +1364,27 @@ function resolvePermissionGroupIdForArticle_D_(article, creds, cache) {
       sectionLookup.section && sectionLookup.section.permission_group_id
     );
     if (permissionGroupId === null) {
-      result = {
-        ok: false,
-        error_code: "MISSING_PERMISSION_GROUP_ID",
-        error_details:
-          "permission_group_id is required for article creation and was not found on section '" +
-          String(sectionLookup.section && sectionLookup.section.name || sectionId) +
-          "'. Set permission_group_id in the row or set script property " +
-          CFG_D.PERMISSIONS.DEFAULT_PERMISSION_GROUP_PROP +
-          ".",
-        attempts: sectionLookup.attempts || [],
-      };
+      const apiFallback = resolveDefaultPermissionGroupFromApi_D_(creds, cache);
+      if (apiFallback.ok) {
+        result = {
+          ok: true,
+          permission_group_id: apiFallback.permission_group_id,
+          source: apiFallback.source || "guide_permission_group_fallback",
+          attempts: (sectionLookup.attempts || []).concat(apiFallback.attempts || []),
+        };
+      } else {
+        result = {
+          ok: false,
+          error_code: "MISSING_PERMISSION_GROUP_ID",
+          error_details:
+            "permission_group_id is required for article creation and was not found on section '" +
+            String(sectionLookup.section && sectionLookup.section.name || sectionId) +
+            "'. Also failed to auto-resolve from Guide permission groups. Set permission_group_id in the row or set script property " +
+            CFG_D.PERMISSIONS.DEFAULT_PERMISSION_GROUP_PROP +
+            ".",
+          attempts: (sectionLookup.attempts || []).concat(apiFallback.attempts || []),
+        };
+      }
     } else {
       result = {
         ok: true,
@@ -1182,6 +1477,131 @@ function fetchSectionMetadata_D_(creds, sectionId, locale) {
     error_details: lastErrorDetails || "Section metadata lookup failed.",
     attempts: attempts,
   };
+}
+
+function resolveDefaultPermissionGroupFromApi_D_(creds, cache) {
+  const cacheKey = "__resolved_default_permission_group_id__";
+  if (cache && cache[cacheKey]) return cache[cacheKey];
+
+  const lookup = fetchPermissionGroups_D_(creds);
+  let result;
+  if (!lookup.ok) {
+    result = {
+      ok: false,
+      error_code: lookup.error_code || "PERMISSION_GROUP_LOOKUP_FAILED",
+      error_details: lookup.error_details || "Failed to load Guide permission groups.",
+      attempts: lookup.attempts || [],
+    };
+  } else {
+    const selected = pickPreferredPermissionGroup_D_(lookup.permission_groups || []);
+    if (!selected || selected.id === null) {
+      result = {
+        ok: false,
+        error_code: "PERMISSION_GROUP_NOT_FOUND",
+        error_details: "No usable permission group id found in Guide permission groups response.",
+        attempts: lookup.attempts || [],
+      };
+    } else {
+      try {
+        PropertiesService.getScriptProperties().setProperty(
+          CFG_D.PERMISSIONS.DEFAULT_PERMISSION_GROUP_PROP,
+          String(selected.id)
+        );
+      } catch (ignore) {}
+      result = {
+        ok: true,
+        permission_group_id: selected.id,
+        source: "guide_permission_groups_auto_default",
+        selected_permission_group: selected,
+        attempts: lookup.attempts || [],
+      };
+    }
+  }
+
+  if (cache) cache[cacheKey] = result;
+  return result;
+}
+
+function fetchPermissionGroups_D_(creds) {
+  const attempts = [];
+  const paths = [
+    { label: "guide.primary", path: "/api/v2/guide/permission_groups.json" },
+    { label: "guide.with_brand", path: appendBrandIdToPath_D_("/api/v2/guide/permission_groups.json", creds.brandId) },
+    { label: "help_center.primary", path: "/api/v2/help_center/permission_groups.json" },
+    { label: "help_center.with_brand", path: appendBrandIdToPath_D_("/api/v2/help_center/permission_groups.json", creds.brandId) },
+  ];
+
+  for (let i = 0; i < paths.length; i++) {
+    const attempt = paths[i];
+    const response = zendeskRequest_D_(creds, "get", attempt.path, null);
+    attempts.push({
+      label: attempt.label,
+      path: attempt.path,
+      ok: response.ok,
+      status_code: response.status_code,
+      error_code: response.error_code || "",
+    });
+
+    if (!response.ok) continue;
+    const parsed = response.response_json || {};
+    const groups = Array.isArray(parsed.permission_groups) ? parsed.permission_groups : [];
+    if (groups.length) {
+      return {
+        ok: true,
+        permission_groups: groups,
+        attempts: attempts,
+      };
+    }
+  }
+
+  const lastAttempt = attempts.length ? attempts[attempts.length - 1] : null;
+  return {
+    ok: false,
+    error_code: lastAttempt && lastAttempt.error_code ? lastAttempt.error_code : "PERMISSION_GROUP_LOOKUP_FAILED",
+    error_details: "Guide permission groups endpoint returned no usable groups.",
+    attempts: attempts,
+  };
+}
+
+function pickPreferredPermissionGroup_D_(groups) {
+  const candidates = (groups || [])
+    .map(function (group) {
+      const id = parseNumericCell_D_(group && group.id);
+      const name = String(group && group.name || "").trim();
+      const builtIn = !!(group && (group.built_in || group.builtin || group.system));
+      const nameLc = name.toLowerCase();
+      return {
+        id: id,
+        name: name,
+        built_in: builtIn,
+        name_lc: nameLc,
+      };
+    })
+    .filter(function (group) {
+      return group.id !== null;
+    });
+
+  if (!candidates.length) return null;
+
+  const managerPreferred = candidates.find(function (group) {
+    return group.name_lc === "managers" || group.name_lc.indexOf("manager") >= 0;
+  });
+  if (managerPreferred) return managerPreferred;
+
+  const agentManagerPreferred = candidates.find(function (group) {
+    return (
+      group.name_lc.indexOf("agents and managers") >= 0 ||
+      group.name_lc.indexOf("agents & managers") >= 0
+    );
+  });
+  if (agentManagerPreferred) return agentManagerPreferred;
+
+  const builtInPreferred = candidates.find(function (group) {
+    return group.built_in;
+  });
+  if (builtInPreferred) return builtInPreferred;
+
+  return candidates[0];
 }
 
 function probeSectionId_D_(creds, sectionId, locale) {
@@ -1437,6 +1857,19 @@ function checkScriptDSectionTargets_() {
     };
   }
 
+  const configuredDefaultPermissionGroupId = getDefaultPermissionGroupId_D_();
+  const visibilityDefaults = getVisibilityDefaults_D_();
+  const tenantSegmentResolution = resolveTenantSegmentId_D_(visibilityDefaults, creds, {});
+  const autoResolvedPermissionGroup =
+    configuredDefaultPermissionGroupId !== null
+      ? {
+          ok: true,
+          permission_group_id: configuredDefaultPermissionGroupId,
+          source: "script_default_permission_group_id",
+          attempts: [],
+        }
+      : resolveDefaultPermissionGroupFromApi_D_(creds, {});
+
   const results = getBucketList_D_().map(function (bucket) {
     const configuredSectionId = getConfiguredBucketSectionId_D_(bucket);
     const configuredSectionName = getConfiguredBucketSectionName_D_(bucket);
@@ -1474,7 +1907,43 @@ function checkScriptDSectionTargets_() {
     effective_help_center_host: getZendeskHost_D_(creds, true),
     brand_id: creds.brandId || "",
     locale: creds.defaultLocale,
+    configured_default_tenant_segment_id: visibilityDefaults.tenantSegmentId,
+    configured_default_tenant_segment_name: visibilityDefaults.tenantSegmentName,
+    resolved_default_tenant_segment: tenantSegmentResolution,
+    configured_default_permission_group_id: configuredDefaultPermissionGroupId,
+    resolved_default_permission_group: autoResolvedPermissionGroup,
     results: results,
+  };
+}
+
+function listScriptDPermissionGroups_() {
+  const creds = getZendeskCreds_D_();
+  if (!creds.subdomain || !creds.email || !creds.token) {
+    return {
+      ok: false,
+      error: "ZENDESK_NOT_CONFIGURED",
+      message: "Set ZD_SUBDOMAIN, ZD_EMAIL, and ZD_TOKEN first.",
+    };
+  }
+
+  const result = fetchPermissionGroups_D_(creds);
+  if (!result.ok) return result;
+
+  const groups = (result.permission_groups || []).map(function (group) {
+    return {
+      id: parseNumericCell_D_(group && group.id),
+      name: String(group && group.name || ""),
+      built_in: !!(group && (group.built_in || group.builtin || group.system)),
+      raw: group,
+    };
+  });
+
+  return {
+    ok: true,
+    count: groups.length,
+    groups: groups,
+    preferred: pickPreferredPermissionGroup_D_(result.permission_groups || []),
+    attempts: result.attempts || [],
   };
 }
 
@@ -1667,6 +2136,10 @@ function getScriptDSetupStatus() {
 
 function checkScriptDSectionTargets() {
   return checkScriptDSectionTargets_();
+}
+
+function listScriptDPermissionGroups() {
+  return listScriptDPermissionGroups_();
 }
 
 function pushScriptDGoogleSuiteArticles() {
