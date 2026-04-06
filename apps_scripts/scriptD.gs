@@ -6,6 +6,7 @@
  *   setupScriptDArticleSheets()
  *   setupScriptDZendeskConfig()
  *   getScriptDSetupStatus()
+ *   checkScriptDSectionTargets()
  *   configureScriptDSpreadsheetTargets(googleSuiteSpreadsheetId, itSupportSpreadsheetId)
  *   configureScriptDVisibilityDefaults(tenantSegmentId, learnerContentTagIdsCsv)
  *   pushScriptDArticles()                  // pushes both buckets
@@ -56,10 +57,12 @@ const CFG_D = {
     SUBDOMAIN_PROP: "ZD_SUBDOMAIN",
     EMAIL_PROP: "ZD_EMAIL",
     TOKEN_PROP: "ZD_TOKEN",
+    BRAND_ID_PROP: "ZD_BRAND_ID",
     DEFAULT_LOCALE_PROP: "HC_DEFAULT_LOCALE",
     DEFAULT_SUBDOMAIN: "cxsupporthub",
     DEFAULT_EMAIL: "mohammed@cxexperts.co.za",
     DEFAULT_LOCALE: "en-us",
+    DEFAULT_BRAND_ID: "22700071871516",
     // Kept for backwards compatibility with existing setup behavior.
     DEFAULT_TOKEN: "7zB3NB6vMdOyV6riWS7SDdAJCSbMYP1Rm5D27pqG",
   },
@@ -139,11 +142,15 @@ function setupScriptDZendeskConfig_() {
   const currentEmail = String(props.getProperty(CFG_D.ZENDESK.EMAIL_PROP) || "").trim();
   const currentLocale = String(props.getProperty(CFG_D.ZENDESK.DEFAULT_LOCALE_PROP) || "").trim();
   const currentToken = String(props.getProperty(CFG_D.ZENDESK.TOKEN_PROP) || "").trim();
+  const currentBrandId = String(props.getProperty(CFG_D.ZENDESK.BRAND_ID_PROP) || "").trim();
 
   if (!currentSubdomain) updates[CFG_D.ZENDESK.SUBDOMAIN_PROP] = CFG_D.ZENDESK.DEFAULT_SUBDOMAIN;
   if (!currentEmail) updates[CFG_D.ZENDESK.EMAIL_PROP] = CFG_D.ZENDESK.DEFAULT_EMAIL;
   if (!currentLocale) updates[CFG_D.ZENDESK.DEFAULT_LOCALE_PROP] = CFG_D.ZENDESK.DEFAULT_LOCALE;
   if (!currentToken) updates[CFG_D.ZENDESK.TOKEN_PROP] = CFG_D.ZENDESK.DEFAULT_TOKEN;
+  if (!currentBrandId && CFG_D.ZENDESK.DEFAULT_BRAND_ID) {
+    updates[CFG_D.ZENDESK.BRAND_ID_PROP] = CFG_D.ZENDESK.DEFAULT_BRAND_ID;
+  }
 
   if (Object.keys(updates).length) {
     props.setProperties(updates, false);
@@ -195,6 +202,7 @@ function getScriptDSetupStatus_() {
     configured: {
       subdomain: creds.subdomain,
       email: creds.email,
+      brand_id: creds.brandId,
       default_locale: creds.defaultLocale,
       token_present: !!creds.token,
       tenant_segment_id_default: String(
@@ -209,6 +217,7 @@ function getScriptDSetupStatus_() {
       CFG_D.ZENDESK.SUBDOMAIN_PROP,
       CFG_D.ZENDESK.EMAIL_PROP,
       CFG_D.ZENDESK.TOKEN_PROP,
+      CFG_D.ZENDESK.BRAND_ID_PROP,
       CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP,
       CFG_D.VISIBILITY_DEFAULTS.LEARNER_CONTENT_TAG_IDS_PROP,
       CFG_D.BUCKETS.GOOGLE_SUITE.spreadsheetIdProp,
@@ -315,7 +324,7 @@ function pushScriptDBucket_(bucket, opts) {
     }
 
     const request = buildArticleRequest_D_(article);
-    const result = zendeskRequest_D_(creds, request.method, request.path, request.payload);
+    const result = zendeskRequestWithFallback_D_(creds, request, article);
 
     if (result.ok) {
       writeArticleResult_D_(sh, rowNum, idx, {
@@ -334,15 +343,17 @@ function pushScriptDBucket_(bucket, opts) {
       if (article.articleId) updated++;
       else created++;
     } else {
+      const detailedError = withRequestAttemptDetails_D_(result);
       writeArticleResult_D_(sh, rowNum, idx, {
         sync_status: "failed",
         error_code: result.error_code,
-        error_details: result.error_details,
+        error_details: detailedError,
       });
       logError_D_(bucket, "Article sync failed", {
         row: rowNum,
         error_code: result.error_code,
-        error_details: truncate_D_(result.error_details, 800),
+        error_details: truncate_D_(detailedError, 800),
+        attempts: result.attempts || [],
       });
       failed++;
     }
@@ -482,13 +493,18 @@ function zendeskRequest_D_(creds, method, path, payloadObj) {
   const url = "https://" + creds.subdomain + ".zendesk.com" + path;
 
   try {
-    const res = UrlFetchApp.fetch(url, {
+    const requestMethod = String(method || "get").toLowerCase();
+    const options = {
       method: method,
       contentType: "application/json",
-      payload: JSON.stringify(payloadObj || {}),
       headers: { Authorization: "Basic " + auth },
       muteHttpExceptions: true,
-    });
+    };
+    if (requestMethod !== "get" && requestMethod !== "head" && requestMethod !== "delete") {
+      options.payload = JSON.stringify(payloadObj || {});
+    }
+
+    const res = UrlFetchApp.fetch(url, options);
 
     const statusCode = Number(res.getResponseCode() || 0);
     const body = String(res.getContentText() || "");
@@ -521,6 +537,84 @@ function zendeskRequest_D_(creds, method, path, payloadObj) {
       status_code: 0,
     };
   }
+}
+
+function zendeskRequestWithFallback_D_(creds, request, article) {
+  const attempts = [];
+
+  const runAttempt = function (path, label) {
+    const response = zendeskRequest_D_(creds, request.method, path, request.payload);
+    attempts.push({
+      label: label,
+      path: path,
+      status_code: response.status_code,
+      error_code: response.error_code || "",
+    });
+    response.attempts = attempts;
+    return response;
+  };
+
+  let result = runAttempt(request.path, "primary");
+  if (result.ok || Number(result.status_code || 0) !== 404) {
+    return result;
+  }
+
+  if (creds.brandId) {
+    const withBrand = appendBrandIdToPath_D_(request.path, creds.brandId);
+    if (withBrand !== request.path) {
+      result = runAttempt(withBrand, "primary+brand");
+      if (result.ok || Number(result.status_code || 0) !== 404) {
+        return result;
+      }
+    }
+  }
+
+  if (isSectionCreatePath_D_(request.path) && !article.articleId) {
+    const localePath = buildLocaleSectionCreatePath_D_(article.sectionId, article.locale || creds.defaultLocale);
+    result = runAttempt(localePath, "locale");
+    if (result.ok || Number(result.status_code || 0) !== 404) {
+      return result;
+    }
+
+    if (creds.brandId) {
+      const localeWithBrand = appendBrandIdToPath_D_(localePath, creds.brandId);
+      if (localeWithBrand !== localePath) {
+        result = runAttempt(localeWithBrand, "locale+brand");
+      }
+    }
+  }
+
+  return result;
+}
+
+function isSectionCreatePath_D_(path) {
+  return /^\/api\/v2\/help_center\/sections\/[^/]+\/articles\.json(\?.*)?$/i.test(String(path || ""));
+}
+
+function buildLocaleSectionCreatePath_D_(sectionId, locale) {
+  const safeLocale = String(locale || CFG_D.ZENDESK.DEFAULT_LOCALE).trim() || CFG_D.ZENDESK.DEFAULT_LOCALE;
+  return (
+    "/api/v2/help_center/" +
+    encodeURIComponent(safeLocale) +
+    "/sections/" +
+    encodeURIComponent(String(sectionId || "").trim()) +
+    "/articles.json"
+  );
+}
+
+function appendBrandIdToPath_D_(path, brandId) {
+  const safePath = String(path || "");
+  const safeBrandId = String(brandId || "").trim();
+  if (!safePath || !safeBrandId) return safePath;
+  if (/[\?&]brand_id=/i.test(safePath)) return safePath;
+  return safePath + (safePath.indexOf("?") >= 0 ? "&" : "?") + "brand_id=" + encodeURIComponent(safeBrandId);
+}
+
+function withRequestAttemptDetails_D_(result) {
+  const baseError = String((result && result.error_details) || "Unknown Zendesk response.");
+  const attempts = result && Array.isArray(result.attempts) ? result.attempts : [];
+  if (!attempts.length) return baseError;
+  return baseError + " | attempts=" + JSON.stringify(attempts);
 }
 
 function writeArticleResult_D_(sheet, rowNum, idx, patch) {
@@ -582,9 +676,130 @@ function getZendeskCreds_D_() {
     token: String(
       props.getProperty(CFG_D.ZENDESK.TOKEN_PROP) || CFG_D.ZENDESK.DEFAULT_TOKEN
     ).trim(),
+    brandId: String(
+      props.getProperty(CFG_D.ZENDESK.BRAND_ID_PROP) || CFG_D.ZENDESK.DEFAULT_BRAND_ID
+    ).trim(),
     defaultLocale: String(
       props.getProperty(CFG_D.ZENDESK.DEFAULT_LOCALE_PROP) || CFG_D.ZENDESK.DEFAULT_LOCALE
     ).trim() || CFG_D.ZENDESK.DEFAULT_LOCALE,
+  };
+}
+
+function checkScriptDSectionTargets_() {
+  const creds = getZendeskCreds_D_();
+  if (!creds.subdomain || !creds.email || !creds.token) {
+    return {
+      ok: false,
+      error: "ZENDESK_NOT_CONFIGURED",
+      message: "Set ZD_SUBDOMAIN, ZD_EMAIL, and ZD_TOKEN first.",
+    };
+  }
+
+  const results = getBucketList_D_().map(function (bucket) {
+    const sectionId = String(bucket.defaultSectionId || "").trim();
+    const basePath = "/api/v2/help_center/sections/" + encodeURIComponent(sectionId) + ".json";
+    const checks = [];
+
+    const primary = zendeskRequest_D_(creds, "get", basePath, null);
+    checks.push({
+      mode: "primary",
+      path: basePath,
+      ok: primary.ok,
+      status_code: primary.status_code,
+      error_code: primary.error_code || "",
+    });
+    if (primary.ok) {
+      return {
+        bucket: bucket.key,
+        label: bucket.label,
+        section_id: sectionId,
+        ok: true,
+        checks: checks,
+      };
+    }
+
+    if (creds.brandId) {
+      const brandPath = appendBrandIdToPath_D_(basePath, creds.brandId);
+      const byBrand = zendeskRequest_D_(creds, "get", brandPath, null);
+      checks.push({
+        mode: "primary+brand",
+        path: brandPath,
+        ok: byBrand.ok,
+        status_code: byBrand.status_code,
+        error_code: byBrand.error_code || "",
+      });
+      if (byBrand.ok) {
+        return {
+          bucket: bucket.key,
+          label: bucket.label,
+          section_id: sectionId,
+          ok: true,
+          checks: checks,
+        };
+      }
+    }
+
+    const localePath =
+      "/api/v2/help_center/" +
+      encodeURIComponent(creds.defaultLocale) +
+      "/sections/" +
+      encodeURIComponent(sectionId) +
+      ".json";
+    const byLocale = zendeskRequest_D_(creds, "get", localePath, null);
+    checks.push({
+      mode: "locale",
+      path: localePath,
+      ok: byLocale.ok,
+      status_code: byLocale.status_code,
+      error_code: byLocale.error_code || "",
+    });
+    if (byLocale.ok) {
+      return {
+        bucket: bucket.key,
+        label: bucket.label,
+        section_id: sectionId,
+        ok: true,
+        checks: checks,
+      };
+    }
+
+    if (creds.brandId) {
+      const localeBrandPath = appendBrandIdToPath_D_(localePath, creds.brandId);
+      const byLocaleBrand = zendeskRequest_D_(creds, "get", localeBrandPath, null);
+      checks.push({
+        mode: "locale+brand",
+        path: localeBrandPath,
+        ok: byLocaleBrand.ok,
+        status_code: byLocaleBrand.status_code,
+        error_code: byLocaleBrand.error_code || "",
+      });
+      if (byLocaleBrand.ok) {
+        return {
+          bucket: bucket.key,
+          label: bucket.label,
+          section_id: sectionId,
+          ok: true,
+          checks: checks,
+        };
+      }
+    }
+
+    return {
+      bucket: bucket.key,
+      label: bucket.label,
+      section_id: sectionId,
+      ok: false,
+      checks: checks,
+      note: "Section id not reachable with current Zendesk/brand configuration.",
+    };
+  });
+
+  return {
+    ok: results.every(function (r) { return !!r.ok; }),
+    subdomain: creds.subdomain,
+    brand_id: creds.brandId || "",
+    locale: creds.defaultLocale,
+    results: results,
   };
 }
 
@@ -769,6 +984,10 @@ function configureScriptDVisibilityDefaults(tenantSegmentId, learnerContentTagId
 
 function getScriptDSetupStatus() {
   return getScriptDSetupStatus_();
+}
+
+function checkScriptDSectionTargets() {
+  return checkScriptDSectionTargets_();
 }
 
 function pushScriptDGoogleSuiteArticles() {
