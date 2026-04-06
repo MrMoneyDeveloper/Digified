@@ -8,6 +8,7 @@
  *   getScriptDSetupStatus()
  *   checkScriptDSectionTargets()
  *   configureScriptDSpreadsheetTargets(googleSuiteSpreadsheetId, itSupportSpreadsheetId)
+ *   configureScriptDZendeskHost(helpCenterHost)
  *   configureScriptDVisibilityDefaults(tenantSegmentId, learnerContentTagIdsCsv)
  *   pushScriptDArticles()                  // pushes both buckets
  *   pushScriptDGoogleSuiteArticles()       // pushes Google Suite bucket only
@@ -61,11 +62,13 @@ const CFG_D = {
 
   ZENDESK: {
     SUBDOMAIN_PROP: "ZD_SUBDOMAIN",
+    HELP_CENTER_HOST_PROP: "ZD_HELP_CENTER_HOST",
     EMAIL_PROP: "ZD_EMAIL",
     TOKEN_PROP: "ZD_TOKEN",
     BRAND_ID_PROP: "ZD_BRAND_ID",
     DEFAULT_LOCALE_PROP: "HC_DEFAULT_LOCALE",
     DEFAULT_SUBDOMAIN: "cxsupporthub",
+    DEFAULT_HELP_CENTER_HOST: "cxe-internal.zendesk.com",
     DEFAULT_EMAIL: "mohammed@cxexperts.co.za",
     DEFAULT_LOCALE: "en-us",
     DEFAULT_BRAND_ID: "22700071871516",
@@ -152,8 +155,14 @@ function setupScriptDZendeskConfig_() {
   const currentLocale = String(props.getProperty(CFG_D.ZENDESK.DEFAULT_LOCALE_PROP) || "").trim();
   const currentToken = String(props.getProperty(CFG_D.ZENDESK.TOKEN_PROP) || "").trim();
   const currentBrandId = String(props.getProperty(CFG_D.ZENDESK.BRAND_ID_PROP) || "").trim();
+  const currentHelpCenterHost = String(
+    props.getProperty(CFG_D.ZENDESK.HELP_CENTER_HOST_PROP) || ""
+  ).trim();
 
   if (!currentSubdomain) updates[CFG_D.ZENDESK.SUBDOMAIN_PROP] = CFG_D.ZENDESK.DEFAULT_SUBDOMAIN;
+  if (!currentHelpCenterHost && CFG_D.ZENDESK.DEFAULT_HELP_CENTER_HOST) {
+    updates[CFG_D.ZENDESK.HELP_CENTER_HOST_PROP] = CFG_D.ZENDESK.DEFAULT_HELP_CENTER_HOST;
+  }
   if (!currentEmail) updates[CFG_D.ZENDESK.EMAIL_PROP] = CFG_D.ZENDESK.DEFAULT_EMAIL;
   if (!currentLocale) updates[CFG_D.ZENDESK.DEFAULT_LOCALE_PROP] = CFG_D.ZENDESK.DEFAULT_LOCALE;
   if (!currentToken) updates[CFG_D.ZENDESK.TOKEN_PROP] = CFG_D.ZENDESK.DEFAULT_TOKEN;
@@ -174,6 +183,13 @@ function configureScriptDSpreadsheetTargets_(googleSuiteSpreadsheetId, itSupport
   updates[CFG_D.BUCKETS.GOOGLE_SUITE.spreadsheetIdProp] = String(googleSuiteSpreadsheetId || "").trim();
   updates[CFG_D.BUCKETS.IT_SUPPORT.spreadsheetIdProp] = String(itSupportSpreadsheetId || "").trim();
   props.setProperties(updates, false);
+  return getScriptDSetupStatus_();
+}
+
+function configureScriptDZendeskHost_(helpCenterHost) {
+  const props = PropertiesService.getScriptProperties();
+  const normalizedHost = extractHost_D_(helpCenterHost);
+  props.setProperty(CFG_D.ZENDESK.HELP_CENTER_HOST_PROP, normalizedHost);
   return getScriptDSetupStatus_();
 }
 
@@ -216,6 +232,8 @@ function getScriptDSetupStatus_() {
     ok: !!(creds.subdomain && creds.email && creds.token),
     configured: {
       subdomain: creds.subdomain,
+      help_center_host: creds.helpCenterHost,
+      effective_help_center_host: getZendeskHost_D_(creds, false),
       email: creds.email,
       brand_id: creds.brandId,
       default_locale: creds.defaultLocale,
@@ -230,6 +248,7 @@ function getScriptDSetupStatus_() {
     buckets: buckets,
     required_script_properties: [
       CFG_D.ZENDESK.SUBDOMAIN_PROP,
+      CFG_D.ZENDESK.HELP_CENTER_HOST_PROP,
       CFG_D.ZENDESK.EMAIL_PROP,
       CFG_D.ZENDESK.TOKEN_PROP,
       CFG_D.ZENDESK.BRAND_ID_PROP,
@@ -556,8 +575,16 @@ function buildArticleRequest_D_(article) {
 }
 
 function zendeskRequest_D_(creds, method, path, payloadObj) {
+  const host = getZendeskHost_D_(creds, true);
+  return zendeskRequestToHost_D_(creds, host, method, path, payloadObj);
+}
+
+function zendeskRequestToHost_D_(creds, host, method, path, payloadObj) {
   const auth = Utilities.base64Encode(creds.email + "/token:" + creds.token);
-  const url = "https://" + creds.subdomain + ".zendesk.com" + path;
+  const safeHost = extractHost_D_(host) || (String(creds.subdomain || "").trim() + ".zendesk.com");
+  const safePath = String(path || "").trim();
+  const normalizedPath = safePath ? (safePath.charAt(0) === "/" ? safePath : "/" + safePath) : "/";
+  const url = "https://" + safeHost + normalizedPath;
 
   try {
     const requestMethod = String(method || "get").toLowerCase();
@@ -607,6 +634,58 @@ function zendeskRequest_D_(creds, method, path, payloadObj) {
       response_json: {},
     };
   }
+}
+
+function getZendeskHost_D_(creds, allowLookup) {
+  if (creds._effectiveHelpCenterHost) return creds._effectiveHelpCenterHost;
+
+  const configured = extractHost_D_(creds.helpCenterHost);
+  if (configured) {
+    creds._effectiveHelpCenterHost = configured;
+    return configured;
+  }
+
+  const fallback = extractHost_D_(String(creds.subdomain || "").trim() + ".zendesk.com");
+  if (!allowLookup || !creds.brandId) {
+    creds._effectiveHelpCenterHost = fallback;
+    return fallback;
+  }
+
+  const lookedUp = lookupBrandHelpCenterHost_D_(creds);
+  creds._effectiveHelpCenterHost = lookedUp || fallback;
+  return creds._effectiveHelpCenterHost;
+}
+
+function lookupBrandHelpCenterHost_D_(creds) {
+  const brandId = String(creds.brandId || "").trim();
+  const supportHost = extractHost_D_(String(creds.subdomain || "").trim() + ".zendesk.com");
+  if (!brandId || !supportHost) return "";
+
+  const path = "/api/v2/brands/" + encodeURIComponent(brandId) + ".json";
+  const response = zendeskRequestToHost_D_(creds, supportHost, "get", path, null);
+  if (!response.ok) return "";
+
+  const brand = response.response_json && response.response_json.brand ? response.response_json.brand : {};
+  const hostCandidates = uniqueStrings_D_([
+    extractHost_D_(brand.brand_url),
+    extractHost_D_(brand.host_mapping),
+    extractHost_D_(brand.subdomain ? String(brand.subdomain) + ".zendesk.com" : ""),
+  ]);
+  const resolved = hostCandidates.length ? hostCandidates[0] : "";
+  if (resolved) {
+    try {
+      PropertiesService.getScriptProperties().setProperty(CFG_D.ZENDESK.HELP_CENTER_HOST_PROP, resolved);
+      creds.helpCenterHost = resolved;
+    } catch (ignore) {}
+  }
+  return resolved;
+}
+
+function extractHost_D_(urlOrHost) {
+  const raw = String(urlOrHost || "").trim();
+  if (!raw) return "";
+  const noProtocol = raw.replace(/^https?:\/\//i, "");
+  return noProtocol.split("/")[0].trim().toLowerCase();
 }
 
 function zendeskRequestWithFallback_D_(creds, request, article) {
@@ -739,6 +818,9 @@ function getZendeskCreds_D_() {
   return {
     subdomain: String(
       props.getProperty(CFG_D.ZENDESK.SUBDOMAIN_PROP) || CFG_D.ZENDESK.DEFAULT_SUBDOMAIN
+    ).trim(),
+    helpCenterHost: String(
+      props.getProperty(CFG_D.ZENDESK.HELP_CENTER_HOST_PROP) || CFG_D.ZENDESK.DEFAULT_HELP_CENTER_HOST
     ).trim(),
     email: String(
       props.getProperty(CFG_D.ZENDESK.EMAIL_PROP) || CFG_D.ZENDESK.DEFAULT_EMAIL
@@ -1161,6 +1243,8 @@ function checkScriptDSectionTargets_() {
   return {
     ok: results.every(function (r) { return !!r.ok; }),
     subdomain: creds.subdomain,
+    help_center_host: creds.helpCenterHost,
+    effective_help_center_host: getZendeskHost_D_(creds, true),
     brand_id: creds.brandId || "",
     locale: creds.defaultLocale,
     results: results,
@@ -1340,6 +1424,10 @@ function setupScriptDZendeskConfig() {
 
 function configureScriptDSpreadsheetTargets(googleSuiteSpreadsheetId, itSupportSpreadsheetId) {
   return configureScriptDSpreadsheetTargets_(googleSuiteSpreadsheetId, itSupportSpreadsheetId);
+}
+
+function configureScriptDZendeskHost(helpCenterHost) {
+  return configureScriptDZendeskHost_(helpCenterHost);
 }
 
 function configureScriptDVisibilityDefaults(tenantSegmentId, learnerContentTagIdsCsv) {
