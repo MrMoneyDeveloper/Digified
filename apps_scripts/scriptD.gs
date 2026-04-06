@@ -3,12 +3,12 @@
  *
  * Public entrypoints:
  *   setupScriptDArticleSheet()
- *   setupScriptDArticleSheets()
  *   setupScriptDZendeskConfig()
  *   getScriptDSetupStatus()
  *   checkScriptDSectionTargets()
  *   configureScriptDSpreadsheetTargets(googleSuiteSpreadsheetId, itSupportSpreadsheetId)
  *   configureScriptDZendeskHost(helpCenterHost)
+ *   configureScriptDDefaultPermissionGroup(permissionGroupId)
  *   configureScriptDVisibilityDefaults(tenantSegmentId, learnerContentTagIdsCsv)
  *   pushScriptDArticles()                  // pushes both buckets
  *   pushScriptDGoogleSuiteArticles()       // pushes Google Suite bucket only
@@ -58,6 +58,10 @@ const CFG_D = {
   VISIBILITY_DEFAULTS: {
     TENANT_SEGMENT_PROP: "HC_TENANT_SEGMENT_ID",
     LEARNER_CONTENT_TAG_IDS_PROP: "HC_LEARNER_CONTENT_TAG_IDS_CSV",
+  },
+
+  PERMISSIONS: {
+    DEFAULT_PERMISSION_GROUP_PROP: "HC_DEFAULT_PERMISSION_GROUP_ID",
   },
 
   ZENDESK: {
@@ -130,6 +134,7 @@ function setupScriptDArticleSheet_() {
       "Fill article_id to update an existing article.",
       "section_id can be left blank to use the bucket default section.",
       "If section_id is invalid, Script D falls back to bucket section name lookup.",
+      "If permission_group_id is blank, Script D will try section-level permission group fallback.",
       "If user_segment_id is blank, HC_TENANT_SEGMENT_ID is applied when configured.",
       "If content_tag_ids_csv is blank, HC_LEARNER_CONTENT_TAG_IDS_CSV is applied when configured.",
       "Run setupScriptDZendeskConfig() once before the first import.",
@@ -193,6 +198,16 @@ function configureScriptDZendeskHost_(helpCenterHost) {
   return getScriptDSetupStatus_();
 }
 
+function configureScriptDDefaultPermissionGroup_(permissionGroupId) {
+  const props = PropertiesService.getScriptProperties();
+  const normalized = parseNumericCell_D_(permissionGroupId);
+  props.setProperty(
+    CFG_D.PERMISSIONS.DEFAULT_PERMISSION_GROUP_PROP,
+    normalized === null ? "" : String(normalized)
+  );
+  return getScriptDSetupStatus_();
+}
+
 function configureScriptDVisibilityDefaults_(tenantSegmentId, learnerContentTagIdsCsv) {
   const props = PropertiesService.getScriptProperties();
   const updates = {};
@@ -238,6 +253,7 @@ function getScriptDSetupStatus_() {
       brand_id: creds.brandId,
       default_locale: creds.defaultLocale,
       token_present: !!creds.token,
+      permission_group_id_default: getDefaultPermissionGroupId_D_(),
       tenant_segment_id_default: String(
         props.getProperty(CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP) || ""
       ).trim(),
@@ -252,6 +268,7 @@ function getScriptDSetupStatus_() {
       CFG_D.ZENDESK.EMAIL_PROP,
       CFG_D.ZENDESK.TOKEN_PROP,
       CFG_D.ZENDESK.BRAND_ID_PROP,
+      CFG_D.PERMISSIONS.DEFAULT_PERMISSION_GROUP_PROP,
       CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP,
       CFG_D.VISIBILITY_DEFAULTS.LEARNER_CONTENT_TAG_IDS_PROP,
       CFG_D.BUCKETS.GOOGLE_SUITE.spreadsheetIdProp,
@@ -335,6 +352,7 @@ function pushScriptDBucket_(bucket, opts) {
   let failed = 0;
   let skipped = 0;
   const sectionResolutionCache = {};
+  const permissionGroupCache = {};
 
   for (let i = 1; i < values.length && processed < limit; i++) {
     const rowNum = i + 1;
@@ -406,6 +424,42 @@ function pushScriptDBucket_(bucket, opts) {
         setCellIf_D_(sh, rowNum, idx.section_id, resolvedSectionId);
       }
       article.sectionId = resolvedSectionId;
+    }
+
+    if (!article.articleId) {
+      const permissionResolution = resolvePermissionGroupIdForArticle_D_(
+        article,
+        creds,
+        permissionGroupCache
+      );
+      if (!permissionResolution.ok) {
+        const permissionErrorDetails =
+          String(permissionResolution.error_details || "Unable to resolve permission_group_id.") +
+          (permissionResolution.attempts && permissionResolution.attempts.length
+            ? " | attempts=" + JSON.stringify(permissionResolution.attempts)
+            : "");
+        writeArticleResult_D_(sh, rowNum, idx, {
+          sync_status: "failed",
+          error_code: String(permissionResolution.error_code || "MISSING_PERMISSION_GROUP_ID"),
+          error_details: truncate_D_(permissionErrorDetails, 1800),
+        });
+        logError_D_(bucket, "Permission group resolution failed", {
+          row: rowNum,
+          error_code: String(permissionResolution.error_code || "MISSING_PERMISSION_GROUP_ID"),
+          error_details: truncate_D_(permissionErrorDetails, 800),
+          section_id: String(article.sectionId || ""),
+        });
+        failed++;
+        processed++;
+        continue;
+      }
+      if (permissionResolution.permission_group_id !== null) {
+        article.permissionGroupId = permissionResolution.permission_group_id;
+        const rowPermissionGroup = parseNumericCell_D_(safeCell_D_(row, idx.permission_group_id));
+        if (rowPermissionGroup !== article.permissionGroupId) {
+          setCellIf_D_(sh, rowNum, idx.permission_group_id, article.permissionGroupId);
+        }
+      }
     }
 
     const request = buildArticleRequest_D_(article);
@@ -813,6 +867,11 @@ function getVisibilityDefaults_D_() {
   };
 }
 
+function getDefaultPermissionGroupId_D_() {
+  const props = PropertiesService.getScriptProperties();
+  return parseNumericCell_D_(props.getProperty(CFG_D.PERMISSIONS.DEFAULT_PERMISSION_GROUP_PROP));
+}
+
 function getZendeskCreds_D_() {
   const props = PropertiesService.getScriptProperties();
   return {
@@ -967,6 +1026,162 @@ function resolveSectionIdForCreate_D_(requestedSectionId, locale, bucket, creds,
 
   if (cache) cache[cacheKey] = result;
   return result;
+}
+
+function resolvePermissionGroupIdForArticle_D_(article, creds, cache) {
+  if (article.permissionGroupId !== null) {
+    return {
+      ok: true,
+      permission_group_id: article.permissionGroupId,
+      source: "row_permission_group_id",
+      attempts: [],
+    };
+  }
+
+  const defaultPermissionGroupId = getDefaultPermissionGroupId_D_();
+  if (defaultPermissionGroupId !== null) {
+    return {
+      ok: true,
+      permission_group_id: defaultPermissionGroupId,
+      source: "script_default_permission_group_id",
+      attempts: [],
+    };
+  }
+
+  const sectionId = String(article.sectionId || "").trim();
+  const localeKey = String(article.locale || creds.defaultLocale || CFG_D.ZENDESK.DEFAULT_LOCALE)
+    .trim()
+    .toLowerCase();
+  if (!sectionId) {
+    return {
+      ok: false,
+      error_code: "MISSING_PERMISSION_GROUP_ID",
+      error_details:
+        "permission_group_id is required for article creation and section_id is missing, so section fallback could not be used.",
+      attempts: [],
+    };
+  }
+
+  const cacheKey = sectionId + "::" + localeKey;
+  if (cache && cache[cacheKey]) return cache[cacheKey];
+
+  const sectionLookup = fetchSectionMetadata_D_(creds, sectionId, article.locale);
+  let result;
+  if (!sectionLookup.ok) {
+    result = {
+      ok: false,
+      error_code: sectionLookup.error_code || "SECTION_LOOKUP_FAILED",
+      error_details: sectionLookup.error_details || "Failed to load section metadata for permission_group_id fallback.",
+      attempts: sectionLookup.attempts || [],
+    };
+  } else {
+    const permissionGroupId = parseNumericCell_D_(
+      sectionLookup.section && sectionLookup.section.permission_group_id
+    );
+    if (permissionGroupId === null) {
+      result = {
+        ok: false,
+        error_code: "MISSING_PERMISSION_GROUP_ID",
+        error_details:
+          "permission_group_id is required for article creation and was not found on section '" +
+          String(sectionLookup.section && sectionLookup.section.name || sectionId) +
+          "'. Set permission_group_id in the row or set script property " +
+          CFG_D.PERMISSIONS.DEFAULT_PERMISSION_GROUP_PROP +
+          ".",
+        attempts: sectionLookup.attempts || [],
+      };
+    } else {
+      result = {
+        ok: true,
+        permission_group_id: permissionGroupId,
+        source: "section_permission_group_id",
+        attempts: sectionLookup.attempts || [],
+      };
+    }
+  }
+
+  if (cache) cache[cacheKey] = result;
+  return result;
+}
+
+function fetchSectionMetadata_D_(creds, sectionId, locale) {
+  const safeSectionId = String(sectionId || "").trim();
+  const safeLocale = String(locale || creds.defaultLocale || CFG_D.ZENDESK.DEFAULT_LOCALE).trim() ||
+    CFG_D.ZENDESK.DEFAULT_LOCALE;
+  const attempts = [];
+
+  if (!safeSectionId) {
+    return {
+      ok: false,
+      error_code: "MISSING_SECTION_ID",
+      error_details: "section_id is missing.",
+      attempts: attempts,
+    };
+  }
+
+  const basePath = "/api/v2/help_center/sections/" + encodeURIComponent(safeSectionId) + ".json";
+  const paths = [{ label: "primary", path: basePath }];
+  if (creds.brandId) {
+    paths.push({
+      label: "primary+brand",
+      path: appendBrandIdToPath_D_(basePath, creds.brandId),
+    });
+  }
+
+  const localePath =
+    "/api/v2/help_center/" +
+    encodeURIComponent(safeLocale) +
+    "/sections/" +
+    encodeURIComponent(safeSectionId) +
+    ".json";
+  paths.push({ label: "locale", path: localePath });
+  if (creds.brandId) {
+    paths.push({
+      label: "locale+brand",
+      path: appendBrandIdToPath_D_(localePath, creds.brandId),
+    });
+  }
+
+  let lastErrorCode = "";
+  let lastErrorDetails = "";
+  for (let i = 0; i < paths.length; i++) {
+    const attempt = paths[i];
+    const response = zendeskRequest_D_(creds, "get", attempt.path, null);
+    attempts.push({
+      label: attempt.label,
+      path: attempt.path,
+      ok: response.ok,
+      status_code: response.status_code,
+      error_code: response.error_code || "",
+    });
+    if (response.ok) {
+      const section = response.response_json && response.response_json.section
+        ? response.response_json.section
+        : null;
+      if (section) {
+        return {
+          ok: true,
+          section: section,
+          attempts: attempts,
+        };
+      }
+      return {
+        ok: false,
+        error_code: "SECTION_RESPONSE_MISSING",
+        error_details: "Section endpoint returned success but no section object.",
+        attempts: attempts,
+      };
+    }
+    lastErrorCode = response.error_code || "";
+    lastErrorDetails = response.error_details || "";
+  }
+
+  return {
+    ok: false,
+    error_code: lastErrorCode || "SECTION_LOOKUP_FAILED",
+    error_details: lastErrorDetails || "Section metadata lookup failed.",
+    attempts: attempts,
+  };
 }
 
 function probeSectionId_D_(creds, sectionId, locale) {
@@ -1226,6 +1441,16 @@ function checkScriptDSectionTargets_() {
     const configuredSectionId = getConfiguredBucketSectionId_D_(bucket);
     const configuredSectionName = getConfiguredBucketSectionName_D_(bucket);
     const resolution = resolveBucketDefaultSection_D_(bucket, creds);
+    let sectionPermissionGroupId = null;
+    let sectionPermissionLookup = null;
+    if (resolution.ok && resolution.section_id) {
+      sectionPermissionLookup = fetchSectionMetadata_D_(creds, resolution.section_id, creds.defaultLocale);
+      if (sectionPermissionLookup.ok) {
+        sectionPermissionGroupId = parseNumericCell_D_(
+          sectionPermissionLookup.section && sectionPermissionLookup.section.permission_group_id
+        );
+      }
+    }
     return {
       bucket: bucket.key,
       label: bucket.label,
@@ -1233,6 +1458,8 @@ function checkScriptDSectionTargets_() {
       configured_section_name: configuredSectionName,
       resolved_section_id: String(resolution.section_id || "").trim(),
       resolved_by: String(resolution.source || ""),
+      resolved_section_permission_group_id: sectionPermissionGroupId,
+      section_permission_lookup: sectionPermissionLookup,
       ok: !!resolution.ok,
       attempts: resolution.attempts || [],
       error_code: resolution.error_code || "",
@@ -1414,10 +1641,6 @@ function setupScriptDArticleSheet() {
   return setupScriptDArticleSheet_();
 }
 
-function setupScriptDArticleSheets() {
-  return setupScriptDArticleSheet_();
-}
-
 function setupScriptDZendeskConfig() {
   return setupScriptDZendeskConfig_();
 }
@@ -1428,6 +1651,10 @@ function configureScriptDSpreadsheetTargets(googleSuiteSpreadsheetId, itSupportS
 
 function configureScriptDZendeskHost(helpCenterHost) {
   return configureScriptDZendeskHost_(helpCenterHost);
+}
+
+function configureScriptDDefaultPermissionGroup(permissionGroupId) {
+  return configureScriptDDefaultPermissionGroup_(permissionGroupId);
 }
 
 function configureScriptDVisibilityDefaults(tenantSegmentId, learnerContentTagIdsCsv) {
