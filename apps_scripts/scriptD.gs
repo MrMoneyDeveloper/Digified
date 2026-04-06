@@ -27,15 +27,21 @@ const CFG_D = {
       key: "google_suite",
       label: "Google Suite",
       spreadsheetIdProp: "HC_GOOGLE_SUITE_SHEET_ID",
+      sectionIdProp: "HC_GOOGLE_SUITE_SECTION_ID",
+      sectionNameProp: "HC_GOOGLE_SUITE_SECTION_NAME",
       sheetName: "HC_IMPORT_GOOGLE_SUITE",
       defaultSectionId: "26400615350556", // Learning Material > Google Suite
+      defaultSectionName: "Google Suit",
     },
     IT_SUPPORT: {
       key: "it_support",
       label: "IT Support Tier 1",
       spreadsheetIdProp: "HC_IT_SUPPORT_SHEET_ID",
+      sectionIdProp: "HC_IT_SUPPORT_SECTION_ID",
+      sectionNameProp: "HC_IT_SUPPORT_SECTION_NAME",
       sheetName: "HC_IMPORT_IT_SUPPORT",
       defaultSectionId: "26400549254812", // Learning Material > IT Support Tier 1
+      defaultSectionName: "IT Support Tier 1",
     },
   },
 
@@ -120,6 +126,7 @@ function setupScriptDArticleSheet_() {
       "Leave article_id blank to create a new article.",
       "Fill article_id to update an existing article.",
       "section_id can be left blank to use the bucket default section.",
+      "If section_id is invalid, Script D falls back to bucket section name lookup.",
       "If user_segment_id is blank, HC_TENANT_SEGMENT_ID is applied when configured.",
       "If content_tag_ids_csv is blank, HC_LEARNER_CONTENT_TAG_IDS_CSV is applied when configured.",
       "Run setupScriptDZendeskConfig() once before the first import.",
@@ -129,7 +136,9 @@ function setupScriptDArticleSheet_() {
       learning_parent_section_id: CFG_D.HELP_CENTER.LEARNING_PARENT_SECTION_ID,
       category_id: CFG_D.HELP_CENTER.DEFAULT_CATEGORY_ID,
       google_suite_section_id: CFG_D.BUCKETS.GOOGLE_SUITE.defaultSectionId,
+      google_suite_section_name: CFG_D.BUCKETS.GOOGLE_SUITE.defaultSectionName,
       it_support_section_id: CFG_D.BUCKETS.IT_SUPPORT.defaultSectionId,
+      it_support_section_name: CFG_D.BUCKETS.IT_SUPPORT.defaultSectionName,
     },
   };
 }
@@ -183,12 +192,18 @@ function getScriptDSetupStatus_() {
 
   const buckets = getBucketList_D_().map(function (bucket) {
     const configuredId = String(props.getProperty(bucket.spreadsheetIdProp) || "").trim();
+    const configuredSectionId = getConfiguredBucketSectionId_D_(bucket);
+    const configuredSectionName = getConfiguredBucketSectionName_D_(bucket);
     const target = getSpreadsheetForBucket_D_(bucket);
     return {
       bucket: bucket.key,
       label: bucket.label,
       sheet_name: bucket.sheetName,
       default_section_id: bucket.defaultSectionId,
+      section_id_property: bucket.sectionIdProp,
+      section_name_property: bucket.sectionNameProp,
+      configured_section_id: configuredSectionId,
+      configured_section_name: configuredSectionName,
       spreadsheet_property: bucket.spreadsheetIdProp,
       spreadsheet_id_from_property: configuredId || "",
       effective_spreadsheet_id: target.getId(),
@@ -221,7 +236,11 @@ function getScriptDSetupStatus_() {
       CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP,
       CFG_D.VISIBILITY_DEFAULTS.LEARNER_CONTENT_TAG_IDS_PROP,
       CFG_D.BUCKETS.GOOGLE_SUITE.spreadsheetIdProp,
+      CFG_D.BUCKETS.GOOGLE_SUITE.sectionIdProp,
+      CFG_D.BUCKETS.GOOGLE_SUITE.sectionNameProp,
       CFG_D.BUCKETS.IT_SUPPORT.spreadsheetIdProp,
+      CFG_D.BUCKETS.IT_SUPPORT.sectionIdProp,
+      CFG_D.BUCKETS.IT_SUPPORT.sectionNameProp,
     ],
   };
 }
@@ -254,6 +273,11 @@ function pushScriptDBucket_(bucket, opts) {
 
   const defaults = getVisibilityDefaults_D_();
   const limit = Math.max(1, toInt_D_(opts && opts.limit, CFG_D.PIPELINE.LIMIT_PER_RUN));
+  const bucketSectionResolution = resolveBucketDefaultSection_D_(bucket, creds);
+  const effectiveDefaultSectionId = bucketSectionResolution.ok
+    ? String(bucketSectionResolution.section_id || "").trim()
+    : String(getConfiguredBucketSectionId_D_(bucket) || bucket.defaultSectionId || "").trim();
+
   const values = sh.getDataRange().getValues();
   if (values.length < 2) {
     return {
@@ -267,7 +291,8 @@ function pushScriptDBucket_(bucket, opts) {
       skipped: 0,
       spreadsheet_id: ss.getId(),
       sheet_name: bucket.sheetName,
-      default_section_id: bucket.defaultSectionId,
+      default_section_id: effectiveDefaultSectionId,
+      default_section_resolution: bucketSectionResolution,
     };
   }
 
@@ -290,12 +315,13 @@ function pushScriptDBucket_(bucket, opts) {
   let updated = 0;
   let failed = 0;
   let skipped = 0;
+  const sectionResolutionCache = {};
 
   for (let i = 1; i < values.length && processed < limit; i++) {
     const rowNum = i + 1;
     const row = values[i];
     const article = articleFromRow_D_(row, idx, {
-      defaultSectionId: bucket.defaultSectionId,
+      defaultSectionId: effectiveDefaultSectionId,
       defaultLocale: creds.defaultLocale,
       tenantSegmentId: defaults.tenantSegmentId,
       learnerContentTagIds: defaults.learnerContentTagIds,
@@ -321,6 +347,46 @@ function pushScriptDBucket_(bucket, opts) {
       failed++;
       processed++;
       continue;
+    }
+
+    if (!article.articleId) {
+      const sectionResolution = resolveSectionIdForCreate_D_(
+        article.sectionId,
+        article.locale,
+        bucket,
+        creds,
+        bucketSectionResolution,
+        sectionResolutionCache
+      );
+
+      if (!sectionResolution.ok) {
+        const sectionErrorDetails =
+          String(sectionResolution.error_details || "Unable to resolve section_id for create.") +
+          (sectionResolution.attempts && sectionResolution.attempts.length
+            ? " | attempts=" + JSON.stringify(sectionResolution.attempts)
+            : "");
+        writeArticleResult_D_(sh, rowNum, idx, {
+          sync_status: "failed",
+          error_code: String(sectionResolution.error_code || "SECTION_ID_UNRESOLVED"),
+          error_details: truncate_D_(sectionErrorDetails, 1800),
+        });
+        logError_D_(bucket, "Section resolution failed", {
+          row: rowNum,
+          error_code: String(sectionResolution.error_code || "SECTION_ID_UNRESOLVED"),
+          error_details: truncate_D_(sectionErrorDetails, 800),
+          requested_section_id: String(article.sectionId || ""),
+          bucket_resolution: bucketSectionResolution,
+        });
+        failed++;
+        processed++;
+        continue;
+      }
+
+      const resolvedSectionId = String(sectionResolution.section_id || "").trim();
+      if (resolvedSectionId && resolvedSectionId !== String(article.sectionId || "").trim()) {
+        setCellIf_D_(sh, rowNum, idx.section_id, resolvedSectionId);
+      }
+      article.sectionId = resolvedSectionId;
     }
 
     const request = buildArticleRequest_D_(article);
@@ -374,7 +440,8 @@ function pushScriptDBucket_(bucket, opts) {
     spreadsheet_id: ss.getId(),
     spreadsheet_name: ss.getName(),
     sheet_name: bucket.sheetName,
-    default_section_id: bucket.defaultSectionId,
+    default_section_id: effectiveDefaultSectionId,
+    default_section_resolution: bucketSectionResolution,
   };
 }
 
@@ -520,6 +587,7 @@ function zendeskRequest_D_(creds, method, path, payloadObj) {
         article_id: String(article.id || "").trim(),
         article_url: String(article.html_url || article.url || "").trim(),
         status_code: statusCode,
+        response_json: parsed,
       };
     }
 
@@ -528,6 +596,7 @@ function zendeskRequest_D_(creds, method, path, payloadObj) {
       error_code: "ZENDESK_API_" + statusCode,
       error_details: body || "Unknown Zendesk response.",
       status_code: statusCode,
+      response_json: parsed,
     };
   } catch (err) {
     return {
@@ -535,6 +604,7 @@ function zendeskRequest_D_(creds, method, path, payloadObj) {
       error_code: "ZENDESK_FETCH_EXCEPTION",
       error_details: String(err || ""),
       status_code: 0,
+      response_json: {},
     };
   }
 }
@@ -685,6 +755,381 @@ function getZendeskCreds_D_() {
   };
 }
 
+function getConfiguredBucketSectionId_D_(bucket) {
+  const props = PropertiesService.getScriptProperties();
+  const configured = String(props.getProperty(bucket.sectionIdProp) || "").trim();
+  return configured || String(bucket.defaultSectionId || "").trim();
+}
+
+function getConfiguredBucketSectionName_D_(bucket) {
+  const props = PropertiesService.getScriptProperties();
+  const configured = String(props.getProperty(bucket.sectionNameProp) || "").trim();
+  return configured || String(bucket.defaultSectionName || "").trim();
+}
+
+function resolveBucketDefaultSection_D_(bucket, creds) {
+  const configuredSectionId = getConfiguredBucketSectionId_D_(bucket);
+  const configuredSectionName = getConfiguredBucketSectionName_D_(bucket);
+  const sectionIdCandidates = uniqueStrings_D_([
+    configuredSectionId,
+    String(bucket.defaultSectionId || "").trim(),
+  ]);
+  const idAttempts = [];
+
+  for (let i = 0; i < sectionIdCandidates.length; i++) {
+    const sectionId = sectionIdCandidates[i];
+    if (!sectionId) continue;
+    const probe = probeSectionId_D_(creds, sectionId, creds.defaultLocale);
+    idAttempts.push({
+      mode: "section_id",
+      section_id: sectionId,
+      ok: probe.ok,
+      attempts: probe.attempts || [],
+      error_code: probe.error_code || "",
+      error_details: probe.error_details || "",
+    });
+    if (probe.ok) {
+      return {
+        ok: true,
+        source: "section_id",
+        section_id: sectionId,
+        section_name_lookup: configuredSectionName,
+        attempts: idAttempts,
+      };
+    }
+  }
+
+  if (configuredSectionName) {
+    const lookup = findSectionByName_D_(creds, configuredSectionName, creds.defaultLocale);
+    if (lookup.ok) {
+      return {
+        ok: true,
+        source: "section_name",
+        section_id: String(lookup.section_id || "").trim(),
+        section_name: String(lookup.section_name || configuredSectionName),
+        section_name_lookup: configuredSectionName,
+        attempts: idAttempts.concat(lookup.attempts || []),
+      };
+    }
+    return {
+      ok: false,
+      error_code: lookup.error_code || "SECTION_NAME_LOOKUP_FAILED",
+      error_details: lookup.error_details || "Section name lookup failed.",
+      section_name_lookup: configuredSectionName,
+      attempts: idAttempts.concat(lookup.attempts || []),
+    };
+  }
+
+  return {
+    ok: false,
+    error_code: "SECTION_UNRESOLVED",
+    error_details: "No valid section_id and no section name available for fallback lookup.",
+    attempts: idAttempts,
+  };
+}
+
+function resolveSectionIdForCreate_D_(requestedSectionId, locale, bucket, creds, bucketResolution, cache) {
+  const sectionId = String(requestedSectionId || "").trim();
+  const localeKey = String(locale || creds.defaultLocale || "").trim().toLowerCase();
+  const cacheKey = String(sectionId || "__blank__") + "::" + localeKey;
+  if (cache && cache[cacheKey]) return cache[cacheKey];
+
+  let result;
+  if (sectionId) {
+    const probe = probeSectionId_D_(creds, sectionId, locale);
+    if (probe.ok) {
+      result = {
+        ok: true,
+        section_id: sectionId,
+        source: "row_section_id",
+      };
+    } else if (
+      bucketResolution &&
+      bucketResolution.ok &&
+      String(bucketResolution.section_id || "").trim() &&
+      String(bucketResolution.section_id || "").trim() !== sectionId
+    ) {
+      result = {
+        ok: true,
+        section_id: String(bucketResolution.section_id || "").trim(),
+        source: "bucket_default_fallback",
+        attempts: probe.attempts || [],
+      };
+    } else {
+      result = {
+        ok: false,
+        error_code: "SECTION_ID_UNRESOLVED",
+        error_details:
+          "Row section_id '" +
+          sectionId +
+          "' could not be found in Zendesk and no bucket fallback section could be resolved.",
+        attempts: probe.attempts || [],
+      };
+    }
+  } else if (bucketResolution && bucketResolution.ok && String(bucketResolution.section_id || "").trim()) {
+    result = {
+      ok: true,
+      section_id: String(bucketResolution.section_id || "").trim(),
+      source: "bucket_default",
+      attempts: bucketResolution.attempts || [],
+    };
+  } else {
+    result = {
+      ok: false,
+      error_code: "MISSING_SECTION_ID",
+      error_details:
+        "section_id is required for new articles and no bucket fallback section could be resolved.",
+      attempts: (bucketResolution && bucketResolution.attempts) || [],
+    };
+  }
+
+  if (cache) cache[cacheKey] = result;
+  return result;
+}
+
+function probeSectionId_D_(creds, sectionId, locale) {
+  const safeSectionId = String(sectionId || "").trim();
+  const safeLocale = String(locale || creds.defaultLocale || CFG_D.ZENDESK.DEFAULT_LOCALE).trim() ||
+    CFG_D.ZENDESK.DEFAULT_LOCALE;
+  const attempts = [];
+
+  if (!safeSectionId) {
+    return {
+      ok: false,
+      error_code: "MISSING_SECTION_ID",
+      error_details: "section_id is missing.",
+      attempts: attempts,
+    };
+  }
+
+  const basePath = "/api/v2/help_center/sections/" + encodeURIComponent(safeSectionId) + ".json";
+  const paths = [
+    { label: "primary", path: basePath },
+  ];
+  if (creds.brandId) paths.push({ label: "primary+brand", path: appendBrandIdToPath_D_(basePath, creds.brandId) });
+
+  const localePath =
+    "/api/v2/help_center/" + encodeURIComponent(safeLocale) + "/sections/" + encodeURIComponent(safeSectionId) + ".json";
+  paths.push({ label: "locale", path: localePath });
+  if (creds.brandId) paths.push({ label: "locale+brand", path: appendBrandIdToPath_D_(localePath, creds.brandId) });
+
+  let lastErrorCode = "";
+  let lastErrorDetails = "";
+  for (let i = 0; i < paths.length; i++) {
+    const attempt = paths[i];
+    const response = zendeskRequest_D_(creds, "get", attempt.path, null);
+    attempts.push({
+      label: attempt.label,
+      path: attempt.path,
+      ok: response.ok,
+      status_code: response.status_code,
+      error_code: response.error_code || "",
+    });
+    if (response.ok) {
+      return {
+        ok: true,
+        section_id: safeSectionId,
+        attempts: attempts,
+      };
+    }
+    lastErrorCode = response.error_code || "";
+    lastErrorDetails = response.error_details || "";
+  }
+
+  return {
+    ok: false,
+    error_code: lastErrorCode || "SECTION_PROBE_FAILED",
+    error_details: lastErrorDetails || "Section id probe failed.",
+    attempts: attempts,
+  };
+}
+
+function findSectionByName_D_(creds, sectionName, locale) {
+  const targetName = String(sectionName || "").trim().toLowerCase();
+  if (!targetName) {
+    return {
+      ok: false,
+      error_code: "MISSING_SECTION_NAME",
+      error_details: "section name lookup value is empty.",
+      attempts: [],
+    };
+  }
+
+  const sectionList = fetchAllSections_D_(creds, locale);
+  if (!sectionList.ok) return sectionList;
+
+  const exact = (sectionList.sections || []).find(function (section) {
+    return String(section && section.name || "").trim().toLowerCase() === targetName;
+  });
+  if (exact) {
+    return {
+      ok: true,
+      section_id: String(exact.id || "").trim(),
+      section_name: String(exact.name || "").trim(),
+      attempts: sectionList.attempts || [],
+    };
+  }
+
+  const contains = (sectionList.sections || []).find(function (section) {
+    return String(section && section.name || "").trim().toLowerCase().indexOf(targetName) >= 0;
+  });
+  if (contains) {
+    return {
+      ok: true,
+      section_id: String(contains.id || "").trim(),
+      section_name: String(contains.name || "").trim(),
+      attempts: sectionList.attempts || [],
+    };
+  }
+
+  const sectionNames = (sectionList.sections || []).map(function (section) {
+    return String(section && section.name || "").trim();
+  });
+
+  return {
+    ok: false,
+    error_code: "SECTION_NAME_NOT_FOUND",
+    error_details:
+      "Section name '" +
+      sectionName +
+      "' not found. Available sections: " +
+      sectionNames.join(", "),
+    attempts: sectionList.attempts || [],
+  };
+}
+
+function fetchAllSections_D_(creds, locale) {
+  const safeLocale = String(locale || creds.defaultLocale || CFG_D.ZENDESK.DEFAULT_LOCALE).trim() ||
+    CFG_D.ZENDESK.DEFAULT_LOCALE;
+
+  const basePath = appendQueryParam_D_("/api/v2/help_center/sections.json", "per_page", "100");
+  const localePath = appendQueryParam_D_(
+    "/api/v2/help_center/" + encodeURIComponent(safeLocale) + "/sections.json",
+    "per_page",
+    "100"
+  );
+
+  const candidates = [
+    { label: "primary", path: basePath },
+  ];
+  if (creds.brandId) candidates.push({ label: "primary+brand", path: appendBrandIdToPath_D_(basePath, creds.brandId) });
+  candidates.push({ label: "locale", path: localePath });
+  if (creds.brandId) candidates.push({ label: "locale+brand", path: appendBrandIdToPath_D_(localePath, creds.brandId) });
+
+  let anySuccess = false;
+  const mergedSections = [];
+  const mergedAttempts = [];
+  let fallbackFailure = null;
+  for (let i = 0; i < candidates.length; i++) {
+    const result = fetchSectionsByPathWithPagination_D_(creds, candidates[i].path, candidates[i].label);
+    mergedAttempts.push.apply(mergedAttempts, result.attempts || []);
+    if (result.ok) {
+      anySuccess = true;
+      mergedSections.push.apply(mergedSections, result.sections || []);
+    } else {
+      fallbackFailure = result;
+    }
+  }
+
+  if (anySuccess) {
+    return {
+      ok: true,
+      sections: dedupeSectionsById_D_(mergedSections),
+      attempts: mergedAttempts,
+    };
+  }
+
+  return fallbackFailure || {
+    ok: false,
+    error_code: "SECTION_FETCH_FAILED",
+    error_details: "Failed to fetch sections from Zendesk.",
+    attempts: mergedAttempts,
+  };
+}
+
+function fetchSectionsByPathWithPagination_D_(creds, startPath, modeLabel) {
+  const sections = [];
+  const attempts = [];
+  let path = String(startPath || "").trim();
+  let safety = 0;
+
+  while (path && safety < 25) {
+    safety++;
+    const response = zendeskRequest_D_(creds, "get", path, null);
+    attempts.push({
+      label: modeLabel + "#page_" + safety,
+      path: path,
+      ok: response.ok,
+      status_code: response.status_code,
+      error_code: response.error_code || "",
+    });
+    if (!response.ok) {
+      return {
+        ok: false,
+        error_code: response.error_code || "SECTION_FETCH_FAILED",
+        error_details: response.error_details || "Zendesk section list request failed.",
+        attempts: attempts,
+      };
+    }
+
+    const parsed = response.response_json || {};
+    const pageSections = Array.isArray(parsed.sections) ? parsed.sections : [];
+    for (let i = 0; i < pageSections.length; i++) {
+      sections.push(pageSections[i]);
+    }
+
+    path = normalizeZendeskPath_D_(parsed.next_page);
+  }
+
+  return {
+    ok: true,
+    sections: sections,
+    attempts: attempts,
+  };
+}
+
+function normalizeZendeskPath_D_(urlOrPath) {
+  const input = String(urlOrPath || "").trim();
+  if (!input) return "";
+  if (input.charAt(0) === "/") return input;
+  const matched = input.match(/^https?:\/\/[^/]+(\/.*)$/i);
+  if (matched && matched[1]) return matched[1];
+  return "";
+}
+
+function appendQueryParam_D_(path, key, value) {
+  const safePath = String(path || "");
+  const safeKey = String(key || "").trim();
+  const safeValue = String(value || "").trim();
+  if (!safePath || !safeKey) return safePath;
+  if (new RegExp("[\\?&]" + safeKey + "=", "i").test(safePath)) return safePath;
+  return safePath + (safePath.indexOf("?") >= 0 ? "&" : "?") + encodeURIComponent(safeKey) + "=" + encodeURIComponent(safeValue);
+}
+
+function uniqueStrings_D_(values) {
+  const dedupe = {};
+  return (values || []).map(function (value) {
+    return String(value || "").trim();
+  }).filter(function (value) {
+    if (!value) return false;
+    const key = value.toLowerCase();
+    if (dedupe[key]) return false;
+    dedupe[key] = true;
+    return true;
+  });
+}
+
+function dedupeSectionsById_D_(sections) {
+  const seen = {};
+  return (sections || []).filter(function (section) {
+    const key = String(section && section.id || "").trim();
+    if (!key) return false;
+    if (seen[key]) return false;
+    seen[key] = true;
+    return true;
+  });
+}
+
 function checkScriptDSectionTargets_() {
   const creds = getZendeskCreds_D_();
   if (!creds.subdomain || !creds.email || !creds.token) {
@@ -696,101 +1141,20 @@ function checkScriptDSectionTargets_() {
   }
 
   const results = getBucketList_D_().map(function (bucket) {
-    const sectionId = String(bucket.defaultSectionId || "").trim();
-    const basePath = "/api/v2/help_center/sections/" + encodeURIComponent(sectionId) + ".json";
-    const checks = [];
-
-    const primary = zendeskRequest_D_(creds, "get", basePath, null);
-    checks.push({
-      mode: "primary",
-      path: basePath,
-      ok: primary.ok,
-      status_code: primary.status_code,
-      error_code: primary.error_code || "",
-    });
-    if (primary.ok) {
-      return {
-        bucket: bucket.key,
-        label: bucket.label,
-        section_id: sectionId,
-        ok: true,
-        checks: checks,
-      };
-    }
-
-    if (creds.brandId) {
-      const brandPath = appendBrandIdToPath_D_(basePath, creds.brandId);
-      const byBrand = zendeskRequest_D_(creds, "get", brandPath, null);
-      checks.push({
-        mode: "primary+brand",
-        path: brandPath,
-        ok: byBrand.ok,
-        status_code: byBrand.status_code,
-        error_code: byBrand.error_code || "",
-      });
-      if (byBrand.ok) {
-        return {
-          bucket: bucket.key,
-          label: bucket.label,
-          section_id: sectionId,
-          ok: true,
-          checks: checks,
-        };
-      }
-    }
-
-    const localePath =
-      "/api/v2/help_center/" +
-      encodeURIComponent(creds.defaultLocale) +
-      "/sections/" +
-      encodeURIComponent(sectionId) +
-      ".json";
-    const byLocale = zendeskRequest_D_(creds, "get", localePath, null);
-    checks.push({
-      mode: "locale",
-      path: localePath,
-      ok: byLocale.ok,
-      status_code: byLocale.status_code,
-      error_code: byLocale.error_code || "",
-    });
-    if (byLocale.ok) {
-      return {
-        bucket: bucket.key,
-        label: bucket.label,
-        section_id: sectionId,
-        ok: true,
-        checks: checks,
-      };
-    }
-
-    if (creds.brandId) {
-      const localeBrandPath = appendBrandIdToPath_D_(localePath, creds.brandId);
-      const byLocaleBrand = zendeskRequest_D_(creds, "get", localeBrandPath, null);
-      checks.push({
-        mode: "locale+brand",
-        path: localeBrandPath,
-        ok: byLocaleBrand.ok,
-        status_code: byLocaleBrand.status_code,
-        error_code: byLocaleBrand.error_code || "",
-      });
-      if (byLocaleBrand.ok) {
-        return {
-          bucket: bucket.key,
-          label: bucket.label,
-          section_id: sectionId,
-          ok: true,
-          checks: checks,
-        };
-      }
-    }
-
+    const configuredSectionId = getConfiguredBucketSectionId_D_(bucket);
+    const configuredSectionName = getConfiguredBucketSectionName_D_(bucket);
+    const resolution = resolveBucketDefaultSection_D_(bucket, creds);
     return {
       bucket: bucket.key,
       label: bucket.label,
-      section_id: sectionId,
-      ok: false,
-      checks: checks,
-      note: "Section id not reachable with current Zendesk/brand configuration.",
+      configured_section_id: configuredSectionId,
+      configured_section_name: configuredSectionName,
+      resolved_section_id: String(resolution.section_id || "").trim(),
+      resolved_by: String(resolution.source || ""),
+      ok: !!resolution.ok,
+      attempts: resolution.attempts || [],
+      error_code: resolution.error_code || "",
+      error_details: resolution.error_details || "",
     };
   });
 
