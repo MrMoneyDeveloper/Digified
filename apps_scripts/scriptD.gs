@@ -1,26 +1,55 @@
 /**
- * Script D - Zendesk Help Center Article Import
+ * Script D - Zendesk Help Center Article Import (multi-target)
  *
  * Public entrypoints:
  *   setupScriptDArticleSheet()
- *   pushScriptDArticles()
+ *   setupScriptDArticleSheets()
+ *   setupScriptDZendeskConfig()
+ *   getScriptDSetupStatus()
+ *   configureScriptDSpreadsheetTargets(googleSuiteSpreadsheetId, itSupportSpreadsheetId)
+ *   configureScriptDVisibilityDefaults(tenantSegmentId, learnerContentTagIdsCsv)
+ *   pushScriptDArticles()                  // pushes both buckets
+ *   pushScriptDGoogleSuiteArticles()       // pushes Google Suite bucket only
+ *   pushScriptDITSupportArticles()         // pushes IT Support bucket only
  */
 
 const CFG_D = {
   SHEETS: {
-    ARTICLES: "HC_ARTICLES_IMPORT",
     LOGS: "HC_ARTICLES_LOGS",
   },
 
+  // Legacy default spreadsheet property used across Scripts A/B/D.
   SHEET_ID_PROP: "TRAINING_SHEET_ID",
+
+  BUCKETS: {
+    GOOGLE_SUITE: {
+      key: "google_suite",
+      label: "Google Suite",
+      spreadsheetIdProp: "HC_GOOGLE_SUITE_SHEET_ID",
+      sheetName: "HC_IMPORT_GOOGLE_SUITE",
+      defaultSectionId: "26400615350556", // Learning Material > Google Suite
+    },
+    IT_SUPPORT: {
+      key: "it_support",
+      label: "IT Support Tier 1",
+      spreadsheetIdProp: "HC_IT_SUPPORT_SHEET_ID",
+      sheetName: "HC_IMPORT_IT_SUPPORT",
+      defaultSectionId: "26400549254812", // Learning Material > IT Support Tier 1
+    },
+  },
 
   PIPELINE: {
     LIMIT_PER_RUN: 100,
   },
 
   HELP_CENTER: {
-    DEFAULT_SECTION_ID: "26400549254812", // Learning Material > IT Support Tier 1
-    DEFAULT_CATEGORY_ID: "26400425185692", // Learning Material
+    LEARNING_PARENT_SECTION_ID: "26400542556316",
+    DEFAULT_CATEGORY_ID: "26400425185692",
+  },
+
+  VISIBILITY_DEFAULTS: {
+    TENANT_SEGMENT_PROP: "HC_TENANT_SEGMENT_ID",
+    LEARNER_CONTENT_TAG_IDS_PROP: "HC_LEARNER_CONTENT_TAG_IDS_CSV",
   },
 
   ZENDESK: {
@@ -31,6 +60,7 @@ const CFG_D = {
     DEFAULT_SUBDOMAIN: "cxsupporthub",
     DEFAULT_EMAIL: "mohammed@cxexperts.co.za",
     DEFAULT_LOCALE: "en-us",
+    // Kept for backwards compatibility with existing setup behavior.
     DEFAULT_TOKEN: "7zB3NB6vMdOyV6riWS7SDdAJCSbMYP1Rm5D27pqG",
   },
 };
@@ -58,36 +88,45 @@ const ARTICLE_HEADERS_D = [
 ];
 
 function setupScriptDArticleSheet_() {
-  const ss = getSS_D_();
-
-  const articleSheet = ensureSheetWithHeader_D_(ss, CFG_D.SHEETS.ARTICLES, ARTICLE_HEADERS_D);
-  const logSheet = ensureSheetWithHeader_D_(ss, CFG_D.SHEETS.LOGS, [
-    "timestamp",
-    "level",
-    "message",
-    "meta_json",
-  ]);
+  const buckets = getBucketList_D_().map(function (bucket) {
+    const ss = getSpreadsheetForBucket_D_(bucket);
+    const articleSheet = ensureSheetWithHeader_D_(ss, bucket.sheetName, ARTICLE_HEADERS_D);
+    ensureSheetWithHeader_D_(ss, CFG_D.SHEETS.LOGS, [
+      "timestamp",
+      "bucket",
+      "level",
+      "message",
+      "meta_json",
+    ]);
+    return {
+      bucket: bucket.key,
+      label: bucket.label,
+      spreadsheet_name: ss.getName(),
+      spreadsheet_id: ss.getId(),
+      spreadsheet_url: ss.getUrl(),
+      article_sheet: articleSheet.getName(),
+      default_section_id: bucket.defaultSectionId,
+    };
+  });
 
   return {
     ok: true,
-    spreadsheet_name: ss.getName(),
-    spreadsheet_id: ss.getId(),
-    spreadsheet_url: ss.getUrl(),
-    article_sheet: articleSheet.getName(),
-    log_sheet: logSheet.getName(),
+    buckets: buckets,
     headers: ARTICLE_HEADERS_D,
     notes: [
       "Leave article_id blank to create a new article.",
       "Fill article_id to update an existing article.",
-      "section_id can be left blank to use the default Learning Material section.",
-      "body accepts HTML or plain text.",
-      "label_names_csv and content_tag_ids_csv accept comma-separated values.",
+      "section_id can be left blank to use the bucket default section.",
+      "If user_segment_id is blank, HC_TENANT_SEGMENT_ID is applied when configured.",
+      "If content_tag_ids_csv is blank, HC_LEARNER_CONTENT_TAG_IDS_CSV is applied when configured.",
       "Run setupScriptDZendeskConfig() once before the first import.",
     ],
     defaults: {
-      section_id: CFG_D.HELP_CENTER.DEFAULT_SECTION_ID,
-      category_id: CFG_D.HELP_CENTER.DEFAULT_CATEGORY_ID,
       locale: CFG_D.ZENDESK.DEFAULT_LOCALE,
+      learning_parent_section_id: CFG_D.HELP_CENTER.LEARNING_PARENT_SECTION_ID,
+      category_id: CFG_D.HELP_CENTER.DEFAULT_CATEGORY_ID,
+      google_suite_section_id: CFG_D.BUCKETS.GOOGLE_SUITE.defaultSectionId,
+      it_support_section_id: CFG_D.BUCKETS.IT_SUPPORT.defaultSectionId,
     },
   };
 }
@@ -101,90 +140,140 @@ function setupScriptDZendeskConfig_() {
   const currentLocale = String(props.getProperty(CFG_D.ZENDESK.DEFAULT_LOCALE_PROP) || "").trim();
   const currentToken = String(props.getProperty(CFG_D.ZENDESK.TOKEN_PROP) || "").trim();
 
-  if (!currentSubdomain) {
-    updates[CFG_D.ZENDESK.SUBDOMAIN_PROP] = CFG_D.ZENDESK.DEFAULT_SUBDOMAIN;
-  }
-  if (!currentEmail) {
-    updates[CFG_D.ZENDESK.EMAIL_PROP] = CFG_D.ZENDESK.DEFAULT_EMAIL;
-  }
-  if (!currentLocale) {
-    updates[CFG_D.ZENDESK.DEFAULT_LOCALE_PROP] = CFG_D.ZENDESK.DEFAULT_LOCALE;
-  }
-  if (!currentToken) {
-    updates[CFG_D.ZENDESK.TOKEN_PROP] = CFG_D.ZENDESK.DEFAULT_TOKEN;
-  }
+  if (!currentSubdomain) updates[CFG_D.ZENDESK.SUBDOMAIN_PROP] = CFG_D.ZENDESK.DEFAULT_SUBDOMAIN;
+  if (!currentEmail) updates[CFG_D.ZENDESK.EMAIL_PROP] = CFG_D.ZENDESK.DEFAULT_EMAIL;
+  if (!currentLocale) updates[CFG_D.ZENDESK.DEFAULT_LOCALE_PROP] = CFG_D.ZENDESK.DEFAULT_LOCALE;
+  if (!currentToken) updates[CFG_D.ZENDESK.TOKEN_PROP] = CFG_D.ZENDESK.DEFAULT_TOKEN;
 
   if (Object.keys(updates).length) {
     props.setProperties(updates, false);
   }
 
-  return {
-    ok: true,
-    added_keys: Object.keys(updates),
-    configured: {
-      subdomain: String(props.getProperty(CFG_D.ZENDESK.SUBDOMAIN_PROP) || updates[CFG_D.ZENDESK.SUBDOMAIN_PROP] || "").trim(),
-      email: String(props.getProperty(CFG_D.ZENDESK.EMAIL_PROP) || updates[CFG_D.ZENDESK.EMAIL_PROP] || "").trim(),
-      default_locale: String(props.getProperty(CFG_D.ZENDESK.DEFAULT_LOCALE_PROP) || updates[CFG_D.ZENDESK.DEFAULT_LOCALE_PROP] || "").trim(),
-      token_present: !!String(props.getProperty(CFG_D.ZENDESK.TOKEN_PROP) || updates[CFG_D.ZENDESK.TOKEN_PROP] || "").trim(),
-      default_section_id: CFG_D.HELP_CENTER.DEFAULT_SECTION_ID,
-    },
-    note: "Zendesk article import defaults have been written. Remove the hardcoded token after this once-off import.",
-  };
+  return getScriptDSetupStatus_();
+}
+
+function configureScriptDSpreadsheetTargets_(googleSuiteSpreadsheetId, itSupportSpreadsheetId) {
+  const props = PropertiesService.getScriptProperties();
+  const updates = {};
+  updates[CFG_D.BUCKETS.GOOGLE_SUITE.spreadsheetIdProp] = String(googleSuiteSpreadsheetId || "").trim();
+  updates[CFG_D.BUCKETS.IT_SUPPORT.spreadsheetIdProp] = String(itSupportSpreadsheetId || "").trim();
+  props.setProperties(updates, false);
+  return getScriptDSetupStatus_();
+}
+
+function configureScriptDVisibilityDefaults_(tenantSegmentId, learnerContentTagIdsCsv) {
+  const props = PropertiesService.getScriptProperties();
+  const updates = {};
+  updates[CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP] = String(tenantSegmentId || "").trim();
+  updates[CFG_D.VISIBILITY_DEFAULTS.LEARNER_CONTENT_TAG_IDS_PROP] = String(learnerContentTagIdsCsv || "").trim();
+  props.setProperties(updates, false);
+  return getScriptDSetupStatus_();
 }
 
 function getScriptDSetupStatus_() {
   const props = PropertiesService.getScriptProperties();
-  const subdomain = String(props.getProperty(CFG_D.ZENDESK.SUBDOMAIN_PROP) || CFG_D.ZENDESK.DEFAULT_SUBDOMAIN).trim();
-  const email = String(props.getProperty(CFG_D.ZENDESK.EMAIL_PROP) || CFG_D.ZENDESK.DEFAULT_EMAIL).trim();
-  const token = String(props.getProperty(CFG_D.ZENDESK.TOKEN_PROP) || CFG_D.ZENDESK.DEFAULT_TOKEN).trim();
-  const locale = String(props.getProperty(CFG_D.ZENDESK.DEFAULT_LOCALE_PROP) || "").trim() || CFG_D.ZENDESK.DEFAULT_LOCALE;
+  const creds = getZendeskCreds_D_();
 
-  const missing = [];
-  if (!subdomain) missing.push(CFG_D.ZENDESK.SUBDOMAIN_PROP);
-  if (!email) missing.push(CFG_D.ZENDESK.EMAIL_PROP);
-  if (!token) missing.push(CFG_D.ZENDESK.TOKEN_PROP);
+  const buckets = getBucketList_D_().map(function (bucket) {
+    const configuredId = String(props.getProperty(bucket.spreadsheetIdProp) || "").trim();
+    const target = getSpreadsheetForBucket_D_(bucket);
+    return {
+      bucket: bucket.key,
+      label: bucket.label,
+      sheet_name: bucket.sheetName,
+      default_section_id: bucket.defaultSectionId,
+      spreadsheet_property: bucket.spreadsheetIdProp,
+      spreadsheet_id_from_property: configuredId || "",
+      effective_spreadsheet_id: target.getId(),
+      effective_spreadsheet_name: target.getName(),
+      effective_spreadsheet_url: target.getUrl(),
+    };
+  });
 
   return {
-    ok: missing.length === 0,
+    ok: !!(creds.subdomain && creds.email && creds.token),
     configured: {
-      subdomain: subdomain,
-      email: email,
-      default_locale: locale,
-      token_present: !!token,
-      default_section_id: CFG_D.HELP_CENTER.DEFAULT_SECTION_ID,
+      subdomain: creds.subdomain,
+      email: creds.email,
+      default_locale: creds.defaultLocale,
+      token_present: !!creds.token,
+      tenant_segment_id_default: String(
+        props.getProperty(CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP) || ""
+      ).trim(),
+      learner_content_tag_ids_default: String(
+        props.getProperty(CFG_D.VISIBILITY_DEFAULTS.LEARNER_CONTENT_TAG_IDS_PROP) || ""
+      ).trim(),
     },
-    missing: missing,
-    article_sheet: CFG_D.SHEETS.ARTICLES,
-    log_sheet: CFG_D.SHEETS.LOGS,
+    buckets: buckets,
+    required_script_properties: [
+      CFG_D.ZENDESK.SUBDOMAIN_PROP,
+      CFG_D.ZENDESK.EMAIL_PROP,
+      CFG_D.ZENDESK.TOKEN_PROP,
+      CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP,
+      CFG_D.VISIBILITY_DEFAULTS.LEARNER_CONTENT_TAG_IDS_PROP,
+      CFG_D.BUCKETS.GOOGLE_SUITE.spreadsheetIdProp,
+      CFG_D.BUCKETS.IT_SUPPORT.spreadsheetIdProp,
+    ],
   };
 }
 
-function pushScriptDArticles_(opts) {
-  const ss = getSS_D_();
-  const sh = ss.getSheetByName(CFG_D.SHEETS.ARTICLES);
+function pushScriptDBucket_(bucket, opts) {
+  const ss = getSpreadsheetForBucket_D_(bucket);
+  const sh = ss.getSheetByName(bucket.sheetName);
   if (!sh) {
-    return { ok: false, error: "ARTICLE_SHEET_NOT_FOUND", message: "Run setupScriptDArticleSheet() first." };
+    return {
+      ok: false,
+      bucket: bucket.key,
+      label: bucket.label,
+      error: "ARTICLE_SHEET_NOT_FOUND",
+      message: "Run setupScriptDArticleSheet() first.",
+      spreadsheet_id: ss.getId(),
+      sheet_name: bucket.sheetName,
+    };
   }
 
   const creds = getZendeskCreds_D_();
   if (!creds.subdomain || !creds.email || !creds.token) {
     return {
       ok: false,
+      bucket: bucket.key,
+      label: bucket.label,
       error: "ZENDESK_NOT_CONFIGURED",
       message: "Set ZD_SUBDOMAIN, ZD_EMAIL, and ZD_TOKEN in Script Properties.",
     };
   }
 
+  const defaults = getVisibilityDefaults_D_();
   const limit = Math.max(1, toInt_D_(opts && opts.limit, CFG_D.PIPELINE.LIMIT_PER_RUN));
   const values = sh.getDataRange().getValues();
   if (values.length < 2) {
-    return { ok: true, processed: 0, created: 0, updated: 0, failed: 0, skipped: 0 };
+    return {
+      ok: true,
+      bucket: bucket.key,
+      label: bucket.label,
+      processed: 0,
+      created: 0,
+      updated: 0,
+      failed: 0,
+      skipped: 0,
+      spreadsheet_id: ss.getId(),
+      sheet_name: bucket.sheetName,
+      default_section_id: bucket.defaultSectionId,
+    };
   }
 
   const idx = indexMap_D_(values[0].map(String));
   const missing = listMissingRequiredCols_D_(idx);
   if (missing.length) {
-    return { ok: false, error: "MISSING_REQUIRED_COLUMNS", missing: missing };
+    return {
+      ok: false,
+      bucket: bucket.key,
+      label: bucket.label,
+      error: "MISSING_REQUIRED_COLUMNS",
+      missing: missing,
+      sheet_name: bucket.sheetName,
+      spreadsheet_id: ss.getId(),
+    };
   }
 
   let processed = 0;
@@ -196,7 +285,12 @@ function pushScriptDArticles_(opts) {
   for (let i = 1; i < values.length && processed < limit; i++) {
     const rowNum = i + 1;
     const row = values[i];
-    const article = articleFromRow_D_(row, idx, creds.defaultLocale);
+    const article = articleFromRow_D_(row, idx, {
+      defaultSectionId: bucket.defaultSectionId,
+      defaultLocale: creds.defaultLocale,
+      tenantSegmentId: defaults.tenantSegmentId,
+      learnerContentTagIds: defaults.learnerContentTagIds,
+    });
 
     if (!article.enabled) {
       skipped++;
@@ -210,7 +304,7 @@ function pushScriptDArticles_(opts) {
         error_code: validation.code,
         error_details: validation.message,
       });
-      logWarn_D_("Article row validation failed", {
+      logWarn_D_(bucket, "Article row validation failed", {
         row: rowNum,
         error_code: validation.code,
         error_details: validation.message,
@@ -231,7 +325,7 @@ function pushScriptDArticles_(opts) {
         error_code: "",
         error_details: "",
       });
-      logInfo_D_("Article synced", {
+      logInfo_D_(bucket, "Article synced", {
         row: rowNum,
         article_id: result.article_id,
         article_url: result.article_url,
@@ -245,7 +339,7 @@ function pushScriptDArticles_(opts) {
         error_code: result.error_code,
         error_details: result.error_details,
       });
-      logError_D_("Article sync failed", {
+      logError_D_(bucket, "Article sync failed", {
         row: rowNum,
         error_code: result.error_code,
         error_details: truncate_D_(result.error_details, 800),
@@ -258,32 +352,78 @@ function pushScriptDArticles_(opts) {
 
   return {
     ok: true,
+    bucket: bucket.key,
+    label: bucket.label,
     processed: processed,
     created: created,
     updated: updated,
     failed: failed,
     skipped: skipped,
     limit: limit,
-    sheet_name: CFG_D.SHEETS.ARTICLES,
+    spreadsheet_id: ss.getId(),
+    spreadsheet_name: ss.getName(),
+    sheet_name: bucket.sheetName,
+    default_section_id: bucket.defaultSectionId,
   };
 }
 
-function articleFromRow_D_(row, idx, defaultLocale) {
+function pushScriptDArticles_(opts) {
+  const options = opts || {};
+  const bucketKey = String(options.bucket || "").trim().toLowerCase();
+  if (bucketKey) {
+    const bucket = findBucketByKey_D_(bucketKey);
+    if (!bucket) {
+      return {
+        ok: false,
+        error: "UNKNOWN_BUCKET",
+        message: "Valid buckets: google_suite, it_support",
+        requested_bucket: bucketKey,
+      };
+    }
+    return pushScriptDBucket_(bucket, options);
+  }
+
+  const google = pushScriptDBucket_(CFG_D.BUCKETS.GOOGLE_SUITE, options);
+  const it = pushScriptDBucket_(CFG_D.BUCKETS.IT_SUPPORT, options);
+
+  return {
+    ok: !!(google.ok && it.ok),
+    google_suite: google,
+    it_support: it,
+    totals: {
+      processed: toInt_D_(google.processed, 0) + toInt_D_(it.processed, 0),
+      created: toInt_D_(google.created, 0) + toInt_D_(it.created, 0),
+      updated: toInt_D_(google.updated, 0) + toInt_D_(it.updated, 0),
+      failed: toInt_D_(google.failed, 0) + toInt_D_(it.failed, 0),
+      skipped: toInt_D_(google.skipped, 0) + toInt_D_(it.skipped, 0),
+    },
+  };
+}
+
+function articleFromRow_D_(row, idx, defaults) {
   const rawSectionId = String(safeCell_D_(row, idx.section_id) || "").trim();
+  const rawUserSegmentId = parseNumericCell_D_(safeCell_D_(row, idx.user_segment_id));
+  const rawContentTagIds = splitCsv_D_(safeCell_D_(row, idx.content_tag_ids_csv));
+
   return {
     enabled: toBool_D_(safeCell_D_(row, idx.enabled), true),
-    sectionId: rawSectionId || CFG_D.HELP_CENTER.DEFAULT_SECTION_ID,
+    sectionId: rawSectionId || defaults.defaultSectionId,
     articleId: String(safeCell_D_(row, idx.article_id) || "").trim(),
-    locale: String(safeCell_D_(row, idx.locale) || defaultLocale || "en-us").trim() || "en-us",
+    locale: String(
+      safeCell_D_(row, idx.locale) || defaults.defaultLocale || CFG_D.ZENDESK.DEFAULT_LOCALE
+    ).trim() || CFG_D.ZENDESK.DEFAULT_LOCALE,
     title: String(safeCell_D_(row, idx.title) || "").trim(),
     body: String(safeCell_D_(row, idx.body) || "").trim(),
-    userSegmentId: parseNumericCell_D_(safeCell_D_(row, idx.user_segment_id)),
+    userSegmentId:
+      rawUserSegmentId !== null ? rawUserSegmentId : defaults.tenantSegmentId,
     permissionGroupId: parseNumericCell_D_(safeCell_D_(row, idx.permission_group_id)),
     draft: parseOptionalBool_D_(safeCell_D_(row, idx.draft)),
     promoted: parseOptionalBool_D_(safeCell_D_(row, idx.promoted)),
     position: parseOptionalInt_D_(safeCell_D_(row, idx.position)),
     labelNames: splitCsv_D_(safeCell_D_(row, idx.label_names_csv)),
-    contentTagIds: splitCsv_D_(safeCell_D_(row, idx.content_tag_ids_csv)),
+    contentTagIds: rawContentTagIds.length
+      ? rawContentTagIds
+      : (defaults.learnerContentTagIds || []),
     notifySubscribers: toBool_D_(safeCell_D_(row, idx.notify_subscribers), false),
   };
 }
@@ -353,7 +493,9 @@ function zendeskRequest_D_(creds, method, path, payloadObj) {
     const statusCode = Number(res.getResponseCode() || 0);
     const body = String(res.getContentText() || "");
     let parsed = {};
-    try { parsed = JSON.parse(body || "{}"); } catch (ignore) {}
+    try {
+      parsed = JSON.parse(body || "{}");
+    } catch (ignore) {}
 
     if (statusCode >= 200 && statusCode < 300) {
       const article = parsed && parsed.article ? parsed.article : {};
@@ -383,7 +525,6 @@ function zendeskRequest_D_(creds, method, path, payloadObj) {
 
 function writeArticleResult_D_(sheet, rowNum, idx, patch) {
   const processedAt = new Date().toISOString();
-
   setCellIf_D_(sheet, rowNum, idx.article_id, patch.article_id);
   setCellIf_D_(sheet, rowNum, idx.zendesk_article_url, patch.zendesk_article_url);
   setCellIf_D_(sheet, rowNum, idx.sync_status, patch.sync_status);
@@ -392,20 +533,58 @@ function writeArticleResult_D_(sheet, rowNum, idx, patch) {
   setCellIf_D_(sheet, rowNum, idx.processed_at, processedAt);
 }
 
-function getSS_D_() {
+function getBucketList_D_() {
+  return [CFG_D.BUCKETS.GOOGLE_SUITE, CFG_D.BUCKETS.IT_SUPPORT];
+}
+
+function findBucketByKey_D_(bucketKey) {
+  const target = String(bucketKey || "").trim().toLowerCase();
+  return getBucketList_D_().find(function (bucket) {
+    return String(bucket.key || "").toLowerCase() === target;
+  }) || null;
+}
+
+function getDefaultSpreadsheet_D_() {
   const props = PropertiesService.getScriptProperties();
-  const sheetId = props.getProperty(CFG_D.SHEET_ID_PROP);
+  const sheetId = String(props.getProperty(CFG_D.SHEET_ID_PROP) || "").trim();
   if (sheetId) return SpreadsheetApp.openById(sheetId);
   return SpreadsheetApp.getActiveSpreadsheet();
+}
+
+function getSpreadsheetForBucket_D_(bucket) {
+  const props = PropertiesService.getScriptProperties();
+  const specificSheetId = String(props.getProperty(bucket.spreadsheetIdProp) || "").trim();
+  if (specificSheetId) return SpreadsheetApp.openById(specificSheetId);
+  return getDefaultSpreadsheet_D_();
+}
+
+function getVisibilityDefaults_D_() {
+  const props = PropertiesService.getScriptProperties();
+  return {
+    tenantSegmentId: parseNumericCell_D_(
+      props.getProperty(CFG_D.VISIBILITY_DEFAULTS.TENANT_SEGMENT_PROP)
+    ),
+    learnerContentTagIds: splitCsv_D_(
+      props.getProperty(CFG_D.VISIBILITY_DEFAULTS.LEARNER_CONTENT_TAG_IDS_PROP)
+    ),
+  };
 }
 
 function getZendeskCreds_D_() {
   const props = PropertiesService.getScriptProperties();
   return {
-    subdomain: String(props.getProperty(CFG_D.ZENDESK.SUBDOMAIN_PROP) || CFG_D.ZENDESK.DEFAULT_SUBDOMAIN).trim(),
-    email: String(props.getProperty(CFG_D.ZENDESK.EMAIL_PROP) || CFG_D.ZENDESK.DEFAULT_EMAIL).trim(),
-    token: String(props.getProperty(CFG_D.ZENDESK.TOKEN_PROP) || CFG_D.ZENDESK.DEFAULT_TOKEN).trim(),
-    defaultLocale: String(props.getProperty(CFG_D.ZENDESK.DEFAULT_LOCALE_PROP) || CFG_D.ZENDESK.DEFAULT_LOCALE).trim() || CFG_D.ZENDESK.DEFAULT_LOCALE,
+    subdomain: String(
+      props.getProperty(CFG_D.ZENDESK.SUBDOMAIN_PROP) || CFG_D.ZENDESK.DEFAULT_SUBDOMAIN
+    ).trim(),
+    email: String(
+      props.getProperty(CFG_D.ZENDESK.EMAIL_PROP) || CFG_D.ZENDESK.DEFAULT_EMAIL
+    ).trim(),
+    token: String(
+      props.getProperty(CFG_D.ZENDESK.TOKEN_PROP) || CFG_D.ZENDESK.DEFAULT_TOKEN
+    ).trim(),
+    defaultLocale: String(
+      props.getProperty(CFG_D.ZENDESK.DEFAULT_LOCALE_PROP) || CFG_D.ZENDESK.DEFAULT_LOCALE
+    ).trim() || CFG_D.ZENDESK.DEFAULT_LOCALE,
   };
 }
 
@@ -516,8 +695,12 @@ function toBool_D_(value, fallback) {
 function splitCsv_D_(value) {
   return String(value || "")
     .split(",")
-    .map(function (item) { return String(item || "").trim(); })
-    .filter(function (item) { return !!item; });
+    .map(function (item) {
+      return String(item || "").trim();
+    })
+    .filter(function (item) {
+      return !!item;
+    });
 }
 
 function toInt_D_(value, fallback) {
@@ -531,29 +714,32 @@ function truncate_D_(value, maxLen) {
   return s.length <= limit ? s : s.slice(0, limit) + "...";
 }
 
-function logInfo_D_(message, meta) {
-  log_D_("info", message, meta);
+function logInfo_D_(bucket, message, meta) {
+  log_D_(bucket, "info", message, meta);
 }
 
-function logWarn_D_(message, meta) {
-  log_D_("warn", message, meta);
+function logWarn_D_(bucket, message, meta) {
+  log_D_(bucket, "warn", message, meta);
 }
 
-function logError_D_(message, meta) {
-  log_D_("error", message, meta);
+function logError_D_(bucket, message, meta) {
+  log_D_(bucket, "error", message, meta);
 }
 
-function log_D_(level, message, meta) {
+function log_D_(bucket, level, message, meta) {
   try {
-    const ss = getSS_D_();
+    const targetBucket = bucket || CFG_D.BUCKETS.IT_SUPPORT;
+    const ss = getSpreadsheetForBucket_D_(targetBucket);
     const sh = ensureSheetWithHeader_D_(ss, CFG_D.SHEETS.LOGS, [
       "timestamp",
+      "bucket",
       "level",
       "message",
       "meta_json",
     ]);
     sh.appendRow([
       new Date().toISOString(),
+      String(targetBucket.key || ""),
       String(level || "info"),
       String(message || ""),
       JSON.stringify(meta || {}),
@@ -565,12 +751,32 @@ function setupScriptDArticleSheet() {
   return setupScriptDArticleSheet_();
 }
 
+function setupScriptDArticleSheets() {
+  return setupScriptDArticleSheet_();
+}
+
 function setupScriptDZendeskConfig() {
   return setupScriptDZendeskConfig_();
 }
 
+function configureScriptDSpreadsheetTargets(googleSuiteSpreadsheetId, itSupportSpreadsheetId) {
+  return configureScriptDSpreadsheetTargets_(googleSuiteSpreadsheetId, itSupportSpreadsheetId);
+}
+
+function configureScriptDVisibilityDefaults(tenantSegmentId, learnerContentTagIdsCsv) {
+  return configureScriptDVisibilityDefaults_(tenantSegmentId, learnerContentTagIdsCsv);
+}
+
 function getScriptDSetupStatus() {
   return getScriptDSetupStatus_();
+}
+
+function pushScriptDGoogleSuiteArticles() {
+  return pushScriptDArticles_({ bucket: "google_suite" });
+}
+
+function pushScriptDITSupportArticles() {
+  return pushScriptDArticles_({ bucket: "it_support" });
 }
 
 function pushScriptDArticles() {

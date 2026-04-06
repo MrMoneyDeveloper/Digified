@@ -82,6 +82,7 @@
     internalTag: themeSettings.internal_tag || "segment_internal",
     tenantTag: themeSettings.tenant_tag || "segment_tenant",
     managementTag: themeSettings.management_tag || "segment_management",
+    learnerTag: themeSettings.learner_tag || "segment_learner",
     internalOrgId: themeSettings.internal_org_id || "23530444315804",
     tenantOrgId: themeSettings.tenant_org_id || "23530712292892",
     managementOrgId: themeSettings.management_org_id || "",
@@ -104,6 +105,21 @@
     userTags: [],
     orgIds: []
   };
+
+  function normalizeTag(tag) {
+    return String(tag || "").trim().toLowerCase();
+  }
+
+  function hasUserTag(segments, requiredTag) {
+    const targetTag = normalizeTag(requiredTag);
+    if (!targetTag) {
+      return true;
+    }
+
+    const userTags =
+      segments && Array.isArray(segments.userTags) ? segments.userTags : [];
+    return userTags.some((tag) => normalizeTag(tag) === targetTag);
+  }
 
   function detectSegment() {
     const user = (window.HelpCenter && window.HelpCenter.user) || null;
@@ -250,6 +266,7 @@
     }
 
     applyRoomVisibility(segments);
+    applyTenantLearningVisibility(segments);
   }
 
   function applyRoomVisibility(segments) {
@@ -266,7 +283,7 @@
     if (
       segments.isInternalUser &&
       !segments.isManagementUser &&
-      !segments.userTags.includes(requiredTag)
+      !hasUserTag(segments, requiredTag)
     ) {
       roomLinks.forEach((item) => {
         if (item.classList.contains("nav-internal")) {
@@ -274,6 +291,31 @@
         }
       });
     }
+  }
+
+  function applyTenantLearningVisibility(segments) {
+    const learningElements = document.querySelectorAll(
+      ".nav-learning-tenant, .tenant-learning-card"
+    );
+    if (!learningElements.length) {
+      return;
+    }
+
+    const shouldHide =
+      segments.isTenantUser && !hasUserTag(segments, segmentSettings.learnerTag);
+
+    learningElements.forEach((element) => {
+      if (shouldHide) {
+        element.style.display = "none";
+        element.setAttribute("data-hidden-by-learner-tag", "true");
+        return;
+      }
+
+      if (element.getAttribute("data-hidden-by-learner-tag") === "true") {
+        element.style.removeProperty("display");
+        element.removeAttribute("data-hidden-by-learner-tag");
+      }
+    });
   }
 
   // Navigation
@@ -442,13 +484,13 @@
           ((window.HelpCenter && window.HelpCenter.themeSettings) || {})
             .room_booking_internal_tag || "";
         if (roomTag && segments.isInternalUser && !segments.isManagementUser) {
-          const hasRoomTag =
-            Array.isArray(segments.userTags) &&
-            segments.userTags.includes(roomTag);
+          const hasRoomTag = hasUserTag(segments, roomTag);
           if (!hasRoomTag) {
             hide(".nav-room-booking.nav-internal");
           }
         }
+
+        applyTenantLearningVisibility(segments);
       }, 500);
     });
   })();

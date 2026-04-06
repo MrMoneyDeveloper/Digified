@@ -249,6 +249,13 @@
           "value": "segment_management"
         },
         {
+          "identifier": "learner_tag",
+          "type": "text",
+          "label": "Learner user tag",
+          "description": "User tag required for tenant learning links and cards.",
+          "value": "segment_learner"
+        },
+        {
           "identifier": "management_org_id",
           "type": "text",
           "label": "Management organization ID",
