@@ -61,16 +61,6 @@
     return "";
   }
 
-  function deriveRoom2Url(url) {
-    const value = String(url || "").trim();
-    if (!value) return "";
-    const derived = value
-      .replace(/room-preview-training-room-1/gi, "room-preview-training-room-2")
-      .replace(/room%201/gi, "room%202")
-      .replace(/room_1/gi, "room_2");
-    return derived !== value ? derived : "";
-  }
-
   function buildPreviewCandidates() {
     const out = [];
     Array.prototype.slice.call(arguments).forEach(function (candidate) {
@@ -83,34 +73,18 @@
     return out;
   }
 
-  const initialPreviewImage =
-    root.querySelector("#training-room-preview-image") || null;
-  const initialPreviewSrc = initialPreviewImage
-    ? String(initialPreviewImage.getAttribute("src") || "").trim()
-    : "";
-  const inlinePreviewImages =
-    window.ROOM_PREVIEW_INLINE && typeof window.ROOM_PREVIEW_INLINE === "object"
-      ? window.ROOM_PREVIEW_INLINE
-      : {};
-
   const roomPreviewImages = {
     "Training Room 1": buildPreviewCandidates(
       root.dataset.roomImageTraining1,
-      root.dataset.roomImageTraining1Fallback,
-      initialPreviewSrc,
-      inlinePreviewImages["Training Room 1"]
+      root.dataset.roomImageTraining1Fallback
     ),
     "Training Room 2": buildPreviewCandidates(
       root.dataset.roomImageTraining2,
-      root.dataset.roomImageTraining2Fallback,
-      deriveRoom2Url(initialPreviewSrc),
-      inlinePreviewImages["Training Room 2"]
+      root.dataset.roomImageTraining2Fallback
     ),
     "Interview Room": buildPreviewCandidates(
       root.dataset.roomImageInterview,
-      root.dataset.roomImageInterviewFallback,
-      root.dataset.roomImageInterview,
-      inlinePreviewImages["Interview Room"]
+      root.dataset.roomImageInterviewFallback
     )
   };
 
