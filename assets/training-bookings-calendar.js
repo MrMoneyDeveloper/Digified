@@ -73,18 +73,26 @@
     return out;
   }
 
+  const inlinePreviewImages =
+    window.ROOM_PREVIEW_INLINE && typeof window.ROOM_PREVIEW_INLINE === "object"
+      ? window.ROOM_PREVIEW_INLINE
+      : {};
+
   const roomPreviewImages = {
     "Training Room 1": buildPreviewCandidates(
       root.dataset.roomImageTraining1,
-      root.dataset.roomImageTraining1Fallback
+      root.dataset.roomImageTraining1Fallback,
+      inlinePreviewImages["Training Room 1"]
     ),
     "Training Room 2": buildPreviewCandidates(
       root.dataset.roomImageTraining2,
-      root.dataset.roomImageTraining2Fallback
+      root.dataset.roomImageTraining2Fallback,
+      inlinePreviewImages["Training Room 2"]
     ),
     "Interview Room": buildPreviewCandidates(
       root.dataset.roomImageInterview,
-      root.dataset.roomImageInterviewFallback
+      root.dataset.roomImageInterviewFallback,
+      inlinePreviewImages["Interview Room"]
     )
   };
 
