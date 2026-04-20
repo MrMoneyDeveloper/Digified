@@ -2743,6 +2743,7 @@ ol.breadcrumbs li::before {
 .digify-header .user-nav {
   display: flex;
   align-items: center;
+  gap: 0.75rem;
 }
 
 /* Dropdown menu */
