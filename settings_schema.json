@@ -6,14 +6,8 @@
         "id": "room_booking_api_url",
         "type": "text",
         "label": "Room booking API URL",
-        "description": "Google Apps Script URL for room booking backend. Auto-populated with default.",
-      "default": "https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
-      },
-      {
-        "id": "room_booking_api_key",
-        "type": "text",
-        "label": "Room booking API Key",
-        "default": ""
+        "description": "Public Google Apps Script URL for the room booking backend. Authentication is handled by the Workspace-restricted web app deployment.",
+        "default": "https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
       },
       {
         "id": "room_booking_api_mode",
@@ -70,13 +64,8 @@
         "id": "training_api_url",
         "type": "text",
         "label": "Training API URL",
-      "default": "https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
-      },
-      {
-        "id": "training_api_key",
-        "type": "text",
-        "label": "Training API Key",
-        "default": ""
+        "description": "Public Google Apps Script URL. Do not place credentials in Zendesk theme settings.",
+        "default": "https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
       },
       {
         "id": "training_api_mode",
@@ -109,4 +98,3 @@
     ]
   }
 ]
-
