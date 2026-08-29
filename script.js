@@ -57,16 +57,8 @@
           settings.room_booking_api_url ||
           settings.room_booking_api_base_url ||
           "";
-        const apiKey =
-          rootData.trainingApiKey ||
-          rootData.roomApiKey ||
-          cfg.apiKey ||
-          settings.training_api_key ||
-          settings.room_booking_api_key ||
-          "";
         return {
-          baseUrl: String(baseUrl || "").trim(),
-          apiKey: String(apiKey || "").trim()
+          baseUrl: String(baseUrl || "").trim()
         };
       }
     };
@@ -1370,13 +1362,13 @@ function logFailure(img, phase) {
 
   const settings = (window.HelpCenter && window.HelpCenter.themeSettings) || {};
   const cfg = window.ROOM_BOOKING_CFG || {};
+  const bookingSecurity = window.BookingSecurity;
   const baseUrl = (
     cfg.baseUrl ||
     settings.room_booking_api_url ||
     settings.room_booking_api_base_url ||
     ""
   ).trim();
-  const apiKey = (cfg.apiKey || settings.room_booking_api_key || "").trim();
   const apiModeRaw = (cfg.mode || settings.room_booking_api_mode || "jsonp").trim();
   const apiMode = apiModeRaw.toLowerCase() === "fetch" ? "fetch" : "jsonp";
   const iframeUrl = (cfg.iframeUrl || settings.room_booking_iframe_url || "").trim();
@@ -1533,14 +1525,10 @@ function logFailure(img, phase) {
 
     if (params) {
       Object.keys(params).forEach((key) => {
-        if (params[key]) {
+        if (params[key] !== undefined && params[key] !== null) {
           url.searchParams.set(key, params[key]);
         }
       });
-    }
-
-    if (apiKey) {
-      url.searchParams.set("api_key", apiKey);
     }
 
     return url.toString();
@@ -1553,16 +1541,13 @@ function logFailure(img, phase) {
 
     try {
       const url = new URL(baseUrl);
-      if (apiKey) {
-        url.searchParams.set("api_key", apiKey);
-      }
       return url.toString();
     } catch (error) {
       return "";
     }
   }
 
-  function jsonpRequest(action, params) {
+  function jsonpRaw(action, params) {
     return new Promise((resolve, reject) => {
       const callbackName =
         "roomJsonpCallback_" +
@@ -1611,6 +1596,53 @@ function logFailure(img, phase) {
 
       script.src = url;
       (document.head || document.body).appendChild(script);
+    });
+  }
+
+  if (bookingSecurity && typeof bookingSecurity.init === "function") {
+    bookingSecurity.init({
+      bootstrap: function () {
+        return jsonpRaw("session_init", {});
+      },
+      onStatus: function (status) {
+        if (status === "session_expired") {
+          setAlert("Your booking session expired. Refreshing secure session...", "info");
+        }
+      }
+    });
+  }
+
+  function jsonpRequest(action, params) {
+    if (!bookingSecurity || typeof bookingSecurity.request !== "function") {
+      return Promise.reject(new Error("Secure booking is not supported by this browser."));
+    }
+    return bookingSecurity.request(action, params || {}, jsonpRaw);
+  }
+
+  function secureFetchRequest(action, params, method) {
+    if (!bookingSecurity || typeof bookingSecurity.request !== "function") {
+      return Promise.reject(new Error("Secure booking is not supported by this browser."));
+    }
+    return bookingSecurity.request(action, params || {}, async function (requestAction, signedParams) {
+      const requestMethod = method === "POST" ? "POST" : "GET";
+      const url =
+        requestMethod === "POST"
+          ? buildPostUrl()
+          : buildUrl(requestAction, signedParams);
+      if (!url) throw new Error("Room API URL is invalid.");
+
+      const options = { headers: { Accept: "application/json" } };
+      if (requestMethod === "POST") {
+        options.method = "POST";
+        options.headers["Content-Type"] = "application/json";
+        options.body = JSON.stringify(Object.assign({ action: requestAction }, signedParams));
+      }
+      const response = await fetch(url, options);
+      try {
+        return await response.json();
+      } catch (error) {
+        throw new Error("Unable to verify the booking service response. Please retry.");
+      }
     });
   }
 
@@ -1777,14 +1809,6 @@ function logFailure(img, phase) {
       return null;
     }
 
-    if (!apiKey) {
-      setAlert("Set Room API key in theme settings.", "error");
-      if (iframeUrl) {
-        showIframeFallback();
-      }
-      return null;
-    }
-
     const from = fromInput ? fromInput.value : "";
     const to = toInput ? toInput.value : "";
     let json = null;
@@ -1792,27 +1816,7 @@ function logFailure(img, phase) {
     if (apiMode === "jsonp") {
       json = await jsonpRequest("sessions", { from: from, to: to });
     } else {
-      const url = buildUrl("sessions", { from: from, to: to });
-      if (!url) {
-        setAlert("Room API URL is invalid.", "error");
-        return null;
-      }
-
-      const response = await fetch(url, {
-        headers: { Accept: "application/json" },
-      });
-      try {
-        json = await response.json();
-      } catch (error) {
-        json = null;
-      }
-      if (!response.ok) {
-        const apiError = apiErrorMessage(json);
-        if (apiError) {
-          throw new Error(apiError);
-        }
-        throw new Error("Failed to load sessions (" + response.status + ").");
-      }
+      json = await secureFetchRequest("sessions", { from: from, to: to }, "GET");
     }
 
     const apiError = apiErrorMessage(json);
@@ -1870,14 +1874,6 @@ function logFailure(img, phase) {
       }
       return;
     }
-    if (!apiKey) {
-      setAlert("Set Room API key in theme settings.", "error");
-      if (iframeUrl) {
-        showIframeFallback();
-      }
-      return;
-    }
-
     const payload = buildBookingPayload(apiMode !== "jsonp");
     if (!payload.slot_id) {
       setAlert("Please select a room slot.", "error");
@@ -1911,24 +1907,7 @@ function logFailure(img, phase) {
           throw new Error(apiError);
         }
       } else {
-        const response = await fetch(postUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        try {
-          json = await response.json();
-        } catch (error) {
-          json = null;
-        }
-
-        if (!response.ok) {
-          const apiError = apiErrorMessage(json);
-          if (apiError) {
-            throw new Error(apiError);
-          }
-          throw new Error("Booking failed.");
-        }
+        json = await secureFetchRequest("book", buildBookingPayload(false), "POST");
 
         const apiError = apiErrorMessage(json);
         if (apiError) {
@@ -2014,7 +1993,7 @@ function logFailure(img, phase) {
    * Digify Calendar API Module
    *
    * This module provides functions to interact with the room Calendar API.
-   * It pulls the API URL/key from booking-config.js (with fallback support).
+   * It pulls the public API URL from booking-config.js.
    * JSONP is used for browser requests to avoid CORS issues. You can still call
    * CalendarAPI.setMode("jsonp") to force JSONP explicitly.
    *
@@ -2034,8 +2013,7 @@ function logFailure(img, phase) {
     if (configProvider && typeof configProvider.getConfig === "function") {
       const config = configProvider.getConfig();
       return {
-        baseUrl: (config.baseUrl || "").trim(),
-        apiKey: config.apiKey || ""
+        baseUrl: (config.baseUrl || "").trim()
       };
     }
 
@@ -2047,10 +2025,8 @@ function logFailure(img, phase) {
       settings.room_booking_api_url ||
       settings.room_booking_api_base_url ||
       "";
-    const rawApiKey = cfg.apiKey || settings.room_booking_api_key || "";
     return {
-      baseUrl: (rawBaseUrl || "").trim(),
-      apiKey: rawApiKey || ""
+      baseUrl: (rawBaseUrl || "").trim()
     };
   }
 
@@ -2061,7 +2037,7 @@ function logFailure(img, phase) {
     FAIL_ALREADY_BOOKED: "You have already booked this session.",
     FAIL_INVALID_SLOT: "This session is no longer available.",
     FAIL_CANCELLED: "This session has been cancelled.",
-    UNAUTHORIZED: "API key not accepted."
+    UNAUTHORIZED: "Secure booking session could not be established."
   };
 
   function setMode(mode) {
@@ -2077,7 +2053,7 @@ function logFailure(img, phase) {
 
   function buildUrl(action, params) {
     const config = getConfig();
-    if (!config.baseUrl || !config.apiKey) {
+    if (!config.baseUrl) {
       return "";
     }
     let url;
@@ -2091,18 +2067,15 @@ function logFailure(img, phase) {
     }
     if (params && typeof params === "object") {
       Object.keys(params).forEach((key) => {
-        if (params[key]) {
+        if (params[key] !== undefined && params[key] !== null) {
           url.searchParams.set(key, params[key]);
         }
       });
     }
-    if (config.apiKey) {
-      url.searchParams.set("api_key", config.apiKey);
-    }
     return url.toString();
   }
 
-  function jsonpRequest(action, params) {
+  function jsonpRaw(action, params) {
     return new Promise((resolve, reject) => {
       const callbackName =
         "calApiJsonpCb_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
@@ -2154,6 +2127,32 @@ function logFailure(img, phase) {
       script.src = url;
       (document.head || document.body).appendChild(script);
     });
+  }
+
+  let securityReady = false;
+
+  function ensureSecurityInitialized() {
+    const security = window.BookingSecurity;
+    if (!security || typeof security.request !== "function") {
+      throw new Error("Secure booking is not supported by this browser.");
+    }
+    if (!securityReady) {
+      security.init({
+        bootstrap: function () {
+          return jsonpRaw("session_init", {});
+        }
+      });
+      securityReady = true;
+    }
+    return security;
+  }
+
+  function jsonpRequest(action, params) {
+    try {
+      return ensureSecurityInitialized().request(action, params || {}, jsonpRaw);
+    } catch (error) {
+      return Promise.reject(error);
+    }
   }
 
   function apiErrorMessage(json) {

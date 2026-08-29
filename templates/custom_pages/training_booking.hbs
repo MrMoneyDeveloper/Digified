@@ -820,13 +820,12 @@
    * Updated: 2026-03-24
    */
   window.TRAINING_BOOKING_CFG = {
-    baseUrl: "https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec",
-    apiKey: "c8032a6a14e04710a701aadd27f8e5d5"
+    baseUrl: "https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
   };
 
   // Validate config on page load
   document.addEventListener('DOMContentLoaded', function() {
-    if (!window.TRAINING_BOOKING_CFG.baseUrl || !window.TRAINING_BOOKING_CFG.apiKey) {
+    if (!window.TRAINING_BOOKING_CFG.baseUrl) {
       console.error('[RoomBooking] ⚠️ API configuration missing!');
       const alert = document.querySelector('#training-booking-alert');
       if (alert) {
@@ -853,7 +852,6 @@
         class="tb-app"
         data-training-booking-version="v2"
         data-training-base-url="https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
-        data-training-api-key="c8032a6a14e04710a701aadd27f8e5d5"
       data-room-image-training-1="{{asset 'room-preview-training-room-1-v2.jpeg'}}"
       data-room-image-training-1-fallback="{{asset 'room-preview-training-room-1-v2.jpeg'}}"
       data-room-image-training-2="{{asset 'room-preview-training-room-2-v2.jpeg'}}"

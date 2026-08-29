@@ -309,7 +309,7 @@ These are the values that must be replaced for a new client.
 - `TRAINING_SHEET_ID` -> `1FqFxTGqsAc0yhGSdp0XJidoFS1DPIXglSk6wo_PtqbU`
 - `MEET_CALENDAR_ID` -> `primary`
 - `TRAINING_DEFAULT_TZ` -> `Africa/Johannesburg`
-- `TRAINING_API_KEY` -> `c8032a6a14e04710a701aadd27f8e5d5`
+- permanent booking credential -> Apps Script Script Properties only; never copy it into a reusable pack, theme, or repository
 
 ### Help Centre / theme values
 
@@ -411,7 +411,7 @@ For a new client rollout:
 
 1. Replace Zendesk credentials
 2. Replace sheet and calendar ownership values
-3. Rotate API key
+3. Rotate the backend-only master credential and implement the signed-session contract
 4. Replace Help Centre hostname and live URLs
 5. Confirm booking ID custom field ID
 6. Confirm view access groups

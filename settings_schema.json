@@ -10,12 +10,6 @@
       "default": "https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
       },
       {
-        "id": "room_booking_api_key",
-        "type": "text",
-        "label": "Room booking API Key",
-        "default": ""
-      },
-      {
         "id": "room_booking_api_mode",
         "type": "enum",
         "label": "Room booking API Mode",
@@ -71,12 +65,6 @@
         "type": "text",
         "label": "Training API URL",
       "default": "https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
-      },
-      {
-        "id": "training_api_key",
-        "type": "text",
-        "label": "Training API Key",
-        "default": ""
       },
       {
         "id": "training_api_mode",
