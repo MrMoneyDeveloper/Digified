@@ -103,7 +103,7 @@ All three scripts currently live in the same Apps Script project:
 
 - `SESSIONS`: optional slot overrides
 - `BOOKINGS`: booking source of truth
-- `SETTINGS`: deployment and API key metadata
+- `SETTINGS`: deployment metadata (do not expose the master booking credential here)
 - `LOGS`: Script B pipeline logs
 - `FAILED_QUEUE`: Script B retry queue
 
@@ -150,7 +150,7 @@ Current known pilot properties:
 | `TRAINING_SHEET_ID` | `1FqFxTGqsAc0yhGSdp0XJidoFS1DPIXglSk6wo_PtqbU` | Main spreadsheet used by Script A and Script B |
 | `MEET_CALENDAR_ID` | `primary` | Script C calendar target |
 | `TRAINING_DEFAULT_TZ` | `Africa/Johannesburg` | Used by Script A and Script C |
-| `TRAINING_API_KEY` | Generated and stored in script properties and `SETTINGS` sheet | Sensitive, rotate for new client |
+| Master booking credential | Apps Script Script Properties only | Sensitive; never place in sheets, theme settings, frontend code, or the repository |
 | `ZD_SUBDOMAIN` | client-specific | Override Script B hardcoded fallback |
 | `ZD_EMAIL` | client-specific | Zendesk API identity |
 | `ZD_TOKEN` | client-specific | Zendesk API token |
@@ -209,12 +209,10 @@ Theme-side:
 - custom page slug: `home_tenant`
 - theme settings:
   - `room_booking_api_url`
-  - `room_booking_api_key`
   - `room_booking_api_mode`
   - `room_booking_iframe_url`
   - `room_booking_internal_tag`
   - `training_api_url`
-  - `training_api_key`
   - `training_api_mode`
   - `training_iframe_url`
   - `training_booking_internal_tag`
@@ -276,7 +274,7 @@ What this does:
 
 - creates/normalizes `SESSIONS`, `BOOKINGS`, and `SETTINGS`
 - writes `DEPLOYMENT_ID` and `WEBAPP_URL`
-- generates or syncs `TRAINING_API_KEY`
+- legacy backend currently generates a permanent credential; the separate backend security change must keep its replacement in Script Properties only
 
 Reference:
 
@@ -412,26 +410,11 @@ Replace:
 - `MEET_CALENDAR_ID`
 - `TRAINING_DEFAULT_TZ`
 
-Rotate:
-
-- `TRAINING_API_KEY`
+Rotate the backend-only master booking credential in Script Properties.
 
 ### 8.6 Theme-Level Explicit API Wiring
 
-Current pilot wiring is explicit in code. For a new client, replace the URL and rotate the key in all locations below:
-
-- `C:\Workspace\Digified\assets\booking-config.js:12`
-- `C:\Workspace\Digified\assets\booking-config.js:13`
-- `C:\Workspace\Digified\assets\room-bookings-calendar.js:60`
-- `C:\Workspace\Digified\assets\room-bookings-calendar.js:61`
-- `C:\Workspace\Digified\templates\custom_pages\room_booking.hbs:5`
-- `C:\Workspace\Digified\templates\custom_pages\room_booking.hbs:6`
-- `C:\Workspace\Digified\templates\custom_pages\room_booking.hbs:45`
-- `C:\Workspace\Digified\templates\custom_pages\room_booking.hbs:46`
-- `C:\Workspace\Digified\templates\custom_pages\training_booking.hbs:823`
-- `C:\Workspace\Digified\templates\custom_pages\training_booking.hbs:824`
-- `C:\Workspace\Digified\templates\custom_pages\training_booking.hbs:855`
-- `C:\Workspace\Digified\templates\custom_pages\training_booking.hbs:856`
+Current pilot wiring exposes only the public Apps Script URL. Authentication uses the short-lived signed-session contract in `docs/booking-security-protocol.md`; no permanent credential belongs in theme code, theme settings, HTML, storage, or repository files.
 
 ## 9. Deployment Steps
 

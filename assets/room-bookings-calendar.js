@@ -55,17 +55,16 @@
     };
   }
 
-  // HARDCODED FALLBACK CONFIGURATION
-  // This is your Google Apps Script URL - update if it changes
+  // Public transport fallback. Authentication is established in memory.
   const HARDCODED_API_URL = "https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec";
-  const HARDCODED_API_KEY = "c8032a6a14e04710a701aadd27f8e5d5";
 
   // Configuration resolution order:
   // 1. Theme settings from Zendesk admin
   // 2. Window config from HTML template
-  // 3. Hardcoded fallback
+  // 3. Public URL fallback
   const settings = (window.HelpCenter && window.HelpCenter.themeSettings) || {};
   const cfg = window.ROOM_BOOKING_CFG || {};
+  const bookingSecurity = window.BookingSecurity;
 
   const baseUrl = (
     (settings.room_booking_api_url && settings.room_booking_api_url.trim()) ||
@@ -73,18 +72,11 @@
     HARDCODED_API_URL
   ).trim();
 
-  const apiKey = (
-    (settings.room_booking_api_key && settings.room_booking_api_key.trim()) ||
-    (cfg.apiKey && cfg.apiKey.trim()) ||
-    HARDCODED_API_KEY
-  ).trim();
-
   const user = getCurrentUser();
 
   // Log configuration resolution
   logger.info("Room Booking Configuration Resolved", {
     baseUrl: baseUrl,
-    apiKeyPresent: apiKey.length > 0,
     configSource: {
       cfgBaseUrl: !!cfg.baseUrl,
       settingsBaseUrl: !!settings.room_booking_api_url,
@@ -479,10 +471,11 @@
       if (action) url.searchParams.set("action", action);
       if (params) {
         Object.keys(params).forEach((key) => {
-          if (params[key]) url.searchParams.set(key, params[key]);
+          if (params[key] !== undefined && params[key] !== null) {
+            url.searchParams.set(key, params[key]);
+          }
         });
       }
-      if (apiKey) url.searchParams.set("api_key", apiKey);
       return url.toString();
     } catch (error) {
       return "";
@@ -490,7 +483,7 @@
   }
 
   // JSONP request with logging
-  function jsonpRequest(action, params) {
+  function jsonpRaw(action, params) {
     return new Promise((resolve, reject) => {
       const callbackName = "roomJsonpCb_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
       const url = buildUrl(action, params);
@@ -499,7 +492,6 @@
       if (!url) {
         logger.error("Failed to build API URL", {
           action: action,
-          params: params,
           baseUrl: baseUrl
         });
         reject(new Error("Room booking API URL is invalid."));
@@ -524,8 +516,6 @@
       logger.info("JSONP request initiated", {
         requestId: requestId,
         action: action,
-        url: requestUrl,
-        params: params,
         callback: callbackName
       });
 
@@ -546,9 +536,7 @@
         logger.info("JSONP response received", {
           requestId: requestId,
           action: action,
-          duration: `${duration}ms`,
-          success: data && data.success,
-          dataKeys: data ? Object.keys(data) : null
+          duration: `${duration}ms`
         });
 
         resolve(data);
@@ -561,8 +549,7 @@
         logger.error("JSONP script load error", {
           requestId: requestId,
           action: action,
-          duration: `${duration}ms`,
-          scriptUrl: requestUrl
+          duration: `${duration}ms`
         });
 
         reject(new Error("JSONP request failed."));
@@ -587,14 +574,33 @@
     });
   }
 
+  if (bookingSecurity && typeof bookingSecurity.init === "function") {
+    bookingSecurity.init({
+      bootstrap: function () {
+        return jsonpRaw("session_init", {});
+      },
+      onStatus: function (status) {
+        if (status === "session_expired") {
+          setAlert("Your booking session expired. Refreshing secure session...", "info");
+        }
+      }
+    });
+  }
+
+  function jsonpRequest(action, params) {
+    if (!bookingSecurity || typeof bookingSecurity.request !== "function") {
+      return Promise.reject(new Error("Secure booking is not supported by this browser."));
+    }
+    return bookingSecurity.request(action, params || {}, jsonpRaw);
+  }
+
   // Fetch room slots for selected date
   async function fetchRoomSlots() {
     // Validate configuration
     if (!baseUrl) {
       const errorMsg = "Room booking API URL is not configured. Please check theme settings or contact support.";
       logger.error("Configuration validation failed", {
-        baseUrl: baseUrl,
-        apiKey: apiKey ? "present" : "missing"
+        baseUrl: baseUrl
       });
       setAlert(errorMsg, "error");
       return null;
@@ -666,7 +672,6 @@
 
       const errorMsg = json.message || "Failed to load room slots.";
       logger.error("API returned unsuccessful response", {
-        response: json,
         success: json && json.success,
         hasSessions: json && json.data && Array.isArray(json.data.sessions)
       });
@@ -1022,7 +1027,6 @@
             : {};
 
         logger.info("Booking successful", {
-          response: json,
           bookingId: json.data && json.data.booking_id,
           ticketId: json.data && json.data.ticket_id,
           meet_status: meet.status || "",
@@ -1061,7 +1065,6 @@
       } else {
         const errorMsg = json.message || "Booking failed.";
         logger.error("Booking request returned false", {
-          response: json,
           message: errorMsg
         });
         throw new Error(errorMsg);
@@ -1178,7 +1181,7 @@
     export: function() {
       return logger.export ? logger.export() : JSON.stringify(logger.logs || [], null, 2);
     },
-    config: function() { return { baseUrl: baseUrl, apiKeyPresent: apiKey.length > 0 }; },
+    config: function() { return { baseUrl: baseUrl }; },
     user: function() { return user; }
   };
   logger.info("Debug interface available at: window.RoomBookingDebug", {});

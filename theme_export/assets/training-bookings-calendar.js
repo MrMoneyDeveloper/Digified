@@ -25,12 +25,9 @@
   const config =
     configProvider && typeof configProvider.getConfig === "function"
       ? configProvider.getConfig(root)
-      : { baseUrl: "", apiKey: "" };
+      : { baseUrl: "" };
   const baseUrl = (config.baseUrl || "").trim();
-  const apiKey = config.apiKey || "";
-
-  console.log("[training_booking] baseUrl", baseUrl);
-  console.log("[training_booking] apiKey length", apiKey.length);
+  const bookingSecurity = window.BookingSecurity;
 
   // Core UI elements
   const alertEl = document.getElementById("training-booking-alert");
@@ -62,7 +59,7 @@
     FAIL_ALREADY_BOOKED: "You have already booked this session.",
     FAIL_INVALID_SLOT: "This session is no longer available.",
     FAIL_CANCELLED: "This session has been cancelled.",
-    UNAUTHORIZED: "API key not accepted."
+    UNAUTHORIZED: "Secure booking session could not be established."
   };
 
   const dateFormatter = new Intl.DateTimeFormat("en-ZA", {
@@ -118,10 +115,13 @@
   }
 
   function ensureConfig() {
-    if (!baseUrl || !apiKey) {
+    if (!baseUrl) {
       throw new Error(
         "Training booking is not configured. Please contact an admin."
       );
+    }
+    if (!bookingSecurity || typeof bookingSecurity.request !== "function") {
+      throw new Error("Secure booking is not supported by this browser.");
     }
   }
 
@@ -140,9 +140,6 @@
     if (action) {
       url.searchParams.set("action", action);
     }
-    if (apiKey) {
-      url.searchParams.set("api_key", apiKey);
-    }
     if (params) {
       Object.keys(params).forEach((key) => {
         if (Object.prototype.hasOwnProperty.call(params, key)) {
@@ -157,7 +154,7 @@
     return url.toString();
   }
 
-  function jsonpRequest(action, params) {
+  function jsonpRaw(action, params) {
     return new Promise((resolve, reject) => {
       const callbackName =
         "calApiJsonpCb_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
@@ -212,6 +209,26 @@
       script.src = url;
       (document.head || document.body).appendChild(script);
     });
+  }
+
+  if (bookingSecurity && typeof bookingSecurity.init === "function") {
+    bookingSecurity.init({
+      bootstrap: function () {
+        return jsonpRaw("session_init", {});
+      },
+      onStatus: function (status) {
+        if (status === "session_expired") {
+          setAlert("Your booking session expired. Refreshing secure session...", "info");
+        }
+      }
+    });
+  }
+
+  function jsonpRequest(action, params) {
+    if (!bookingSecurity || typeof bookingSecurity.request !== "function") {
+      return Promise.reject(new Error("Secure booking is not supported by this browser."));
+    }
+    return bookingSecurity.request(action, params || {}, jsonpRaw);
   }
 
   function apiErrorMessage(json) {

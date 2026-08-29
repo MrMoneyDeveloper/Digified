@@ -1,7 +1,7 @@
 {
   "name": "Digified",
   "author": "Zendesk",
-  "version": "2028.0.9",
+  "version": "2028.0.10",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -888,13 +888,6 @@
           "value": "https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
         },
         {
-          "identifier": "room_booking_api_key",
-          "type": "text",
-          "label": "Room booking API key",
-          "description": "API key for the room booking Apps Script.",
-          "value": ""
-        },
-        {
           "identifier": "room_booking_api_mode",
           "type": "text",
           "label": "Room booking API mode",
@@ -926,13 +919,6 @@
           "label": "Training API URL",
           "description": "URL for the training booking Apps Script.",
           "value": "https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
-        },
-        {
-          "identifier": "training_api_key",
-          "type": "text",
-          "label": "Training API key",
-          "description": "API key for the training booking Apps Script.",
-          "value": ""
         },
         {
           "identifier": "training_api_mode",

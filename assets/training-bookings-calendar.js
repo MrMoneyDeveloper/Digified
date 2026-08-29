@@ -49,9 +49,9 @@
   const config =
     configProvider && typeof configProvider.getConfig === "function"
       ? configProvider.getConfig(root)
-      : { baseUrl: "", apiKey: "" };
+      : { baseUrl: "" };
   const baseUrl = String(config.baseUrl || "").trim();
-  const apiKey = String(config.apiKey || "").trim();
+  const bookingSecurity = window.BookingSecurity;
 
   function swapPreviewExtension(url) {
     const value = String(url || "").trim();
@@ -146,7 +146,7 @@
     FAIL_REPEAT_CONFLICT: "One or more repeat days are unavailable.",
     FAIL_MEET_DURATION_LIMIT:
       "Google Meet is limited to 1 hour on the current plan. Shorten the booking to 1 hour or keep it in-person only.",
-    UNAUTHORIZED: "API key not accepted."
+    UNAUTHORIZED: "Secure booking session could not be established."
   };
 
   const longDateFormatter = new Intl.DateTimeFormat("en-ZA", {
@@ -207,8 +207,11 @@
   }
 
   function ensureConfig() {
-    if (!baseUrl || !apiKey) {
+    if (!baseUrl) {
       throw new Error("Training booking is not configured. Please contact an admin.");
+    }
+    if (!bookingSecurity || typeof bookingSecurity.request !== "function") {
+      throw new Error("Secure booking is not supported by this browser.");
     }
   }
 
@@ -323,17 +326,16 @@
       return "";
     }
     url.searchParams.set("action", action);
-    url.searchParams.set("api_key", apiKey);
     Object.keys(params || {}).forEach(function (key) {
       const value = params[key];
-      if (value !== undefined && value !== null && value !== "") {
+      if (value !== undefined && value !== null) {
         url.searchParams.set(key, value);
       }
     });
     return url.toString();
   }
 
-  function jsonp(action, params) {
+  function jsonpRaw(action, params) {
     return new Promise(function (resolve, reject) {
       const callbackName =
         "trainingJsonpCb_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
@@ -367,6 +369,26 @@
       script.src = url;
       (document.head || document.body).appendChild(script);
     });
+  }
+
+  if (bookingSecurity && typeof bookingSecurity.init === "function") {
+    bookingSecurity.init({
+      bootstrap: function () {
+        return jsonpRaw("session_init", {});
+      },
+      onStatus: function (status) {
+        if (status === "session_expired") {
+          setAlert(
+            "Your booking session expired. Refreshing secure session...",
+            "info"
+          );
+        }
+      }
+    });
+  }
+
+  async function jsonp(action, params) {
+    return bookingSecurity.request(action, params || {}, jsonpRaw);
   }
 
   function apiError(json) {
