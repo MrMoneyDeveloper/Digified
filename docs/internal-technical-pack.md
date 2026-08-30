@@ -150,7 +150,9 @@ Current known pilot properties:
 | `TRAINING_SHEET_ID` | `1FqFxTGqsAc0yhGSdp0XJidoFS1DPIXglSk6wo_PtqbU` | Main spreadsheet used by Script A and Script B |
 | `MEET_CALENDAR_ID` | `primary` | Script C calendar target |
 | `TRAINING_DEFAULT_TZ` | `Africa/Johannesburg` | Used by Script A and Script C |
-| Master booking credential | Apps Script Script Properties only | Sensitive; never place in sheets, theme settings, frontend code, or the repository |
+| `BOOKING_MASTER_SECRET` | Apps Script Script Properties only | Sensitive; created by `initializeBookingSecurity()` and never placed in sheets, theme settings, frontend code, or the repository |
+| `BOOKING_ALLOWED_DOMAINS` | Workspace domain(s) | Comma-separated domains authorized for `session_init` |
+| `BOOKING_ALLOWED_ORIGINS` | Exact Zendesk HTTPS origin(s) | Comma-separated origins; no paths or wildcards |
 | `ZD_SUBDOMAIN` | client-specific | Override Script B hardcoded fallback |
 | `ZD_EMAIL` | client-specific | Zendesk API identity |
 | `ZD_TOKEN` | client-specific | Zendesk API token |
@@ -266,15 +268,14 @@ powershell -ExecutionPolicy Bypass -File .\package-theme.ps1
 
 ### 7.3 Script A Bootstrapping
 
-Run the web app init endpoint once:
+The legacy HTTP `action=init` endpoint is retired. From the Apps Script editor:
 
-- [https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec?action=init](https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec?action=init)
+- configure `BOOKING_ALLOWED_DOMAINS` and `BOOKING_ALLOWED_ORIGINS` in Script Properties
+- run `initializeBookingDataModel()` when the sheet structure needs initialization
+- run `initializeBookingSecurity()` to create/retain the server-only master secret and revoke the legacy key
+- run `verifyBookingSecurityConfiguration()` and `selfTestBookingSecurityProtocol()`
 
-What this does:
-
-- creates/normalizes `SESSIONS`, `BOOKINGS`, and `SETTINGS`
-- writes `DEPLOYMENT_ID` and `WEBAPP_URL`
-- legacy backend currently generates a permanent credential; the separate backend security change must keep its replacement in Script Properties only
+The only unsigned browser action is the top-level, Workspace-authenticated `session_init` popup. It does not return JSONP; its temporary session is delivered to the exact allowlisted Zendesk origin with `postMessage`.
 
 Reference:
 
@@ -420,11 +421,11 @@ Current pilot wiring exposes only the public Apps Script URL. Authentication use
 
 ### Apps Script Deployment
 
-1. Save the Apps Script project.
-2. Create a new version.
-3. Deploy or update the web app.
-4. Run `?action=init` once against the active `/exec` URL.
-5. Confirm the `SETTINGS` sheet updates `DEPLOYMENT_ID` and `WEBAPP_URL`.
+1. Copy `apps_scripts/script0.json` into `appsscript.json`, save Script A, and leave Script B/C integrations intact.
+2. Set `BOOKING_ALLOWED_DOMAINS` and exact `BOOKING_ALLOWED_ORIGINS` Script Properties.
+3. Run `initializeBookingSecurity()`, `verifyBookingSecurityConfiguration()`, and `selfTestBookingSecurityProtocol()`.
+4. Create a new version and deploy the web app with `DOMAIN` access as `USER_DEPLOYING`.
+5. Test through Zendesk's **Connect securely** popup while signed into the company Workspace account.
 
 ### Theme Deployment
 

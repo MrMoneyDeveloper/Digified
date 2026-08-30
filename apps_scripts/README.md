@@ -12,14 +12,15 @@ Reference manifest settings for the Apps Script project that hosts Scripts A/B/C
 Includes:
 - `runtimeVersion: V8`
 - `timeZone: Africa/Johannesburg`
-- Web app settings (`executeAs: USER_DEPLOYING`, `access: ANYONE_ANONYMOUS`)
+- Web app settings (`executeAs: USER_DEPLOYING`, `access: DOMAIN`)
 - Advanced Calendar service (`Calendar` v3)
 
 Note: In the Apps Script editor, this content belongs in the project manifest
 file named `appsscript.json`.
 
 ### scriptA.gs - Room booking API
-Handles `action=sessions` and `action=book` for the room booking UI.
+Handles the authenticated popup `action=session_init` bootstrap plus signed
+`action=sessions`, `action=days`, and `action=book` calls for the room booking UI.
 It writes bookings to the `BOOKINGS` sheet and stores:
 - `meeting_type`
 - `attendee_emails`
@@ -44,6 +45,12 @@ Defines `createMeetForBooking_C_(params)` for hybrid bookings and keeps
 Script A calls this only when remote attendees are included.
 
 ## Theme integration notes
-- The front end uses JSONP calls to the Apps Script web app with `action=sessions` and `action=book`.
-- The base URL and API key come from Zendesk theme settings or `assets/booking-config.js`.
+- `session_init` uses a top-level Google Workspace-authenticated popup and sends
+  its temporary session to an exact allowlisted Zendesk origin with `postMessage`.
+  It never returns a session key through JSONP.
+- Set `BOOKING_ALLOWED_DOMAINS`, `BOOKING_ALLOWED_ORIGINS`, and the server-only
+  `BOOKING_MASTER_SECRET` in Apps Script Script Properties before deployment.
+- The front end uses signed JSONP calls to the Apps Script web app for normal
+  booking actions such as `sessions`, `days`, and `book`.
+- Only the public Apps Script base URL comes from `assets/booking-config.js`.
 - Apps Script code must be deployed separately; these files are for context only.

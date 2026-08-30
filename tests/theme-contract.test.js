@@ -25,6 +25,21 @@ function sha256NormalizedText(relativePath) {
     .digest("hex");
 }
 
+function gitBlobSha1(relativePath) {
+  const content = Buffer.from(read(relativePath).replace(/\r\n/g, "\n"));
+  return crypto
+    .createHash("sha1")
+    .update(Buffer.from(`blob ${content.length}\0`))
+    .update(content)
+    .digest("hex");
+}
+
+function scriptAConfigValue(source, name) {
+  const match = source.match(new RegExp(`${name}: "([^"]+)"`));
+  assert.ok(match, `Script A must declare ${name}`);
+  return match[1];
+}
+
 function assertIncludes(source, expected, label) {
   assert.ok(source.includes(expected), `${label} must include ${expected}`);
 }
@@ -75,9 +90,28 @@ bookingTemplates.forEach((relativePath) => {
 
   [
     "data-room-image-training-1",
+    "data-room-image-training-1-fallback",
     "data-room-image-training-2",
+    "data-room-image-training-2-fallback",
     "data-room-image-interview"
   ].forEach((attribute) => assertIncludes(source, attribute, relativePath));
+
+  ["training-1", "training-2"].forEach((roomKey) => {
+    const primary = source.match(
+      new RegExp(`data-room-image-${roomKey}="\\{\\{asset '([^']+)'\\}\\}"`)
+    );
+    const fallback = source.match(
+      new RegExp(`data-room-image-${roomKey}-fallback="\\{\\{asset '([^']+)'\\}\\}"`)
+    );
+    assert.ok(primary && fallback, `${relativePath} must declare ${roomKey} image assets`);
+    assert.notEqual(
+      primary[1],
+      fallback[1],
+      `${relativePath} ${roomKey} fallback must use an independent asset URL`
+    );
+    assert.ok(fs.existsSync(path.join(ROOT, "assets", primary[1])));
+    assert.ok(fs.existsSync(path.join(ROOT, "assets", fallback[1])));
+  });
 
   assert.ok(
     source.includes("data-room-base-url") ||
@@ -104,6 +138,7 @@ const documentHead = read("templates/document_head.hbs");
   "bootstrap.min.css",
   "booking-config.js",
   "booking-security.js",
+  "booking-session-popup.js",
   "theme-ui.js",
   "alpine-csp.min.js",
   "gsap.min.js",
@@ -136,6 +171,63 @@ const bookingClient = read("assets/training-bookings-calendar.js");
 assertIncludes(bookingClient, "const probe = new Image()", "booking room preview loader");
 assertIncludes(bookingClient, "previewRequestId", "booking room preview loader");
 assertExcludes(bookingClient, "swapPreviewExtension", "booking room preview loader");
+assertIncludes(bookingClient, "bookingSessionPopup.openSession", "booking popup integration");
+assertExcludes(bookingClient, 'jsonpRaw("session_init"', "booking popup integration");
+
+const legacyBookingClient = read("assets/room-bookings-calendar.js");
+assertIncludes(legacyBookingClient, "bookingSessionPopup.openSession", "legacy booking popup integration");
+assertExcludes(legacyBookingClient, 'jsonpRaw("session_init"', "legacy booking popup integration");
+
+const popupClient = read("assets/booking-session-popup.js");
+assertIncludes(popupClient, 'url.searchParams.set("action", "session_init")', "popup client");
+assertIncludes(popupClient, "isTrustedMessageOrigin(event.origin", "popup client");
+assertIncludes(popupClient, "sourceMatchesPopup(event.source, popup)", "popup client");
+assertExcludes(popupClient, "localStorage", "popup client");
+assertExcludes(popupClient, "sessionStorage", "popup client");
+assertExcludes(popupClient, "document.cookie", "popup client");
+
+const appsScriptManifest = JSON.parse(read("apps_scripts/script0.json"));
+assert.strictEqual(appsScriptManifest.webapp.access, "DOMAIN");
+assert.strictEqual(appsScriptManifest.webapp.executeAs, "USER_DEPLOYING");
+assert.ok(
+  appsScriptManifest.oauthScopes.includes("https://www.googleapis.com/auth/userinfo.email")
+);
+
+const scriptA = read("apps_scripts/scriptA.gs");
+assertIncludes(scriptA, "bookingServeSessionInitPopup_(params, requestId)", "Script A");
+assertIncludes(scriptA, "completeBookingSessionInitPopup", "Script A");
+assertIncludes(scriptA, "BOOKING_ALLOWED_ORIGINS", "Script A");
+assertIncludes(scriptA, "opener.postMessage(message,targetOrigin)", "Script A");
+assertExcludes(scriptA, "return jsonResponse_(bootstrapResult", "Script A");
+assertExcludes(scriptA, "postMessage(message,\"*\")", "Script A");
+assert.strictEqual(
+  scriptAConfigValue(scriptA, "FRONTEND_PROTOCOL_DOC_SHA"),
+  gitBlobSha1("docs/booking-security-protocol.md")
+);
+assert.strictEqual(
+  scriptAConfigValue(scriptA, "FRONTEND_SECURITY_JS_SHA"),
+  sha256("assets/booking-security.js")
+);
+assert.strictEqual(
+  scriptAConfigValue(scriptA, "FRONTEND_POPUP_JS_SHA"),
+  sha256("assets/booking-session-popup.js")
+);
+assert.strictEqual(
+  scriptAConfigValue(scriptA, "FRONTEND_BOOKING_CLIENT_SHA"),
+  sha256NormalizedText("assets/training-bookings-calendar.js")
+);
+assert.strictEqual(
+  scriptAConfigValue(scriptA, "FRONTEND_LEGACY_BOOKING_CLIENT_SHA"),
+  sha256NormalizedText("assets/room-bookings-calendar.js")
+);
+assert.strictEqual(
+  scriptAConfigValue(scriptA, "FRONTEND_THEME_SCRIPT_SHA"),
+  sha256NormalizedText("script.js")
+);
+assert.strictEqual(
+  scriptAConfigValue(scriptA, "FRONTEND_CONFIG_JS_SHA"),
+  sha256("assets/booking-config.js")
+);
 
 const runtimeSources = [
   documentHead,
@@ -162,8 +254,18 @@ assert.strictEqual(
 );
 assert.strictEqual(
   sha256NormalizedText("assets/training-bookings-calendar.js"),
-  "70b9b45322d4e06c4a56302027e9cee7930b169a320edfc0259b34adc02ac6f4",
-  "booking client behavior must match the room preview regression baseline"
+  "f4446745ff9954609d4150a5ef5a0446d22189873e4dd515596612f37502f14d",
+  "booking client behavior must match the popup/fallback integration baseline"
+);
+assert.strictEqual(
+  sha256("assets/booking-session-popup.js"),
+  "0dd5b81d1e53dc1e046a7d78772b9f8ab52ccc09cc75b446265b6ae5f6018b77",
+  "booking popup bootstrap implementation must match the backend contract"
+);
+assert.strictEqual(
+  sha256NormalizedText("assets/room-bookings-calendar.js"),
+  "afb149fc77875f41a23d5c94871de0033fa5f21fc3fc3f5208673d03dccfdb90",
+  "legacy booking client must use the same popup bootstrap contract"
 );
 assert.strictEqual(
   sha256("assets/booking-config.js"),
@@ -172,6 +274,6 @@ assert.strictEqual(
 );
 
 const manifest = JSON.parse(read("manifest.json"));
-assert.strictEqual(manifest.version, "2028.1.1", "theme version must be bumped");
+assert.strictEqual(manifest.version, "2028.2.0", "theme version must be bumped");
 
 console.log("theme contract tests passed");
