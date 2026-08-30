@@ -212,7 +212,7 @@ assert.strictEqual(
 );
 assert.strictEqual(
   scriptAConfigValue(scriptA, "FRONTEND_POPUP_JS_SHA"),
-  sha256("assets/booking-session-popup.js")
+  sha256NormalizedText("assets/booking-session-popup.js")
 );
 assert.strictEqual(
   scriptAConfigValue(scriptA, "FRONTEND_BOOKING_CLIENT_SHA"),
@@ -260,7 +260,7 @@ assert.strictEqual(
   "booking client behavior must match the popup/fallback integration baseline"
 );
 assert.strictEqual(
-  sha256("assets/booking-session-popup.js"),
+  sha256NormalizedText("assets/booking-session-popup.js"),
   "50337d24e6f866d249becd135b7fab92225dac662ab73a287b84865d6de17fb4",
   "booking popup bootstrap implementation must match the backend contract"
 );

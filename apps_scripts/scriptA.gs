@@ -983,7 +983,7 @@ function getBookingSecurityContractInfo() {
     frontend_baseline_commit: BOOKING_SECURITY_CFG.FRONTEND_BASELINE_COMMIT,
     frontend_protocol_doc_sha: BOOKING_SECURITY_CFG.FRONTEND_PROTOCOL_DOC_SHA,
     frontend_security_js_sha256: BOOKING_SECURITY_CFG.FRONTEND_SECURITY_JS_SHA,
-    frontend_popup_js_sha256: BOOKING_SECURITY_CFG.FRONTEND_POPUP_JS_SHA,
+    frontend_popup_js_sha256_normalized: BOOKING_SECURITY_CFG.FRONTEND_POPUP_JS_SHA,
     frontend_booking_client_sha256_normalized: BOOKING_SECURITY_CFG.FRONTEND_BOOKING_CLIENT_SHA,
     frontend_legacy_booking_client_sha256_normalized: BOOKING_SECURITY_CFG.FRONTEND_LEGACY_BOOKING_CLIENT_SHA,
     frontend_theme_script_sha256_normalized: BOOKING_SECURITY_CFG.FRONTEND_THEME_SCRIPT_SHA,
