@@ -52,8 +52,6 @@
       : { baseUrl: "" };
   const baseUrl = String(config.baseUrl || "").trim();
   const bookingSecurity = window.BookingSecurity;
-  const bookingSessionPopup = window.BookingSessionPopup;
-  let bootstrapFailureMessage = "";
 
   function buildPreviewCandidates() {
     const out = [];
@@ -210,9 +208,6 @@
     }
     if (!bookingSecurity || typeof bookingSecurity.request !== "function") {
       throw new Error("Secure booking is not supported by this browser.");
-    }
-    if (!bookingSessionPopup || typeof bookingSessionPopup.openSession !== "function") {
-      throw new Error("Secure booking connection is not available. Please contact an admin.");
     }
   }
 
@@ -386,24 +381,7 @@
   if (bookingSecurity && typeof bookingSecurity.init === "function") {
     bookingSecurity.init({
       bootstrap: function () {
-        bootstrapFailureMessage = "";
-        return bookingSessionPopup.openSession({
-          baseUrl: baseUrl,
-          onStatus: function (status) {
-            if (status === "popup_blocked") {
-              bootstrapFailureMessage =
-                "Secure booking connection was blocked. Allow popups and retry.";
-            } else if (status === "closed") {
-              bootstrapFailureMessage =
-                "Secure booking connection was cancelled. Please retry.";
-            } else if (status === "timeout") {
-              bootstrapFailureMessage =
-                "Secure booking connection timed out. Please retry.";
-            } else if (status === "connected") {
-              bootstrapFailureMessage = "";
-            }
-          }
-        });
+        return jsonpRaw("session_init", {});
       },
       onStatus: function (status) {
         if (status === "session_expired") {
@@ -433,9 +411,6 @@
 
   function friendlyError(error, fallback) {
     const message = error && error.message ? String(error.message) : "";
-    if (error && error.code === "SESSION_INIT_FAILED" && bootstrapFailureMessage) {
-      return bootstrapFailureMessage;
-    }
     if (message === "JSONP request failed." || message === "JSONP request timed out.") {
       return "Unable to reach the room booking API. Please try again.";
     }
@@ -1070,7 +1045,7 @@
       if (!preserveAlert) {
         setAlert(friendlyError(error, "Unable to load availability."), "error", {
           action: {
-            label: error && error.code === "SESSION_INIT_FAILED" ? "Connect securely" : "Retry",
+            label: "Retry",
             onClick: loadCalendar
           }
         });

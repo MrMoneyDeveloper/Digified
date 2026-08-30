@@ -20,7 +20,6 @@ function assertExcludes(source, unexpected, label) {
 
 const manifest = JSON.parse(read("apps_scripts/script0.json"));
 const scriptA = read("apps_scripts/scriptA.gs");
-const popup = read("assets/booking-session-popup.js");
 const protocol = read("docs/booking-security-protocol.md");
 
 assert.strictEqual(manifest.webapp.executeAs, "USER_DEPLOYING");
@@ -36,20 +35,18 @@ assert.ok(!manifest.oauthScopes.includes("https://www.googleapis.com/auth/userin
 ].forEach((value) => assertExcludes(scriptA, value, "Script A"));
 
 assertIncludes(scriptA, 'MASTER_SECRET_PROP: "BOOKING_MASTER_SECRET"', "Script A");
-assertIncludes(scriptA, 'ALLOWED_ORIGINS_PROP: "BOOKING_ALLOWED_ORIGINS"', "Script A");
 assertIncludes(scriptA, 'scope: "booking"', "Script A session token");
+assertIncludes(scriptA, 'if (action === "session_init")', "Script A automatic bootstrap");
+assertIncludes(scriptA, "return jsonResponse_(result, e);", "Script A automatic bootstrap");
 assertIncludes(scriptA, "bookingVerifySignedRequest_", "Script A signed requests");
 assertIncludes(scriptA, "bookingSignResponse_", "Script A signed responses");
 assertIncludes(scriptA, "bookingReserveNonce_", "Script A replay protection");
 assertIncludes(scriptA, "handleCancel_(body, requestId)", "Script A cancellation flow");
 assertExcludes(scriptA, "api_key: apiKey", "Script A public response");
 assertExcludes(scriptA, "handleGetApiKey_", "Script A");
-
-assertIncludes(popup, "sourceMatchesPopup(event.source, popup)", "popup client");
-assertIncludes(popup, "isTrustedMessageOrigin(event.origin", "popup client");
-assertExcludes(popup, 'postMessage(message, "*")', "popup client");
-assertExcludes(popup, "localStorage", "popup client");
-assertExcludes(popup, "sessionStorage", "popup client");
+assertExcludes(scriptA, "BOOKING_ALLOWED_ORIGINS", "Script A");
+assertExcludes(scriptA, "postMessage", "Script A");
+assertExcludes(scriptA, "HtmlService", "Script A");
 
 assertIncludes(protocol, "Zendesk login, IT approval, tags, segments", "protocol trust boundary");
 assertIncludes(protocol, 'access: "ANYONE_ANONYMOUS"', "protocol deployment contract");
@@ -59,7 +56,6 @@ assertExcludes(protocol, "Session.getActiveUser()", "protocol");
 const browserFiles = [
   "assets/booking-config.js",
   "assets/booking-security.js",
-  "assets/booking-session-popup.js",
   "assets/room-bookings-calendar.js",
   "assets/training-bookings-calendar.js",
   "templates/custom_pages/room_booking.hbs",
@@ -67,6 +63,11 @@ const browserFiles = [
   "settings_schema.json"
 ];
 const browserSource = browserFiles.map(read).join("\n");
+
+assertIncludes(browserSource, 'jsonpRaw("session_init", {})', "browser automatic bootstrap");
+assertExcludes(browserSource, "BookingSessionPopup", "browser automatic bootstrap");
+assertExcludes(browserSource, "window.open(", "browser automatic bootstrap");
+assertExcludes(browserSource, "Connect securely", "browser automatic bootstrap");
 
 [
   /\bapiKey\b/i,
