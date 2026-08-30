@@ -4,8 +4,8 @@
 
 Status: Internal replication document  
 Last updated: 2026-03-25  
-Current theme build: `2027.0.10`  
-Current Zendesk build marker: `2026-03-25-01`
+Current theme build: `2028.2.2`
+Current Zendesk build marker: `2026-08-30-04`
 
 ## 1. Purpose
 
@@ -111,8 +111,8 @@ All three scripts currently live in the same Apps Script project:
 
 ### 6.1 Theme Build And Packaging
 
-- Theme version: `2027.0.10`
-- Build marker: `2026-03-25-01`
+- Theme version: `2028.2.2`
+- Build marker: `2026-08-30-04`
 - Build marker source: `C:\Workspace\Digified\templates\document_head.hbs:2`
 - Room page build marker: `C:\Workspace\Digified\templates\custom_pages\room_booking.hbs:1`
 - Current distributable zip: `C:\Workspace\Digified\digified-theme.zip`
@@ -151,7 +151,6 @@ Current known pilot properties:
 | `MEET_CALENDAR_ID` | `primary` | Script C calendar target |
 | `TRAINING_DEFAULT_TZ` | `Africa/Johannesburg` | Used by Script A and Script C |
 | `BOOKING_MASTER_SECRET` | Apps Script Script Properties only | Sensitive; created by `initializeBookingSecurity()` and never placed in sheets, theme settings, frontend code, or the repository |
-| `BOOKING_ALLOWED_ORIGINS` | Exact Zendesk HTTPS origin(s) | Comma-separated origins; no paths or wildcards |
 | `ZD_SUBDOMAIN` | client-specific | Override Script B hardcoded fallback |
 | `ZD_EMAIL` | client-specific | Zendesk API identity |
 | `ZD_TOKEN` | client-specific | Zendesk API token |
@@ -269,12 +268,11 @@ powershell -ExecutionPolicy Bypass -File .\package-theme.ps1
 
 The legacy HTTP `action=init` endpoint is retired. From the Apps Script editor:
 
-- configure `BOOKING_ALLOWED_ORIGINS` in Script Properties
 - run `initializeBookingDataModel()` when the sheet structure needs initialization
 - run `initializeBookingSecurity()` to create/retain the server-only master secret and revoke the legacy key
 - run `verifyBookingSecurityConfiguration()` and `selfTestBookingSecurityProtocol()`
 
-The only unsigned browser action is the top-level `session_init` popup. It does not return JSONP; its temporary session is delivered to the exact allowlisted Zendesk origin with `postMessage`. Zendesk remains responsible for end-user login, segments, and page access.
+The only unsigned browser action is `session_init`. The frontend calls it automatically through JSONP and stores the returned temporary session in JavaScript memory only. Zendesk remains responsible for end-user login, segments, and page access. This public bootstrap is not an Apps Script end-user authorization boundary.
 
 Reference:
 
@@ -421,10 +419,9 @@ Current pilot wiring exposes only the public Apps Script URL. Authentication use
 ### Apps Script Deployment
 
 1. Copy `apps_scripts/script0.json` into `appsscript.json`, save Script A, and leave Script B/C integrations intact.
-2. Set the exact `BOOKING_ALLOWED_ORIGINS` Script Property.
-3. Run `initializeBookingSecurity()`, `verifyBookingSecurityConfiguration()`, and `selfTestBookingSecurityProtocol()`.
-4. Create a new version and deploy the web app with `ANYONE_ANONYMOUS` access as `USER_DEPLOYING`.
-5. Test through Zendesk's **Connect securely** popup; no Google Workspace end-user account is required.
+2. Run `initializeBookingSecurity()`, `verifyBookingSecurityConfiguration()`, and `selfTestBookingSecurityProtocol()`.
+3. Create a new version and deploy the web app with `ANYONE_ANONYMOUS` access as `USER_DEPLOYING`.
+4. Open the Zendesk room page and confirm `session_init` runs automatically, followed by a signed availability request. No popup or user action should occur.
 
 ### Theme Deployment
 

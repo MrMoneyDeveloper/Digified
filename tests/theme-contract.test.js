@@ -138,7 +138,6 @@ const documentHead = read("templates/document_head.hbs");
   "bootstrap.min.css",
   "booking-config.js",
   "booking-security.js",
-  "booking-session-popup.js",
   "theme-ui.js",
   "alpine-csp.min.js",
   "gsap.min.js",
@@ -171,20 +170,13 @@ const bookingClient = read("assets/training-bookings-calendar.js");
 assertIncludes(bookingClient, "const probe = new Image()", "booking room preview loader");
 assertIncludes(bookingClient, "previewRequestId", "booking room preview loader");
 assertExcludes(bookingClient, "swapPreviewExtension", "booking room preview loader");
-assertIncludes(bookingClient, "bookingSessionPopup.openSession", "booking popup integration");
-assertExcludes(bookingClient, 'jsonpRaw("session_init"', "booking popup integration");
+assertIncludes(bookingClient, 'jsonpRaw("session_init", {})', "automatic bootstrap integration");
+assertExcludes(bookingClient, "BookingSessionPopup", "automatic bootstrap integration");
+assertExcludes(bookingClient, "Connect securely", "automatic bootstrap integration");
 
 const legacyBookingClient = read("assets/room-bookings-calendar.js");
-assertIncludes(legacyBookingClient, "bookingSessionPopup.openSession", "legacy booking popup integration");
-assertExcludes(legacyBookingClient, 'jsonpRaw("session_init"', "legacy booking popup integration");
-
-const popupClient = read("assets/booking-session-popup.js");
-assertIncludes(popupClient, 'url.searchParams.set("action", "session_init")', "popup client");
-assertIncludes(popupClient, "isTrustedMessageOrigin(event.origin", "popup client");
-assertIncludes(popupClient, "sourceMatchesPopup(event.source, popup)", "popup client");
-assertExcludes(popupClient, "localStorage", "popup client");
-assertExcludes(popupClient, "sessionStorage", "popup client");
-assertExcludes(popupClient, "document.cookie", "popup client");
+assertIncludes(legacyBookingClient, 'jsonpRaw("session_init", {})', "legacy automatic bootstrap integration");
+assertExcludes(legacyBookingClient, "BookingSessionPopup", "legacy automatic bootstrap integration");
 
 const appsScriptManifest = JSON.parse(read("apps_scripts/script0.json"));
 assert.strictEqual(appsScriptManifest.webapp.access, "ANYONE_ANONYMOUS");
@@ -192,12 +184,13 @@ assert.strictEqual(appsScriptManifest.webapp.executeAs, "USER_DEPLOYING");
 assert.ok(!appsScriptManifest.oauthScopes.includes("https://www.googleapis.com/auth/userinfo.email"));
 
 const scriptA = read("apps_scripts/scriptA.gs");
-assertIncludes(scriptA, "bookingServeSessionInitPopup_(params, requestId)", "Script A");
-assertIncludes(scriptA, "completeBookingSessionInitPopup", "Script A");
-assertIncludes(scriptA, "BOOKING_ALLOWED_ORIGINS", "Script A");
-assertIncludes(scriptA, "opener.postMessage(message,targetOrigin)", "Script A");
-assertExcludes(scriptA, "return jsonResponse_(bootstrapResult", "Script A");
-assertExcludes(scriptA, "postMessage(message,\"*\")", "Script A");
+assertIncludes(scriptA, 'if (action === "session_init")', "Script A");
+assertIncludes(scriptA, "const result = bookingHandleSessionInit_(requestId);", "Script A");
+assertIncludes(scriptA, "return jsonResponse_(result, e);", "Script A");
+assertExcludes(scriptA, "bookingServeSessionInitPopup_", "Script A");
+assertExcludes(scriptA, "completeBookingSessionInitPopup", "Script A");
+assertExcludes(scriptA, "BOOKING_ALLOWED_ORIGINS", "Script A");
+assertExcludes(scriptA, "postMessage", "Script A");
 assertExcludes(scriptA, "BOOKING_ALLOWED_DOMAINS", "Script A");
 assertExcludes(scriptA, "Session.getActiveUser()", "Script A");
 assertExcludes(scriptA, "bookingAuthorizeSessionInit_", "Script A");
@@ -209,10 +202,6 @@ assert.strictEqual(
 assert.strictEqual(
   scriptAConfigValue(scriptA, "FRONTEND_SECURITY_JS_SHA"),
   sha256("assets/booking-security.js")
-);
-assert.strictEqual(
-  scriptAConfigValue(scriptA, "FRONTEND_POPUP_JS_SHA"),
-  sha256NormalizedText("assets/booking-session-popup.js")
 );
 assert.strictEqual(
   scriptAConfigValue(scriptA, "FRONTEND_BOOKING_CLIENT_SHA"),
@@ -256,18 +245,13 @@ assert.strictEqual(
 );
 assert.strictEqual(
   sha256NormalizedText("assets/training-bookings-calendar.js"),
-  "d4659ea25b61233e7d5bdce171c31f73c320443bc776266f441fc09ee372bf33",
-  "booking client behavior must match the popup/fallback integration baseline"
-);
-assert.strictEqual(
-  sha256NormalizedText("assets/booking-session-popup.js"),
-  "50337d24e6f866d249becd135b7fab92225dac662ab73a287b84865d6de17fb4",
-  "booking popup bootstrap implementation must match the backend contract"
+  "0ebb6745df7e547699cb56f2fb4e0c41611567c8bd9b37f55c725c5a6e2602a9",
+  "booking client behavior must match the automatic bootstrap/fallback baseline"
 );
 assert.strictEqual(
   sha256NormalizedText("assets/room-bookings-calendar.js"),
-  "6d9ff3b660e0e89e32a034797aa3fafc163ecda50c2abf9b5a75b16e710f3fb9",
-  "legacy booking client must use the same popup bootstrap contract"
+  "205e2d88a5183a35489fd88749af5a4eb5e2b817a53a048e328e9678f40f221d",
+  "legacy booking client must use the same automatic bootstrap contract"
 );
 assert.strictEqual(
   sha256("assets/booking-config.js"),
@@ -276,6 +260,6 @@ assert.strictEqual(
 );
 
 const manifest = JSON.parse(read("manifest.json"));
-assert.strictEqual(manifest.version, "2028.2.1", "theme version must be bumped");
+assert.strictEqual(manifest.version, "2028.2.2", "theme version must be bumped");
 
 console.log("theme contract tests passed");

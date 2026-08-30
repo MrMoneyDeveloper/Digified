@@ -54,8 +54,10 @@
         class="tb-app"
         id="training-booking-root"
         aria-labelledby="harness-title"
-        data-room-image-training-1="../assets/room-preview-training-room-1-v2.jpeg"
-        data-room-image-training-2="../assets/room-preview-training-room-2-v2.jpeg"
+        data-room-image-training-1="../assets/room-preview-training-room-1-v3.jpeg"
+        data-room-image-training-1-fallback="../assets/room-preview-training-room-1-fallback-v2.jpeg"
+        data-room-image-training-2="../assets/room-preview-training-room-2-v3.jpeg"
+        data-room-image-training-2-fallback="../assets/room-preview-training-room-2-fallback-v2.jpeg"
         data-room-image-interview="../assets/room-preview-interview-room.jpeg"
       >
         <div id="training-booking-alert" class="tb-alert" role="status" hidden></div>
@@ -70,7 +72,7 @@
 
         <section id="training-room-preview" class="tb-room-preview" aria-label="Selected room">
           <div class="tb-room-preview__media">
-            <img id="training-room-preview-image" class="tb-room-preview__image" src="../assets/room-preview-training-room-1-v2.jpeg" alt="Training Room 1" width="1600" height="1200">
+            <img id="training-room-preview-image" class="tb-room-preview__image" src="../assets/room-preview-training-room-1-v3.jpeg" alt="Training Room 1" width="1600" height="1200">
             <div id="training-room-preview-placeholder" class="tb-room-preview__placeholder" hidden>Room image unavailable</div>
           </div>
           <div class="tb-room-preview__body"><p class="tb-eyebrow">Selected space</p><h2 id="training-room-preview-title">Training Room 1</h2><p id="training-room-preview-caption">Flexible seating for workshops, learning, and team sessions.</p></div>
@@ -121,8 +123,8 @@
       var controls = document.querySelectorAll("[data-state]");
       var closeControls = document.querySelectorAll("[data-close]");
       var roomImages = {
-        "Training Room 1": "../assets/room-preview-training-room-1-v2.jpeg",
-        "Training Room 2": "../assets/room-preview-training-room-2-v2.jpeg",
+        "Training Room 1": "../assets/room-preview-training-room-1-v3.jpeg",
+        "Training Room 2": "../assets/room-preview-training-room-2-v3.jpeg",
         "Interview Room": "../assets/room-preview-interview-room.jpeg"
       };
 

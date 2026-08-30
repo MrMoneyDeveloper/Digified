@@ -19,7 +19,7 @@ Note: In the Apps Script editor, this content belongs in the project manifest
 file named `appsscript.json`.
 
 ### scriptA.gs - Room booking API
-Handles the exact-origin popup `action=session_init` bootstrap plus signed
+Handles the automatic unsigned JSONP `action=session_init` bootstrap plus signed
 `action=sessions`, `action=days`, and `action=book` calls for the room booking UI.
 It writes bookings to the `BOOKINGS` sheet and stores:
 - `meeting_type`
@@ -45,14 +45,13 @@ Defines `createMeetForBooking_C_(params)` for hybrid bookings and keeps
 Script A calls this only when remote attendees are included.
 
 ## Theme integration notes
-- `session_init` uses a top-level popup and sends
-  its temporary session to an exact allowlisted Zendesk origin with `postMessage`.
-  It never returns a session key through JSONP.
-- Set `BOOKING_ALLOWED_ORIGINS` and the server-only `BOOKING_MASTER_SECRET` in
-  Apps Script Script Properties before deployment.
+- `session_init` returns a short-lived temporary session automatically through
+  JSONP. It never returns the server-only master secret.
+- Set the server-only `BOOKING_MASTER_SECRET` in Apps Script Script Properties
+  before deployment. `initializeBookingSecurity()` creates it when absent.
 - Zendesk remains responsible for end-user login, segments, and page access;
   Apps Script performs no end-user role, domain, email, or approval checks.
-- The front end uses signed JSONP calls to the Apps Script web app for normal
-  booking actions such as `sessions`, `days`, and `book`.
+- The front end uses the temporary session to sign JSONP calls for normal booking
+  actions such as `sessions`, `days`, and `book`, and verifies signed responses.
 - Only the public Apps Script base URL comes from `assets/booking-config.js`.
 - Apps Script code must be deployed separately; these files are for context only.

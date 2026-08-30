@@ -4,13 +4,13 @@
  * SECURITY UPDATE: 2026-08-30
  *
  * Repo-aligned frontend contract:
- *   Digified main @ 473e64baec266ea7bb5a37ab1c5186aefbf0417e
+ *   Digified automatic-bootstrap contract (theme 2028.2.2)
  *   docs/booking-security-protocol.md (v1)
  *
  * - Dynamic sessions (Mon-Fri)
  * - Signed JSONP GET transport retained for Zendesk Help Centre business calls
- * - session_init is the only unsigned browser action and is served as an
- *   top-level popup; a session key is never returned as JSONP
+ * - session_init is the only unsigned browser action and returns a short-lived
+ *   temporary session through the existing JSONP transport
  * - Normal requests use SHA-256 + HMAC-SHA256 + timestamp + nonce
  * - Normal responses are SHA-256 hashed and HMAC-SHA256 signed
  * - Permanent master secret lives only in Apps Script Script Properties
@@ -79,10 +79,17 @@ function doGet(e) {
   let securityContext = null;
 
   try {
-    // session_init is the only unsigned frontend action. It must remain a
-    // top-level popup and must never flow through JSON/JSONP.
+    // session_init is the only unsigned frontend action. It returns only a
+    // short-lived derived session; the permanent master secret never leaves
+    // Apps Script.
     if (action === "session_init") {
-      return bookingServeSessionInitPopup_(params, requestId);
+      const result = bookingHandleSessionInit_(requestId);
+      result.meta = {
+        request_id: requestId,
+        took_ms: Date.now() - started,
+        tz: CFG.DEFAULT_TIMEZONE,
+      };
+      return jsonResponse_(result, e);
     }
 
     // Permanently retire the credential-bootstrap endpoints.
@@ -834,21 +841,18 @@ const BOOKING_SECURITY_CFG = Object.freeze({
   VERSION: "v1",
 
   // Keep these values aligned with the frontend contract in GitHub.
-  FRONTEND_BASELINE_COMMIT: "703de41821eb4058a7bd6ef37980532bb29c45ea",
-  FRONTEND_PROTOCOL_DOC_SHA: "4bec3fb186064950d2ece0d0077abfb76421b06b",
+  FRONTEND_BASELINE_COMMIT: "d9cf345c159a4b66950e418d2f9af47fd2a78798",
+  FRONTEND_PROTOCOL_DOC_SHA: "31eb77b4c0bd68873f158834c5675088c78214ad",
   FRONTEND_SECURITY_JS_SHA: "b58d62a4f49f25b843bd0899bbca98edfaf84bcdaf0224a5d5c71cc1ee7aec90",
-  FRONTEND_POPUP_JS_SHA: "50337d24e6f866d249becd135b7fab92225dac662ab73a287b84865d6de17fb4",
-  FRONTEND_BOOKING_CLIENT_SHA: "d4659ea25b61233e7d5bdce171c31f73c320443bc776266f441fc09ee372bf33",
-  FRONTEND_LEGACY_BOOKING_CLIENT_SHA: "6d9ff3b660e0e89e32a034797aa3fafc163ecda50c2abf9b5a75b16e710f3fb9",
-  FRONTEND_THEME_SCRIPT_SHA: "236791d6af9e1afe5fdb8664e114f0d0b24c669e9bc5141a5155543b67ef3ee3",
+  FRONTEND_BOOKING_CLIENT_SHA: "0ebb6745df7e547699cb56f2fb4e0c41611567c8bd9b37f55c725c5a6e2602a9",
+  FRONTEND_LEGACY_BOOKING_CLIENT_SHA: "205e2d88a5183a35489fd88749af5a4eb5e2b817a53a048e328e9678f40f221d",
+  FRONTEND_THEME_SCRIPT_SHA: "2bc98edc5a312346c1134fb187b926e91ae58933d4e45b87e69bb9fb5e891a27",
   FRONTEND_CONFIG_JS_SHA: "c62f11b9f1aeba7144d962528cb362bbcc639b4de8d2a3e6dd74c6be2954940c",
-  THEME_VERSION: "2028.2.1",
+  THEME_VERSION: "2028.2.2",
   REQUIRED_WEBAPP_ACCESS: "ANYONE_ANONYMOUS",
   REQUIRED_EXECUTE_AS: "USER_DEPLOYING",
   MASTER_SECRET_PROP: "BOOKING_MASTER_SECRET",
-  ALLOWED_ORIGINS_PROP: "BOOKING_ALLOWED_ORIGINS",
   LEGACY_API_KEY_PROP: "TRAINING_API_KEY",
-  POPUP_MESSAGE_TYPE: "digify.booking.session.v1",
 
   // Frontend accepts responses inside a 5 minute window.
   REQUEST_WINDOW_MS: 5 * 60 * 1000,
@@ -879,7 +883,6 @@ const BOOKING_SECURITY_CFG = Object.freeze({
  * - creates a fresh server-only master secret if one does not already exist
  * - removes the legacy exposed TRAINING_API_KEY Script Property
  * - overwrites the legacy SETTINGS-sheet value if the sheet exists
- * - requires BOOKING_ALLOWED_ORIGINS to contain the exact Zendesk HTTPS origin
  *
  * The master secret is never returned.
  */
@@ -894,14 +897,6 @@ function initializeBookingSecurity() {
 
   // Revoke the formerly browser-visible key.
   props.deleteProperty(BOOKING_SECURITY_CFG.LEGACY_API_KEY_PROP);
-
-  const allowedOrigins = bookingGetAllowedOrigins_();
-  if (!allowedOrigins.length) {
-    throw new Error(
-      "BOOKING_ALLOWED_ORIGINS is not configured. Add the exact Zendesk Help Center HTTPS origin " +
-      "in Project Settings > Script Properties (for example: https://support.example.com), then run initializeBookingSecurity() again."
-    );
-  }
 
   // Scrub the current spreadsheet copy of the old key where possible.
   try {
@@ -924,7 +919,6 @@ function initializeBookingSecurity() {
     ok: true,
     security_version: BOOKING_SECURITY_CFG.VERSION,
     master_secret_configured: true,
-    allowed_origins: allowedOrigins,
     legacy_api_key_revoked: !props.getProperty(BOOKING_SECURITY_CFG.LEGACY_API_KEY_PROP),
     deployment_requirements: {
       webapp_access: BOOKING_SECURITY_CFG.REQUIRED_WEBAPP_ACCESS,
@@ -956,12 +950,10 @@ function rotateBookingMasterSecret() {
 function verifyBookingSecurityConfiguration() {
   const props = PropertiesService.getScriptProperties();
   const masterSecret = props.getProperty(BOOKING_SECURITY_CFG.MASTER_SECRET_PROP) || "";
-  const allowedOrigins = bookingGetAllowedOrigins_();
   return {
-    ok: !!masterSecret && allowedOrigins.length > 0,
+    ok: !!masterSecret,
     security_version: BOOKING_SECURITY_CFG.VERSION,
     master_secret_configured: !!masterSecret,
-    allowed_origins: allowedOrigins,
     deployment_requirements: {
       webapp_access: BOOKING_SECURITY_CFG.REQUIRED_WEBAPP_ACCESS,
       execute_as: BOOKING_SECURITY_CFG.REQUIRED_EXECUTE_AS,
@@ -983,16 +975,13 @@ function getBookingSecurityContractInfo() {
     frontend_baseline_commit: BOOKING_SECURITY_CFG.FRONTEND_BASELINE_COMMIT,
     frontend_protocol_doc_sha: BOOKING_SECURITY_CFG.FRONTEND_PROTOCOL_DOC_SHA,
     frontend_security_js_sha256: BOOKING_SECURITY_CFG.FRONTEND_SECURITY_JS_SHA,
-    frontend_popup_js_sha256_normalized: BOOKING_SECURITY_CFG.FRONTEND_POPUP_JS_SHA,
     frontend_booking_client_sha256_normalized: BOOKING_SECURITY_CFG.FRONTEND_BOOKING_CLIENT_SHA,
     frontend_legacy_booking_client_sha256_normalized: BOOKING_SECURITY_CFG.FRONTEND_LEGACY_BOOKING_CLIENT_SHA,
     frontend_theme_script_sha256_normalized: BOOKING_SECURITY_CFG.FRONTEND_THEME_SCRIPT_SHA,
     frontend_config_js_sha256: BOOKING_SECURITY_CFG.FRONTEND_CONFIG_JS_SHA,
     theme_version: BOOKING_SECURITY_CFG.THEME_VERSION,
-    transport: "Exact-origin popup/postMessage bootstrap + signed JSONP business requests",
+    transport: "Automatic unsigned JSONP session bootstrap + signed JSONP business requests",
     session_init_auth: "No Apps Script end-user authorization; Zendesk controls page access",
-    popup_message_type: BOOKING_SECURITY_CFG.POPUP_MESSAGE_TYPE,
-    popup_target_origin_property: BOOKING_SECURITY_CFG.ALLOWED_ORIGINS_PROP,
     required_webapp_access: BOOKING_SECURITY_CFG.REQUIRED_WEBAPP_ACCESS,
     required_execute_as: BOOKING_SECURITY_CFG.REQUIRED_EXECUTE_AS,
     anonymous_deployment_supported: true,
@@ -1008,149 +997,7 @@ function getBookingSecurityContractInfo() {
 
 
 /**
- * Serve the temporary-session bootstrap shell. The HTML contains only the
- * exact target origin and a one-time request id; it never contains a session key.
- */
-function bookingServeSessionInitPopup_(params, serverRequestId) {
-  let targetOrigin = "";
-  let bootstrapRequestId = "";
-
-  try {
-    targetOrigin = bookingRequireAllowedOrigin_(params && params.origin);
-    bootstrapRequestId = bookingRequireBootstrapRequestId_(
-      params && params.request_id
-    );
-
-    return bookingCreateSessionPopupHtml_(
-      targetOrigin,
-      bootstrapRequestId,
-      null
-    );
-  } catch (err) {
-    if (targetOrigin && bootstrapRequestId) {
-      return bookingCreateSessionPopupHtml_(targetOrigin, bootstrapRequestId, {
-        type: BOOKING_SECURITY_CFG.POPUP_MESSAGE_TYPE,
-        request_id: bootstrapRequestId,
-        success: false,
-        code: "SESSION_INIT_FAILED",
-        message: "Secure booking session could not be established.",
-        data: {},
-      });
-    }
-
-    return bookingCreateStandaloneBootstrapErrorHtml_();
-  }
-}
-
-/**
- * Public so HtmlService can call it through google.script.run. The exact origin,
- * request id, and Script Properties are revalidated before a short-lived session
- * is generated. Zendesk, not Apps Script, controls end-user page access.
- */
-function completeBookingSessionInitPopup(bootstrapRequestId, targetOrigin) {
-  let requestId = "";
-
-  try {
-    bookingRequireAllowedOrigin_(targetOrigin);
-    requestId = bookingRequireBootstrapRequestId_(bootstrapRequestId);
-    const result = bookingHandleSessionInit_(requestId);
-
-    return {
-      type: BOOKING_SECURITY_CFG.POPUP_MESSAGE_TYPE,
-      request_id: requestId,
-      success: true,
-      data: result.data,
-    };
-  } catch (err) {
-    return {
-      type: BOOKING_SECURITY_CFG.POPUP_MESSAGE_TYPE,
-      request_id: requestId,
-      success: false,
-      code: "SESSION_INIT_FAILED",
-      message: "Secure booking session could not be established.",
-      data: {},
-    };
-  }
-}
-
-function bookingCreateSessionPopupHtml_(targetOrigin, requestId, initialError) {
-  const originJson = bookingJsonForInlineScript_(targetOrigin);
-  const requestIdJson = bookingJsonForInlineScript_(requestId);
-  const messageTypeJson = bookingJsonForInlineScript_(
-    BOOKING_SECURITY_CFG.POPUP_MESSAGE_TYPE
-  );
-  const initialErrorJson = initialError
-    ? bookingJsonForInlineScript_(initialError)
-    : "null";
-
-  const html = [
-    "<!doctype html>",
-    '<html lang="en"><head><base target="_top"><meta charset="utf-8">',
-    '<meta name="viewport" content="width=device-width,initial-scale=1">',
-    "<title>Secure booking session</title>",
-    "<style>",
-    "html{font-family:Arial,sans-serif;background:#f6f8fb;color:#191936}",
-    "body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box}",
-    ".card{width:min(420px,100%);background:#fff;border:1px solid #d9dee8;border-radius:18px;padding:28px;box-shadow:0 16px 44px rgba(25,25,54,.12)}",
-    "h1{font-size:1.35rem;margin:0 0 12px}p{line-height:1.55;margin:0;color:#52617d}",
-    "</style></head><body><main class=\"card\"><h1>Secure booking session</h1>",
-    '<p id="status" role="status">Preparing a temporary booking session...</p></main>',
-    "<script>",
-    "(function(){'use strict';",
-    "var targetOrigin=" + originJson + ";",
-    "var requestId=" + requestIdJson + ";",
-    "var messageType=" + messageTypeJson + ";",
-    "var initialError=" + initialErrorJson + ";",
-    "var status=document.getElementById('status');",
-    "function targetWindow(){",
-    "try{if(window.top&&window.top.opener&&!window.top.opener.closed)return window.top.opener;}catch(ignore){}",
-    "try{if(window.opener&&!window.opener.closed)return window.opener;}catch(ignore){}",
-    "return null;}",
-    "function scrub(message){",
-    "try{if(message&&message.data&&message.data.session_key)message.data.session_key='';}catch(ignore){}",
-    "}",
-    "function finish(message){",
-    "var opener=targetWindow();",
-    "if(!opener){scrub(message);status.textContent='Return to the Help Center and retry the secure connection.';return;}",
-    "opener.postMessage(message,targetOrigin);",
-    "var ok=message&&message.success===true;scrub(message);message=null;",
-    "status.textContent=ok?'Secure session established. This window will close.':'Secure booking session could not be established. Close this window and retry.';",
-    "setTimeout(function(){try{window.top.close();}catch(ignore){try{window.close();}catch(inner){}}},150);",
-    "}",
-    "function fail(){finish({type:messageType,request_id:requestId,success:false,code:'SESSION_INIT_FAILED',message:'Secure booking session could not be established.',data:{}});}",
-    "if(initialError){finish(initialError);return;}",
-    "google.script.run.withSuccessHandler(finish).withFailureHandler(fail).completeBookingSessionInitPopup(requestId,targetOrigin);",
-    "})();",
-    "<\/script></body></html>",
-  ].join("");
-
-  return HtmlService.createHtmlOutput(html)
-    .setTitle("Secure booking session")
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
-}
-
-function bookingCreateStandaloneBootstrapErrorHtml_() {
-  return HtmlService.createHtmlOutput(
-    "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">" +
-      "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
-      "<title>Secure booking session</title></head><body>" +
-      "<p>Secure booking session could not be established. Close this window and retry.</p>" +
-      "</body></html>"
-  ).setTitle("Secure booking session");
-}
-
-function bookingJsonForInlineScript_(value) {
-  return JSON.stringify(value)
-    .replace(/&/g, "\\u0026")
-    .replace(/</g, "\\u003c")
-    .replace(/>/g, "\\u003e")
-    .replace(/\u2028/g, "\\u2028")
-    .replace(/\u2029/g, "\\u2029");
-}
-
-/**
- * Generate session material after the popup RPC has repeated the exact-origin
- * and request-id checks.
+ * Generate short-lived session material for the automatic unsigned bootstrap.
  *
  * SECURITY BOUNDARY:
  * The web app deployment MUST use:
@@ -1462,74 +1309,6 @@ function bookingIsAllowedAction_(action, method) {
   }
 
   return false;
-}
-
-function bookingGetAllowedOrigins_() {
-  const raw = String(
-    PropertiesService.getScriptProperties().getProperty(
-      BOOKING_SECURITY_CFG.ALLOWED_ORIGINS_PROP
-    ) || ""
-  );
-  const seen = {};
-  const origins = [];
-
-  raw.split(/[,;\s]+/).forEach(function (value) {
-    const origin = bookingNormalizeHttpsOrigin_(value);
-    if (!origin || seen[origin]) return;
-    seen[origin] = true;
-    origins.push(origin);
-  });
-
-  return origins;
-}
-
-function bookingNormalizeHttpsOrigin_(value) {
-  const candidate = String(value || "").trim().replace(/\/+$/, "");
-  const match = candidate.match(
-    /^https:\/\/([a-z0-9](?:[a-z0-9.-]*[a-z0-9])?)(?::([0-9]{1,5}))?$/i
-  );
-  if (!match) return "";
-
-  const hostname = String(match[1] || "").toLowerCase();
-  if (!hostname || hostname.indexOf("..") >= 0) return "";
-
-  const port = match[2] ? Number(match[2]) : 443;
-  if (!Number.isInteger(port) || port < 1 || port > 65535) return "";
-
-  return "https://" + hostname + (port === 443 ? "" : ":" + String(port));
-}
-
-function bookingRequireAllowedOrigin_(value) {
-  const origin = bookingNormalizeHttpsOrigin_(value);
-  const allowedOrigins = bookingGetAllowedOrigins_();
-
-  if (!allowedOrigins.length) {
-    throw bookingSecurityError_(
-      "BOOKING_ALLOWED_ORIGINS_NOT_CONFIGURED",
-      "Secure booking is not configured.",
-      500
-    );
-  }
-  if (!origin || allowedOrigins.indexOf(origin) < 0) {
-    throw bookingSecurityError_(
-      "SESSION_INIT_ORIGIN_NOT_ALLOWED",
-      "Secure booking origin is not allowed.",
-      403
-    );
-  }
-  return origin;
-}
-
-function bookingRequireBootstrapRequestId_(value) {
-  const requestId = String(value || "").trim().toLowerCase();
-  if (!/^[a-f0-9]{32}$/.test(requestId)) {
-    throw bookingSecurityError_(
-      "SESSION_INIT_REQUEST_INVALID",
-      "Secure booking request is invalid.",
-      400
-    );
-  }
-  return requestId;
 }
 
 function bookingGetMasterSecret_() {

@@ -1269,7 +1269,6 @@ function logFailure(img, phase) {
   const settings = (window.HelpCenter && window.HelpCenter.themeSettings) || {};
   const cfg = window.ROOM_BOOKING_CFG || {};
   const bookingSecurity = window.BookingSecurity;
-  const bookingSessionPopup = window.BookingSessionPopup;
   const baseUrl = (
     cfg.baseUrl ||
     settings.room_booking_api_url ||
@@ -1509,24 +1508,7 @@ function logFailure(img, phase) {
   if (bookingSecurity && typeof bookingSecurity.init === "function") {
     bookingSecurity.init({
       bootstrap: function () {
-        if (!bookingSessionPopup || typeof bookingSessionPopup.openSession !== "function") {
-          return Promise.reject(new Error("Secure booking sign-in is not available."));
-        }
-        return bookingSessionPopup.openSession({
-          baseUrl: baseUrl,
-          onStatus: function (status) {
-            if (status === "popup_blocked") {
-              setAlert(
-                "Secure booking sign-in was blocked. Allow popups and retry.",
-                "error"
-              );
-            } else if (status === "closed") {
-              setAlert("Secure booking sign-in was cancelled. Please retry.", "error");
-            } else if (status === "timeout") {
-              setAlert("Secure booking sign-in timed out. Please retry.", "error");
-            }
-          }
-        });
+        return jsonpRaw("session_init", {});
       },
       onStatus: function (status) {
         if (status === "session_expired") {
@@ -2061,13 +2043,9 @@ function logFailure(img, phase) {
       throw new Error("Secure booking is not supported by this browser.");
     }
     if (!securityReady) {
-      const popup = window.BookingSessionPopup;
       security.init({
         bootstrap: function () {
-          if (!popup || typeof popup.openSession !== "function") {
-            return Promise.reject(new Error("Secure booking sign-in is not available."));
-          }
-          return popup.openSession({ baseUrl: getConfig().baseUrl });
+          return jsonpRaw("session_init", {});
         }
       });
       securityReady = true;
