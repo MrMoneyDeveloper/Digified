@@ -53,22 +53,17 @@
   const baseUrl = String(config.baseUrl || "").trim();
   const bookingSecurity = window.BookingSecurity;
 
-  function swapPreviewExtension(url) {
-    const value = String(url || "").trim();
-    if (!value) return "";
-    if (/\.png(\?|$)/i.test(value)) return value.replace(/\.png(\?|$)/i, ".jpeg$1");
-    if (/\.jpe?g(\?|$)/i.test(value)) return value.replace(/\.jpe?g(\?|$)/i, ".png$1");
-    return "";
-  }
-
   function buildPreviewCandidates() {
     const out = [];
     Array.prototype.slice.call(arguments).forEach(function (candidate) {
-      const value = String(candidate || "").trim();
+      let value = String(candidate || "").trim();
       if (!value) return;
+      try {
+        value = new URL(value, document.baseURI).href;
+      } catch (_error) {
+        // Keep the rendered asset value so the browser can report the load failure.
+      }
       if (out.indexOf(value) < 0) out.push(value);
-      const swapped = swapPreviewExtension(value);
-      if (swapped && out.indexOf(swapped) < 0) out.push(swapped);
     });
     return out;
   }
@@ -172,7 +167,8 @@
     selected: null,
     drag: null,
     cells: new Map(),
-    loadRequestId: 0
+    loadRequestId: 0,
+    previewRequestId: 0
   };
 
   function getCurrentUser() {
@@ -232,44 +228,55 @@
       const showPlaceholder = function () {
         ui.roomPreviewImage.hidden = true;
         ui.roomPreviewImage.removeAttribute("src");
+        ui.roomPreviewImage.removeAttribute("aria-busy");
         ui.roomPreviewImage.alt = "";
         if (ui.roomPreviewPlaceholder) {
           ui.roomPreviewPlaceholder.hidden = false;
-          ui.roomPreviewPlaceholder.textContent = title;
+          ui.roomPreviewPlaceholder.textContent = title + " image unavailable";
         }
       };
 
+      const previewRequestId = ++state.previewRequestId;
       const loadCandidate = function (index) {
+        if (previewRequestId !== state.previewRequestId) return;
         if (index >= imageCandidates.length) {
           showPlaceholder();
           return;
         }
+
         const candidate = imageCandidates[index];
-        ui.roomPreviewImage.onload = function () {
+        const probe = new Image();
+        probe.decoding = "async";
+        probe.onload = function () {
+          if (previewRequestId !== state.previewRequestId) return;
+          ui.roomPreviewImage.src = candidate;
+          ui.roomPreviewImage.alt = title + " preview";
           ui.roomPreviewImage.hidden = false;
+          ui.roomPreviewImage.removeAttribute("aria-busy");
           if (ui.roomPreviewPlaceholder) {
             ui.roomPreviewPlaceholder.hidden = true;
           }
         };
-        ui.roomPreviewImage.onerror = function () {
+        probe.onerror = function () {
+          if (previewRequestId !== state.previewRequestId) return;
           loadCandidate(index + 1);
         };
-        ui.roomPreviewImage.src = candidate;
-        ui.roomPreviewImage.alt = title + " preview";
-        ui.roomPreviewImage.hidden = false;
+        probe.src = candidate;
       };
 
       if (imageCandidates.length) {
-        if (ui.roomPreviewPlaceholder) ui.roomPreviewPlaceholder.hidden = true;
+        ui.roomPreviewImage.hidden = true;
+        ui.roomPreviewImage.setAttribute("aria-busy", "true");
+        if (ui.roomPreviewPlaceholder) {
+          ui.roomPreviewPlaceholder.hidden = false;
+          ui.roomPreviewPlaceholder.textContent = "Loading " + title + " preview...";
+        }
         loadCandidate(0);
       } else {
         showPlaceholder();
       }
     }
 
-    if (ui.roomPreviewPlaceholder) {
-      ui.roomPreviewPlaceholder.textContent = title;
-    }
   }
 
   function setAlert(message, type, options) {

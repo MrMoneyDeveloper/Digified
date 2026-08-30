@@ -50,7 +50,14 @@
         <article class="tb-guide__card"><span class="tb-guide__number">03</span><h2>Confirm details</h2><p>Add repeat days and a Google Meet if needed.</p></article>
       </section>
 
-      <section class="tb-app" id="training-booking-root" aria-labelledby="harness-title">
+      <section
+        class="tb-app"
+        id="training-booking-root"
+        aria-labelledby="harness-title"
+        data-room-image-training-1="../assets/room-preview-training-room-1-v2.jpeg"
+        data-room-image-training-2="../assets/room-preview-training-room-2-v2.jpeg"
+        data-room-image-interview="../assets/room-preview-interview-room.jpeg"
+      >
         <div id="training-booking-alert" class="tb-alert" role="status" hidden></div>
         <h2 id="harness-title" class="visibility-hidden">Room booking preview</h2>
 
@@ -108,8 +115,16 @@
       var loading = document.getElementById("training-booking-loading");
       var list = document.getElementById("training-booking-list");
       var modal = document.getElementById("training-booking-modal");
+      var room = document.getElementById("training-room");
+      var roomImage = document.getElementById("training-room-preview-image");
+      var roomTitle = document.getElementById("training-room-preview-title");
       var controls = document.querySelectorAll("[data-state]");
       var closeControls = document.querySelectorAll("[data-close]");
+      var roomImages = {
+        "Training Room 1": "../assets/room-preview-training-room-1-v2.jpeg",
+        "Training Room 2": "../assets/room-preview-training-room-2-v2.jpeg",
+        "Interview Room": "../assets/room-preview-interview-room.jpeg"
+      };
 
       function showState(state) {
         alertBox.hidden = true;
@@ -124,6 +139,7 @@
 
       controls.forEach(function (control) { control.addEventListener("click", function () { showState(control.dataset.state); }); });
       closeControls.forEach(function (control) { control.addEventListener("click", function () { modal.hidden = true; }); });
+      room.addEventListener("change", function () { roomImage.src = roomImages[room.value]; roomImage.alt = room.value; roomTitle.textContent = room.value; });
       document.getElementById("training-booking-form").addEventListener("submit", function (event) { event.preventDefault(); modal.hidden = true; });
       document.addEventListener("keydown", function (event) { if (event.key === "Escape") modal.hidden = true; });
     })();

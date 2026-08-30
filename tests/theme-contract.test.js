@@ -80,6 +80,8 @@ bookingTemplates.forEach((relativePath) => {
 
   assertIncludes(source, "training-bookings.css", relativePath);
   assertIncludes(source, "training-bookings-calendar.js", relativePath);
+  assertIncludes(source, 'loading="eager"', relativePath);
+  assertIncludes(source, 'fetchpriority="high"', relativePath);
   assertExcludes(source, "room-preview-inline.js", relativePath);
 });
 
@@ -104,6 +106,9 @@ const documentHead = read("templates/document_head.hbs");
 const themeUiHarness = read("tests/theme-ui-harness.html");
 assertIncludes(themeUiHarness, "x-data=\"digifyHeader\"", "theme UI harness");
 assertIncludes(themeUiHarness, "data-digify-motion=\"hero\"", "theme UI harness");
+assertIncludes(themeUiHarness, "access-hub-card-internal", "theme UI harness");
+assertIncludes(themeUiHarness, "landing-card--staff", "theme UI harness");
+assertIncludes(themeUiHarness, "policy-card-grid", "theme UI harness");
 
 const header = read("templates/header.hbs");
 assertIncludes(header, "digify_intro_seen_v1", "header intro");
@@ -116,6 +121,14 @@ assertIncludes(style, "@container", "theme stylesheet");
 assertIncludes(style, "@media (min-width: 40rem)", "theme stylesheet");
 assertIncludes(style, "@media (prefers-reduced-motion: reduce)", "theme stylesheet");
 assertIncludes(style, "[data-digify-motion]", "theme stylesheet");
+assertIncludes(style, ".policies-page .policy-card-grid > .row > .col", "theme stylesheet");
+assertIncludes(style, ".access-hub-cards .access-hub-card-internal", "theme stylesheet");
+assertIncludes(style, ".signup-options-section .landing-card .btn.btn-primary", "theme stylesheet");
+
+const bookingClient = read("assets/training-bookings-calendar.js");
+assertIncludes(bookingClient, "const probe = new Image()", "booking room preview loader");
+assertIncludes(bookingClient, "previewRequestId", "booking room preview loader");
+assertExcludes(bookingClient, "swapPreviewExtension", "booking room preview loader");
 
 const runtimeSources = [
   documentHead,
@@ -142,8 +155,8 @@ assert.strictEqual(
 );
 assert.strictEqual(
   sha256("assets/training-bookings-calendar.js"),
-  "10f960baf27c341fb54da82bff12948225f2d55db4367be3f45bcac297ee0b84",
-  "booking client behavior must remain unchanged"
+  "4276e29be4687e8bf56e7469f932764df0c4781ee368ce5b220e1bea476a41cf",
+  "booking client behavior must match the room preview regression baseline"
 );
 assert.strictEqual(
   sha256("assets/booking-config.js"),
@@ -152,6 +165,6 @@ assert.strictEqual(
 );
 
 const manifest = JSON.parse(read("manifest.json"));
-assert.strictEqual(manifest.version, "2028.1.0", "theme version must be bumped");
+assert.strictEqual(manifest.version, "2028.1.1", "theme version must be bumped");
 
 console.log("theme contract tests passed");
