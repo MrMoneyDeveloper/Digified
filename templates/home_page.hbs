@@ -58,11 +58,11 @@
   </script>
 {{/if}}
 
-<main id="main-content">
+<main id="main-content" data-digify-motion-page="home">
   <div class="digify-landing digify-landing--anon">
     {{#if signed_in}}
       <!-- HERO: Signed in but NO segment tag (pending approval) -->
-      <section class="hc-unknown-user pending-approval-hero">
+      <section class="hc-unknown-user pending-approval-hero" data-digify-motion="hero">
         <div class="container">
           <div class="hero-content">
             <span class="hero-label">DIGIFY CX ACCESS HUB</span>
@@ -83,7 +83,7 @@
         <div class="container">
           <h2 class="section-title">Choose your access type</h2>
           
-          <div class="landing-cards-grid two-column">
+          <div class="landing-cards-grid two-column" data-digify-motion-stagger>
             
             <!-- Internal Staff Sign-Up -->
             <article class="landing-card landing-card--staff">
@@ -125,9 +125,9 @@
         </div>
       </section>
     {{else}}
-      <section class="digify-hero">
+      <section class="digify-hero" data-digify-motion="hero">
         <div class="digify-hero__background">
-          <img src="{{settings.home_hero_image}}" alt="Digify CX hero" class="digify-hero__image" data-digify-check="home-hero">
+          <img src="{{settings.home_hero_image}}" alt="Digify CX hero" class="digify-hero__image" data-digify-check="home-hero" width="1920" height="1080" decoding="async" fetchpriority="high">
         </div>
         <div class="digify-hero__overlay"></div>
         <div class="digify-hero__content container">
@@ -144,21 +144,21 @@
         <div class="container">
           <h2 class="digify-brand-strip__title">Our CX Group</h2>
           <div class="digify-brand-carousel">
-            <div class="digify-brand-carousel__track">
-              <img src="{{settings.home_logo_digify_bpo}}" alt="Digify BPO" class="digify-brand-carousel__logo" data-digify-check="home-brand-digify-bpo">
-              <img src="{{asset 'home-logo-cx-leads.png'}}" alt="CX Leads" class="digify-brand-carousel__logo" data-digify-check="home-brand-leads">
-              <img src="{{settings.home_logo_outbound_cx}}" alt="Outbound CX" class="digify-brand-carousel__logo" data-digify-check="home-brand-outbound">
-              <img src="{{settings.home_logo_cx_experts}}" alt="CX Experts" class="digify-brand-carousel__logo" data-digify-check="home-brand-experts">
-              <img src="{{settings.home_logo_digify_bpo}}" alt="Digify BPO" class="digify-brand-carousel__logo">
-              <img src="{{asset 'home-logo-cx-leads.png'}}" alt="CX Leads" class="digify-brand-carousel__logo">
-              <img src="{{settings.home_logo_outbound_cx}}" alt="Outbound CX" class="digify-brand-carousel__logo">
-              <img src="{{settings.home_logo_cx_experts}}" alt="CX Experts" class="digify-brand-carousel__logo">
+            <div class="digify-brand-carousel__track" data-digify-motion-stagger>
+              <img src="{{settings.home_logo_digify_bpo}}" alt="Digify BPO" class="digify-brand-carousel__logo" data-digify-check="home-brand-digify-bpo" width="953" height="293" loading="lazy" decoding="async">
+              <img src="{{asset 'home-logo-cx-leads.png'}}" alt="CX Leads" class="digify-brand-carousel__logo" data-digify-check="home-brand-leads" width="1343" height="568" loading="lazy" decoding="async">
+              <img src="{{settings.home_logo_outbound_cx}}" alt="Outbound CX" class="digify-brand-carousel__logo" data-digify-check="home-brand-outbound" width="990" height="156" loading="lazy" decoding="async">
+              <img src="{{settings.home_logo_cx_experts}}" alt="CX Experts" class="digify-brand-carousel__logo" data-digify-check="home-brand-experts" width="917" height="198" loading="lazy" decoding="async">
+              <img src="{{settings.home_logo_digify_bpo}}" alt="" class="digify-brand-carousel__logo" width="953" height="293" loading="lazy" decoding="async">
+              <img src="{{asset 'home-logo-cx-leads.png'}}" alt="" class="digify-brand-carousel__logo" width="1343" height="568" loading="lazy" decoding="async">
+              <img src="{{settings.home_logo_outbound_cx}}" alt="" class="digify-brand-carousel__logo" width="990" height="156" loading="lazy" decoding="async">
+              <img src="{{settings.home_logo_cx_experts}}" alt="" class="digify-brand-carousel__logo" width="917" height="198" loading="lazy" decoding="async">
             </div>
           </div>
         </div>
       </section>
 
-      <section class="digify-cards container digify-cards--anon">
+      <section class="digify-cards container digify-cards--anon" data-digify-motion-stagger>
         <!-- Card 1: Staff Sign Up -->
         <article class="digify-card digify-card--primary">
           <h3>Digify CX team members</h3>
@@ -182,7 +182,7 @@
 
       {{#if categories}}
         <section class="digify-category-section container">
-          <div class="digify-category-grid">
+          <div class="digify-category-grid" data-digify-motion-stagger>
             {{#each categories}}
               <article class="digify-category-card">
                 <h3><a href="{{url}}">{{name}}</a></h3>
@@ -198,9 +198,9 @@
   </div>
 
   <div class="digify-landing digify-landing--internal">
-    <section class="digify-hero">
+    <section class="digify-hero" data-digify-motion="hero">
       <div class="digify-hero__background">
-        <img src="{{settings.home_hero_image}}" alt="Digify CX hero" class="digify-hero__image">
+        <img src="{{settings.home_hero_image}}" alt="Digify CX hero" class="digify-hero__image" width="1920" height="1080" loading="lazy" decoding="async">
       </div>
       <div class="digify-hero__overlay"></div>
       <div class="digify-hero__content container">
@@ -216,7 +216,7 @@
         <div class="container">
           <h2 class="landing-section-title">Welcome back</h2>
 
-          <div class="landing-cards-grid">
+          <div class="landing-cards-grid" data-digify-motion-stagger>
             <!-- Card 1: Internal support -->
             <article class="landing-card landing-card--primary">
               <div class="landing-card__content">
@@ -256,9 +256,9 @@
   </div>
 
   <div class="digify-landing digify-landing--tenant">
-    <section class="digify-hero">
+    <section class="digify-hero" data-digify-motion="hero">
       <div class="digify-hero__background">
-        <img src="{{settings.digify_cx_building_image}}" alt="Digify CX building" class="digify-hero__image">
+        <img src="{{settings.digify_cx_building_image}}" alt="Digify CX building" class="digify-hero__image" width="1242" height="813" loading="lazy" decoding="async">
       </div>
       <div class="digify-hero__overlay"></div>
       <div class="digify-hero__content container">

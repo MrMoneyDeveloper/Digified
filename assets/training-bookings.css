@@ -886,3 +886,421 @@ body.tb-dragging {
     transition: none;
   }
 }
+
+/* ===== Digify kinetic booking skin (2028.1) ===== */
+.training-bookings {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(2.6rem, 5vw, 5.5rem) 0 clamp(4rem, 7vw, 7rem);
+  background:
+    radial-gradient(circle at 92% 4%, rgba(120, 238, 214, 0.24), transparent 28rem),
+    radial-gradient(circle at -5% 34%, rgba(160, 173, 214, 0.26), transparent 24rem),
+    linear-gradient(180deg, #f7f8fc 0%, #edf4f6 48%, #f5f7fb 100%);
+}
+
+.training-bookings::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: min(36rem, 80vw);
+  aspect-ratio: 1;
+  top: -18rem;
+  right: -12rem;
+  border: 1px solid rgba(31, 30, 58, 0.12);
+  border-radius: 44% 56% 65% 35% / 48% 38% 62% 52%;
+  transform: rotate(18deg);
+}
+
+.training-bookings .container {
+  width: min(calc(100% - (2 * clamp(0.8rem, 3vw, 3rem))), 92rem);
+}
+
+.tb-hero {
+  position: relative;
+  max-width: 68rem;
+  margin-bottom: clamp(1.5rem, 3vw, 2.8rem);
+  padding-left: clamp(0rem, 1vw, 1rem);
+}
+
+.tb-hero::before {
+  content: "";
+  width: clamp(3rem, 8vw, 7rem);
+  height: 0.28rem;
+  display: block;
+  margin-bottom: 1.15rem;
+  border-radius: 999rem;
+  background: linear-gradient(90deg, #28d8bd, #a0add6, #ff775f);
+  box-shadow: 0 0 1.5rem rgba(40, 216, 189, 0.32);
+}
+
+.tb-hero h1 {
+  max-width: 12ch;
+  margin: 0 0 0.9rem;
+  color: #17162f;
+  font-size: clamp(2.25rem, 1.55rem + 3.4vw, 5rem);
+  font-weight: 830;
+  letter-spacing: -0.05em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.tb-intro {
+  max-width: 68ch;
+  color: #4a5570;
+  font-size: clamp(1rem, 0.92rem + 0.35vw, 1.2rem);
+  line-height: 1.68;
+}
+
+.tb-build-tag {
+  border-color: rgba(31, 30, 58, 0.14);
+  background: rgba(255, 255, 255, 0.72);
+  color: #575f7c;
+  backdrop-filter: blur(0.8rem);
+}
+
+.tb-guide {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
+  gap: clamp(0.8rem, 1.5vw, 1.25rem);
+  margin-bottom: clamp(1.4rem, 3vw, 2.5rem);
+}
+
+.tb-guide__card {
+  position: relative;
+  overflow: hidden;
+  min-height: 9rem;
+  padding: clamp(1rem, 2vw, 1.45rem);
+  border-color: rgba(31, 30, 58, 0.12);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 0.8rem 2.2rem rgba(19, 25, 58, 0.08);
+}
+
+.tb-guide__card::after {
+  content: "";
+  position: absolute;
+  width: 5rem;
+  aspect-ratio: 1;
+  right: -2.2rem;
+  bottom: -2.4rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(40, 216, 189, 0.2), transparent 68%);
+}
+
+.tb-guide__eyebrow,
+.tb-room-preview__eyebrow {
+  color: #14736b;
+}
+
+.tb-guide__card p {
+  color: #4a5570;
+}
+
+.tb-app {
+  container-type: inline-size;
+  padding: clamp(0.8rem, 2.2vw, 1.8rem);
+  border: 1px solid rgba(31, 30, 58, 0.13);
+  border-radius: clamp(1.25rem, 2vw, 2rem);
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 2rem 5rem rgba(19, 25, 58, 0.14);
+  backdrop-filter: blur(1rem) saturate(118%);
+}
+
+.tb-alert,
+.tb-filters,
+.tb-room-preview,
+.tb-selection-summary,
+.tb-calendar,
+.tb-placeholder,
+.tb-signed-out {
+  border-color: rgba(31, 30, 58, 0.12);
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 0.7rem 2rem rgba(19, 25, 58, 0.07);
+}
+
+.tb-alert {
+  border-left-width: 0.3rem;
+}
+
+.tb-alert--error {
+  border-left-color: #dc5064;
+  background: #fff3f5;
+}
+
+.tb-alert--success {
+  border-left-color: #15957e;
+  background: #effcf8;
+}
+
+.tb-filters {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: clamp(0.8rem, 1.6vw, 1.25rem);
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+.tb-field label,
+.tb-field .tb-field-label {
+  color: #272644;
+  font-size: 0.82rem;
+  font-weight: 780;
+}
+
+.tb-field .form-control {
+  min-height: 3rem;
+  border: 1px solid rgba(31, 30, 58, 0.2);
+  border-radius: 0.85rem;
+  color: #17162f;
+  font-size: 0.94rem;
+}
+
+.tb-field .form-control:focus {
+  border-color: #1bad9b;
+  box-shadow: 0 0 0 0.25rem rgba(40, 216, 189, 0.18);
+}
+
+.tb-actions {
+  align-self: end;
+  gap: 0.65rem;
+}
+
+.training-bookings .btn {
+  min-height: 3rem;
+  border-radius: 999rem;
+  font-size: 0.86rem;
+  font-weight: 760;
+  padding-inline: 1.15rem;
+}
+
+.training-bookings .btn.btn-primary {
+  border-color: #17162f;
+  background: linear-gradient(115deg, #17162f, #38356d);
+  box-shadow: 0 0.75rem 1.7rem rgba(31, 30, 58, 0.2);
+}
+
+.training-bookings .btn.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(115deg, #242247, #155f65);
+  box-shadow: 0 1rem 2rem rgba(31, 30, 58, 0.24);
+}
+
+.training-bookings .btn.btn-secondary {
+  border-color: rgba(31, 30, 58, 0.2);
+  background: #ffffff;
+  color: #17162f;
+}
+
+.tb-room-preview {
+  overflow: hidden;
+  grid-template-columns: minmax(13rem, 0.8fr) minmax(0, 1.2fr);
+  min-height: 15rem;
+  padding: 0;
+}
+
+.tb-room-preview__media {
+  min-height: 15rem;
+  background: linear-gradient(135deg, #17162f, #2b3158);
+}
+
+.tb-room-preview__image {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.tb-room-preview__body {
+  align-self: center;
+  padding: clamp(1.2rem, 4cqi, 2.5rem);
+}
+
+.tb-room-preview__title,
+.tb-calendar__title,
+.tb-modal-title {
+  color: #17162f;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.tb-room-preview__title {
+  font-size: clamp(1.45rem, 1.1rem + 1.5cqi, 2.25rem);
+}
+
+.tb-room-preview__caption,
+.tb-calendar__subtitle,
+.tb-calendar__footnote,
+.tb-selection-summary__text {
+  color: #4a5570;
+}
+
+.tb-calendar {
+  overflow: hidden;
+}
+
+.tb-calendar__header {
+  padding: clamp(1rem, 2vw, 1.5rem);
+  border-bottom: 1px solid rgba(31, 30, 58, 0.1);
+  background: linear-gradient(120deg, rgba(160, 173, 214, 0.12), rgba(40, 216, 189, 0.08));
+}
+
+.tb-calendar__body {
+  overflow-x: auto;
+  scrollbar-color: rgba(31, 30, 58, 0.28) transparent;
+}
+
+.tb-calendar-grid {
+  min-width: max(48rem, 100%);
+}
+
+.tb-calendar-corner,
+.tb-calendar-day {
+  background: #eeeff7;
+  color: #17162f;
+}
+
+.tb-calendar-day--primary {
+  background: linear-gradient(135deg, #27264d, #174f57);
+  color: #ffffff;
+}
+
+.tb-time-label {
+  background: #f6f7fb;
+  color: #59617c;
+  font-weight: 720;
+}
+
+.tb-cell {
+  min-height: clamp(3.4rem, 7vw, 4.5rem);
+  border-color: rgba(31, 30, 58, 0.08);
+  transition: background 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.tb-cell--open:hover,
+.tb-cell--open:focus-visible {
+  background: rgba(40, 216, 189, 0.12);
+  box-shadow: inset 0 0 0 0.12rem rgba(27, 173, 155, 0.55);
+}
+
+.tb-cell--preview,
+.tb-cell--selected {
+  background: linear-gradient(135deg, #1bad9b, #56dfc8);
+  color: #092c32;
+}
+
+.tb-cell--mirrored {
+  background: rgba(160, 173, 214, 0.3);
+}
+
+.tb-modal {
+  background: rgba(11, 13, 31, 0.72);
+  backdrop-filter: blur(0.75rem);
+}
+
+.tb-modal-dialog {
+  width: min(43rem, calc(100vw - 1.6rem));
+  max-height: min(90vh, 54rem);
+  max-height: min(90dvh, 54rem);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 1.5rem;
+  box-shadow: 0 2.5rem 7rem rgba(8, 10, 28, 0.42);
+}
+
+.tb-modal-header {
+  background: linear-gradient(115deg, #17162f, #2f2d5d 68%, #165e64);
+  color: #ffffff;
+}
+
+.tb-modal-header .tb-modal-title {
+  color: #ffffff;
+}
+
+.tb-modal-close {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.tb-checkbox {
+  min-height: 3rem;
+  border: 1px solid rgba(31, 30, 58, 0.14);
+  border-radius: 0.9rem;
+  background: #f7f8fc;
+  padding: 0.8rem;
+}
+
+@container (min-width: 42rem) {
+  .tb-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .tb-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .tb-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 64rem) {
+  .tb-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  }
+
+  .tb-actions {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .training-bookings {
+    padding-top: 2rem;
+  }
+
+  .tb-app {
+    padding: 0.7rem;
+    border-radius: 1.2rem;
+  }
+
+  .tb-room-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .tb-room-preview__media {
+    min-height: 12rem;
+  }
+
+  .tb-room-preview__body {
+    padding: 1.15rem;
+  }
+}
+
+@media (max-width: 39.999rem) {
+  .training-bookings .container {
+    width: min(calc(100% - 1rem), 92rem);
+  }
+
+  .tb-guide {
+    grid-template-columns: 1fr;
+  }
+
+  .tb-actions,
+  .tb-modal-actions {
+    flex-direction: column;
+  }
+
+  .training-bookings .btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .training-bookings *,
+  .training-bookings *::before,
+  .training-bookings *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

@@ -58,7 +58,7 @@
             <tr>
               <td>
                 {{#is type 'user'}}
-                  <img class="user-avatar" src="{{avatar_url}}" alt="">
+                  <img class="user-avatar" src="{{avatar_url}}" alt="" loading="lazy" decoding="async">
                 {{/is}}
                 <a href="{{url}}" title="{{title}}" class="striped-list-title">
                   {{excerpt title characters=60}}

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Digify booking UI harness</title>
+  <link rel="stylesheet" href="../assets/bootstrap.min.css">
+  <link rel="stylesheet" href="../assets/training-bookings.css">
+  <style>
+    body { margin: 0; }
+    .harness-toolbar {
+      position: sticky;
+      inset-block-start: 0;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+      padding: 0.8rem 1rem;
+      border-bottom: 1px solid rgba(31, 30, 58, 0.12);
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(0.8rem);
+    }
+    .harness-toolbar p { margin: 0 auto 0 0; }
+    .harness-toolbar button { min-height: 2.75rem; }
+  </style>
+</head>
+<body>
+  <div class="harness-toolbar" aria-label="Harness state controls">
+    <p><strong>Non-production harness:</strong> visual states only; it sends no requests.</p>
+    <button class="btn btn-secondary" type="button" data-state="normal">Normal</button>
+    <button class="btn btn-secondary" type="button" data-state="loading">Loading</button>
+    <button class="btn btn-secondary" type="button" data-state="empty">Empty</button>
+    <button class="btn btn-secondary" type="button" data-state="error">Error</button>
+    <button class="btn btn-primary" type="button" data-state="modal">Modal</button>
+  </div>
+
+  <main class="training-bookings" data-training-bookings>
+    <div class="container">
+      <header class="tb-hero">
+        <div class="tb-hero__orb" aria-hidden="true"></div>
+        <p class="tb-eyebrow">Secure room booking</p>
+        <h1>Find a room that fits the moment.</h1>
+        <p class="tb-lead">A local visual fixture for responsive, keyboard, loading, empty, error, and modal checks.</p>
+      </header>
+
+      <section class="tb-guide" aria-label="Booking steps">
+        <article class="tb-guide__card"><span class="tb-guide__number">01</span><h2>Choose a date</h2><p>Start with the day your team needs.</p></article>
+        <article class="tb-guide__card"><span class="tb-guide__number">02</span><h2>Select time</h2><p>Tap or drag across available blocks.</p></article>
+        <article class="tb-guide__card"><span class="tb-guide__number">03</span><h2>Confirm details</h2><p>Add repeat days and a Google Meet if needed.</p></article>
+      </section>
+
+      <section class="tb-app" id="training-booking-root" aria-labelledby="harness-title">
+        <div id="training-booking-alert" class="tb-alert" role="status" hidden></div>
+        <h2 id="harness-title" class="visibility-hidden">Room booking preview</h2>
+
+        <form id="training-booking-filters" class="tb-filters">
+          <label class="tb-field" for="training-date"><span>Date</span><input id="training-date" type="date" value="2026-09-01"></label>
+          <label class="tb-field" for="training-room"><span>Room</span><select id="training-room"><option>Training Room 1</option><option>Training Room 2</option><option>Interview Room</option></select></label>
+          <fieldset id="training-repeat-days" class="tb-repeat-days"><legend>Repeat days</legend><label><input type="checkbox" checked> Tue</label><label><input type="checkbox"> Wed</label><label><input type="checkbox"> Thu</label></fieldset>
+          <div class="tb-actions"><button id="training-load" class="btn btn-primary" type="button">Show availability</button><button id="training-reset" class="btn btn-secondary" type="reset">Reset</button></div>
+        </form>
+
+        <section id="training-room-preview" class="tb-room-preview" aria-label="Selected room">
+          <div class="tb-room-preview__media">
+            <img id="training-room-preview-image" class="tb-room-preview__image" src="../assets/room-preview-training-room-1-v2.jpeg" alt="Training Room 1" width="1600" height="1200">
+            <div id="training-room-preview-placeholder" class="tb-room-preview__placeholder" hidden>Room image unavailable</div>
+          </div>
+          <div class="tb-room-preview__body"><p class="tb-eyebrow">Selected space</p><h2 id="training-room-preview-title">Training Room 1</h2><p id="training-room-preview-caption">Flexible seating for workshops, learning, and team sessions.</p></div>
+        </section>
+
+        <div id="training-booking-loading" class="tb-loading" role="status" hidden>Refreshing room availability…</div>
+        <div id="training-booking-selection" class="tb-selection" aria-live="polite">Selected: Tuesday, 09:00–10:30</div>
+        <section id="training-booking-list" class="tb-calendar" aria-label="Availability">
+          <header class="tb-calendar__header"><h2>Tuesday availability</h2><p>Tap an open block or use the keyboard to select it.</p></header>
+          <div class="tb-calendar__body">
+            <div class="tb-calendar-grid" style="--tb-day-count: 3">
+              <div class="tb-calendar-corner">Time</div><div class="tb-calendar-day tb-calendar-day--primary">Tue 1</div><div class="tb-calendar-day">Wed 2</div><div class="tb-calendar-day">Thu 3</div>
+              <div class="tb-time-label">09:00</div><button class="tb-cell tb-cell--selected" type="button">Selected</button><button class="tb-cell tb-cell--open" type="button">Open</button><button class="tb-cell" type="button" disabled>Booked</button>
+              <div class="tb-time-label">09:30</div><button class="tb-cell tb-cell--selected" type="button">Selected</button><button class="tb-cell tb-cell--open" type="button">Open</button><button class="tb-cell tb-cell--mirrored" type="button">Repeat</button>
+            </div>
+          </div>
+        </section>
+      </section>
+    </div>
+  </main>
+
+  <div id="training-booking-modal" class="tb-modal" role="dialog" aria-modal="true" aria-labelledby="training-booking-modal-title" hidden>
+    <div class="tb-modal-dialog">
+      <header class="tb-modal-header"><h2 id="training-booking-modal-title" class="tb-modal-title">Confirm booking</h2><button class="tb-modal-close" type="button" data-close aria-label="Close">×</button></header>
+      <form id="training-booking-form" class="tb-modal-body">
+        <div class="tb-form-grid">
+          <label class="tb-field" for="training-booking-requester-name"><span>Name</span><input id="training-booking-requester-name" value="Test user"></label>
+          <label class="tb-field" for="training-booking-requester-email"><span>Email</span><input id="training-booking-requester-email" type="email" value="test@example.com"></label>
+        </div>
+        <label class="tb-field" for="training-booking-notes"><span>Notes</span><textarea id="training-booking-notes">Visual fixture only</textarea></label>
+        <label class="tb-checkbox"><input id="training-booking-online" type="checkbox" checked> Add Google Meet</label>
+        <div id="training-booking-attendees"><label class="tb-field"><span>Attendee</span><input type="email" value="attendee@example.com"></label></div>
+        <button id="training-booking-add-attendee" class="btn btn-secondary" type="button">Add attendee</button>
+        <div class="tb-modal-actions"><button id="training-booking-modal-cancel" class="btn btn-secondary" type="button" data-close>Cancel</button><button id="training-booking-submit" class="btn btn-primary" type="submit">Book room</button></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var alertBox = document.getElementById("training-booking-alert");
+      var loading = document.getElementById("training-booking-loading");
+      var list = document.getElementById("training-booking-list");
+      var modal = document.getElementById("training-booking-modal");
+      var controls = document.querySelectorAll("[data-state]");
+      var closeControls = document.querySelectorAll("[data-close]");
+
+      function showState(state) {
+        alertBox.hidden = true;
+        loading.hidden = true;
+        list.hidden = false;
+        modal.hidden = true;
+        if (state === "loading") { loading.hidden = false; list.hidden = true; }
+        if (state === "empty") { alertBox.textContent = "No available rooms match these filters."; alertBox.hidden = false; list.hidden = true; }
+        if (state === "error") { alertBox.textContent = "Unable to verify the booking service response. Please retry."; alertBox.hidden = false; list.hidden = true; }
+        if (state === "modal") { modal.hidden = false; document.getElementById("training-booking-requester-name").focus(); }
+      }
+
+      controls.forEach(function (control) { control.addEventListener("click", function () { showState(control.dataset.state); }); });
+      closeControls.forEach(function (control) { control.addEventListener("click", function () { modal.hidden = true; }); });
+      document.getElementById("training-booking-form").addEventListener("submit", function (event) { event.preventDefault(); modal.hidden = true; });
+      document.addEventListener("keydown", function (event) { if (event.key === "Escape") modal.hidden = true; });
+    })();
+  </script>
+</body>
+</html>

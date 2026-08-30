@@ -1,44 +1,6 @@
 (function () {
   'use strict';
 
-  (function setupGlobalPageLoader() {
-    var minimumVisibleMs = 3000;
-    var startedAt = Date.now();
-    var pageLoaded = document.readyState === "complete";
-
-    function hideLoaderWhenAllowed() {
-      if (!pageLoaded) {
-        return;
-      }
-
-      var elapsed = Date.now() - startedAt;
-      var remaining = Math.max(0, minimumVisibleMs - elapsed);
-
-      window.setTimeout(function () {
-        var loader = document.getElementById("digify-global-loader");
-        if (!loader) {
-          return;
-        }
-
-        loader.classList.add("digify-global-loader--hidden");
-        window.setTimeout(function () {
-          if (loader && loader.parentNode) {
-            loader.parentNode.removeChild(loader);
-          }
-        }, 350);
-      }, remaining);
-    }
-
-    if (pageLoaded) {
-      hideLoaderWhenAllowed();
-    } else {
-      window.addEventListener("load", function () {
-        pageLoaded = true;
-        hideLoaderWhenAllowed();
-      }, { once: true });
-    }
-  })();
-
   const themeSettings =
     (window.HelpCenter && window.HelpCenter.themeSettings) || {};
 
@@ -378,62 +340,6 @@
     });
 
   });
-
-  // Navigation dropdown toggle - stays open
-  (function () {
-    "use strict";
-
-    document.addEventListener("DOMContentLoaded", function () {
-      document.querySelectorAll(".dropdown-menu li").forEach((li) => {
-        li.style.display = "block";
-      });
-
-      const dropdownToggle = document.querySelector(".dropdown-toggle");
-      const dropdownMenu = document.querySelector(".dropdown-menu");
-      const dropdown = document.querySelector(".dropdown");
-
-      if (!dropdownToggle || !dropdownMenu) {
-        console.warn("[Dropdown] Elements not found");
-        return;
-      }
-
-      dropdownToggle.addEventListener("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const isOpen = dropdownMenu.classList.contains("show");
-        dropdownMenu.classList.toggle("show");
-        dropdownToggle.setAttribute("aria-expanded", !isOpen);
-
-        console.log("[Dropdown] Toggled:", !isOpen);
-      });
-
-      dropdown.addEventListener("mouseenter", function () {
-        dropdownMenu.classList.add("show");
-        dropdownToggle.setAttribute("aria-expanded", "true");
-      });
-
-      dropdown.addEventListener("mouseleave", function () {
-        setTimeout(function () {
-          dropdownMenu.classList.remove("show");
-          dropdownToggle.setAttribute("aria-expanded", "false");
-        }, 200);
-      });
-
-      dropdownMenu.addEventListener("click", function (e) {
-        if (e.target.tagName === "A") {
-          dropdownMenu.classList.remove("show");
-        }
-      });
-
-      document.addEventListener("click", function (e) {
-        if (!dropdown.contains(e.target)) {
-          dropdownMenu.classList.remove("show");
-          dropdownToggle.setAttribute("aria-expanded", "false");
-        }
-      });
-    });
-  })();
 
   // Filter Quick Links based on user segment
   (function () {

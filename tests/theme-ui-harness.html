@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Digify theme UI harness</title>
+  <link rel="stylesheet" href="../assets/bootstrap.min.css">
+  <link rel="stylesheet" href="../style.css">
+  <script src="../assets/theme-ui.js" defer></script>
+  <script src="../assets/alpine-csp.min.js" defer></script>
+  <script src="../assets/gsap.min.js" defer></script>
+  <script src="../assets/theme-motion.js" defer></script>
+</head>
+<body>
+  <a class="visually-hidden-focusable" href="#main-content">Skip to content</a>
+  <header class="digify-header" data-digify-motion="reveal">
+    <div class="digify-header__inner container">
+      <a class="digify-header__brand" href="#main-content">
+        <img class="digify-header__logo" src="../settings/digify_cx_logo.png" alt="Digify CX" width="96" height="73">
+        <span class="digify-header__brand-text">Digify CX Group</span>
+      </a>
+      <nav class="digify-header__nav" aria-label="Harness navigation">
+        <details class="dropdown digify-header__disclosure" x-data="digifyHeader" @toggle="sync" @click.outside="close" @keydown.escape.stop="closeAndFocus">
+          <summary class="dropdown-toggle" aria-haspopup="menu" x-ref="toggle" x-bind:aria-expanded="open">Quick Links</summary>
+          <ul class="dropdown-menu" role="menu">
+            <li class="dropdown-menu__label" role="presentation">Actions</li>
+            <li role="none"><a role="menuitem" href="#cards">Support &amp; Requests</a></li>
+            <li role="none"><a role="menuitem" href="#cards">Book Room</a></li>
+            <li class="dropdown-menu__divider" role="separator"></li>
+            <li role="none"><a role="menuitem" href="#cards">Policies</a></li>
+          </ul>
+        </details>
+        <a class="nav-link" href="#cards">Requests</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content" data-digify-motion-page="harness">
+    <section class="digify-hero" data-digify-motion="hero">
+      <div class="digify-hero__background"><img class="digify-hero__image" src="../assets/hero.jpg" alt="" width="1920" height="1080"></div>
+      <div class="digify-hero__overlay"></div>
+      <div class="digify-hero__content container">
+        <p class="digify-hero__eyebrow">Digify CX Access Hub</p>
+        <h1>Move through work with clarity.</h1>
+        <p class="digify-hero__copy">A local fixture for header, hero, cards, motion fallback, and responsive checks.</p>
+      </div>
+    </section>
+    <section id="cards" class="digify-cards container" data-digify-motion-stagger>
+      <article class="digify-card"><h2>Internal support</h2><p>Route workplace requests to the right team.</p><a class="btn btn-primary" href="#main-content">Start request</a></article>
+      <article class="digify-card"><h2>Room booking</h2><p>Choose a space, time, repeat pattern, and Meet option.</p><a class="btn btn-secondary" href="#main-content">Find a room</a></article>
+      <article class="digify-card"><h2>Policies</h2><p>Find current workplace and building guidance.</p><a class="btn btn-secondary" href="#main-content">Browse policies</a></article>
+    </section>
+  </main>
+
+  <footer class="digify-footer" data-digify-motion="reveal">
+    <div class="digify-footer__inner container"><div class="digify-footer__brand"><strong>Digify CX</strong><p>One Group. One Stack. Every CX Touch Point.</p></div></div>
+  </footer>
+</body>
+</html>
