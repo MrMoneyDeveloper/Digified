@@ -212,7 +212,7 @@
       throw new Error("Secure booking is not supported by this browser.");
     }
     if (!bookingSessionPopup || typeof bookingSessionPopup.openSession !== "function") {
-      throw new Error("Secure booking sign-in is not available. Please contact an admin.");
+      throw new Error("Secure booking connection is not available. Please contact an admin.");
     }
   }
 
@@ -392,13 +392,13 @@
           onStatus: function (status) {
             if (status === "popup_blocked") {
               bootstrapFailureMessage =
-                "Secure booking sign-in was blocked. Allow popups and retry.";
+                "Secure booking connection was blocked. Allow popups and retry.";
             } else if (status === "closed") {
               bootstrapFailureMessage =
-                "Secure booking sign-in was cancelled. Please retry.";
+                "Secure booking connection was cancelled. Please retry.";
             } else if (status === "timeout") {
               bootstrapFailureMessage =
-                "Secure booking sign-in timed out. Please retry.";
+                "Secure booking connection timed out. Please retry.";
             } else if (status === "connected") {
               bootstrapFailureMessage = "";
             }

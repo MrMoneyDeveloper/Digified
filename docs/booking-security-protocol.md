@@ -1,19 +1,19 @@
 # Booking signed-client protocol (v1)
 
-This document is the frontend/backend interoperability contract for the Zendesk room-booking client. The browser never receives the permanent or master API credential. HTTPS/TLS supplies transport encryption; this protocol supplies short-lived request authentication and response integrity.
+This document is the frontend/backend interoperability contract for the Zendesk room-booking client. The browser never receives the permanent or master API credential. HTTPS/TLS supplies transport encryption; this protocol supplies short-lived request integrity and signed-response validation.
 
-The Apps Script backend and Zendesk frontend must be deployed in the sequence documented below. Until the authenticated `session_init` popup, signed request verification, and signed responses are all live, the booking UI fails closed with a friendly secure-session error.
+The Apps Script backend and Zendesk frontend must be deployed in the sequence documented below. Until the `session_init` popup, signed request verification, and signed responses are all live, the booking UI fails closed with a friendly secure-session error.
 
 ## Session bootstrap
 
-`action=session_init` is the only unsigned API action the frontend permits. It is **not** a JSON or JSONP endpoint and it must never return a session key through a script tag. It is an authenticated top-level Apps Script popup with this flow:
+`action=session_init` is the only unsigned API action the frontend permits. It is **not** a JSON or JSONP endpoint and it must never return a session key through a script tag. It is a top-level Apps Script popup with this flow:
 
 1. The Zendesk page generates a cryptographically random 16-byte request id, encoded as 32 lowercase hexadecimal characters.
 2. A direct user action opens the Apps Script `/exec` URL in a popup with only `action=session_init`, the exact `window.location.origin`, and the request id in the query string. No key, token, signature, or user data is placed in the URL.
-3. The Apps Script deployment uses `access: "DOMAIN"` and `executeAs: "USER_DEPLOYING"`. Script A requires `Session.getActiveUser().getEmail()` and verifies its domain against the `BOOKING_ALLOWED_DOMAINS` Script Property.
+3. The Apps Script deployment uses `access: "ANYONE_ANONYMOUS"` and `executeAs: "USER_DEPLOYING"`. The deploying Gmail account is the backend execution identity; Apps Script does not authenticate or authorize the Help Center user.
 4. Script A normalizes the requested origin as an exact HTTPS origin and verifies it against the `BOOKING_ALLOWED_ORIGINS` Script Property. Wildcards are not supported.
-5. The authenticated HTML-service shell calls `completeBookingSessionInitPopup(requestId, targetOrigin)` asynchronously with `google.script.run`. The shell HTML itself contains no session key.
-6. The server repeats the origin, request-id, and Workspace-identity checks, creates the temporary session, and returns it only to the authenticated HTML-service runtime.
+5. The HTML-service shell calls `completeBookingSessionInitPopup(requestId, targetOrigin)` asynchronously with `google.script.run`. The shell HTML itself contains no session key.
+6. The server repeats the origin and request-id checks, creates the temporary session, and returns it to the HTML-service runtime.
 7. The popup calls `window.top.opener.postMessage(message, exactAllowedOrigin)` (falling back to `window.opener` only when appropriate). It never uses `"*"` as `targetOrigin`, clears its temporary key reference after posting, and closes.
 8. Zendesk accepts the message only when its type and request id match the outstanding bootstrap, `event.origin` is the Apps Script deployment origin or an HTTPS Apps Script `script.googleusercontent.com` origin, and `event.source` is the opened popup or its HTML-service frame.
 
@@ -21,7 +21,6 @@ The Script Properties required by this boundary are:
 
 ```text
 BOOKING_MASTER_SECRET=<server-only random value created by initializeBookingSecurity>
-BOOKING_ALLOWED_DOMAINS=<comma-separated Workspace domains>
 BOOKING_ALLOWED_ORIGINS=<comma-separated exact HTTPS Zendesk origins>
 ```
 
@@ -49,6 +48,10 @@ A successful response is:
 All times are Unix milliseconds. `expires_at` must be later than `server_time`. The session key is interpreted as UTF-8 bytes when importing the HMAC key. It must be random, temporary, and scoped to the returned session. The frontend imports it as a non-extractable Web Crypto key and retains the session only in JavaScript memory.
 
 The client uses `server_time - browser_time` as a clock offset, refreshes five seconds before expiry, and shares one in-flight bootstrap Promise across concurrent callers. The session key is never persisted in HTML, cookies, `localStorage`, or `sessionStorage`.
+
+### Deliberate trust boundary
+
+Zendesk login, IT approval, tags, segments, and page permissions remain the only end-user authorization layer. Apps Script does not validate the requester's role, organization, email domain, segment, or approval status. Because the web app is anonymously reachable and `session_init` performs no end-user authentication, this design removes permanent browser credentials and protects request integrity, but it does not make the public Apps Script endpoint an authorization boundary. The public URL and browser requests remain visible in developer tools by design.
 
 ## Request business-parameter canonicalization
 
@@ -156,16 +159,16 @@ The frontend validates in this order:
 5. Calculate HMAC-SHA256 over the exact response string-to-sign and compare it with `signature`.
 6. Only after successful verification may UI/API error handling inspect or display returned booking data.
 
-Any authentication failure clears the session and retries once through a fresh `session_init`. Any hash/signature/malformed-response failure clears the session and fails closed without displaying unverified data.
+Any session/signature failure clears the session and retries once through a fresh `session_init`. Any hash/signature/malformed-response failure clears the session and fails closed without displaying unverified data.
 
 ## Deployment and verification order
 
 Do not publish the Zendesk frontend before the matching Apps Script deployment is ready.
 
-1. In the Apps Script project, set `BOOKING_ALLOWED_DOMAINS` and the exact `BOOKING_ALLOWED_ORIGINS` value in Script Properties. Keep `BOOKING_MASTER_SECRET` there only; never copy it into Zendesk or GitHub.
+1. In the Apps Script project, set the exact `BOOKING_ALLOWED_ORIGINS` value in Script Properties. Keep `BOOKING_MASTER_SECRET`, `ZD_TOKEN`, and every other permanent credential there only; never copy them into Zendesk or GitHub.
 2. Copy the repository `apps_scripts/script0.json` content into the Apps Script file named `appsscript.json`, and copy the updated `scriptA.gs`. Leave the existing Script B/C business integrations intact.
-3. Run `initializeBookingSecurity()`, then `verifyBookingSecurityConfiguration()` and `selfTestBookingSecurityProtocol()` from the editor. Confirm the origin/domain checks are configured and no secret is returned.
-4. Create a new Apps Script web-app deployment/version with `DOMAIN` access and execution as the deploying user. Do not select anonymous access.
-5. While signed into the company Workspace account, test the deployment through Zendesk's **Connect securely** action. A bare `/exec?action=session_init` URL is intentionally incomplete because it lacks the allowlisted origin and random request id.
+3. Run `initializeBookingSecurity()`, then `verifyBookingSecurityConfiguration()` and `selfTestBookingSecurityProtocol()` from the editor. Confirm the exact origin is configured and no secret is returned.
+4. Create a new Apps Script web-app deployment/version with `ANYONE_ANONYMOUS` access and execution as the deploying user.
+5. Test the deployment through Zendesk's **Connect securely** action. No Google Workspace sign-in is required. A bare `/exec?action=session_init` URL is intentionally incomplete because it lacks the allowlisted origin and random request id.
 6. In browser developer tools, confirm `session_init` is a popup navigation, not a JSONP script request; the URL contains no session key; the message target is the exact Zendesk origin; and normal `sessions`, `days`, and `book` requests remain signed JSONP.
-7. Only after popup bootstrap and signed availability responses pass, upload the matching Zendesk theme package. Test availability, repeat bookings, booking submission, requester identity, Calendar/Meet creation, images/fallbacks, expiry refresh, popup cancellation, and popup blocking before production publication.
+7. Only after popup bootstrap and signed availability responses pass, upload the matching Zendesk theme package. Test availability, repeat bookings, booking submission, requester details, cancellation, Calendar/Meet creation, images/fallbacks, expiry refresh, popup cancellation, and popup blocking before production publication.

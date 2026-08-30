@@ -12,7 +12,7 @@ powershell -ExecutionPolicy Bypass -File .\package-theme.ps1
 
 The script runs `tar -a -c -f digified-theme.zip assets settings templates translations script.js style.css manifest.json settings_schema.json`, ensuring the resulting `digified-theme.zip` is ready for import with POSIX-style paths. Use the `-ExecutionPolicy Bypass` flag if your PowerShell policy blocks local scripts.
 
-Run `node tests/booking-security.test.js`, `node tests/booking-session-popup.test.js`, and `node tests/theme-contract.test.js` to verify the signed-client cryptography, exact-origin popup bootstrap, room fallbacks, and backend/frontend alignment metadata.
+Run `node tests/booking-security.test.js`, `node tests/booking-session-popup.test.js`, `node tests/booking-backend-boundary.test.js`, and `node tests/theme-contract.test.js` to verify the signed-client cryptography, exact-origin popup bootstrap, browser-credential boundary, room fallbacks, and backend/frontend alignment metadata.
 
 ### GitHub pull deployment
 
@@ -47,7 +47,7 @@ Zendesk theme settings (Guide Admin > Customize > Theme settings):
 - Optional: set `room_booking_iframe_url` if you want to embed a full booking UI instead of the API flow.
 - Optional: set `room_booking_internal_tag` if internal users need a specific tag to see booking links.
 
-The frontend opens the unsigned `session_init` action in a Google Workspace-authenticated popup, accepts the short-lived session only through exact-origin `postMessage`, stores it in memory only, signs every normal request, and verifies every normal response. See `docs/booking-security-protocol.md` for the exact contract and deployment order. Apps Script continues to handle Zendesk ticket creation internally, so the client does not call the Zendesk API directly.
+The frontend opens the unsigned `session_init` action in a top-level popup, accepts the short-lived session only through exact-origin `postMessage`, stores it in memory only, signs every normal request, and verifies every normal response. Zendesk remains responsible for login, segments, and booking-page access; Apps Script performs no second user-authorization check. See `docs/booking-security-protocol.md` for the exact contract and deployment order. Apps Script continues to handle Zendesk ticket creation internally, so the client does not call the Zendesk API directly.
 
 Custom page setup:
 - Create a Zendesk Guide custom page with slug `room_booking`.

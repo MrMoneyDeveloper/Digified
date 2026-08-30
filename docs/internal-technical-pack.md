@@ -151,7 +151,6 @@ Current known pilot properties:
 | `MEET_CALENDAR_ID` | `primary` | Script C calendar target |
 | `TRAINING_DEFAULT_TZ` | `Africa/Johannesburg` | Used by Script A and Script C |
 | `BOOKING_MASTER_SECRET` | Apps Script Script Properties only | Sensitive; created by `initializeBookingSecurity()` and never placed in sheets, theme settings, frontend code, or the repository |
-| `BOOKING_ALLOWED_DOMAINS` | Workspace domain(s) | Comma-separated domains authorized for `session_init` |
 | `BOOKING_ALLOWED_ORIGINS` | Exact Zendesk HTTPS origin(s) | Comma-separated origins; no paths or wildcards |
 | `ZD_SUBDOMAIN` | client-specific | Override Script B hardcoded fallback |
 | `ZD_EMAIL` | client-specific | Zendesk API identity |
@@ -270,12 +269,12 @@ powershell -ExecutionPolicy Bypass -File .\package-theme.ps1
 
 The legacy HTTP `action=init` endpoint is retired. From the Apps Script editor:
 
-- configure `BOOKING_ALLOWED_DOMAINS` and `BOOKING_ALLOWED_ORIGINS` in Script Properties
+- configure `BOOKING_ALLOWED_ORIGINS` in Script Properties
 - run `initializeBookingDataModel()` when the sheet structure needs initialization
 - run `initializeBookingSecurity()` to create/retain the server-only master secret and revoke the legacy key
 - run `verifyBookingSecurityConfiguration()` and `selfTestBookingSecurityProtocol()`
 
-The only unsigned browser action is the top-level, Workspace-authenticated `session_init` popup. It does not return JSONP; its temporary session is delivered to the exact allowlisted Zendesk origin with `postMessage`.
+The only unsigned browser action is the top-level `session_init` popup. It does not return JSONP; its temporary session is delivered to the exact allowlisted Zendesk origin with `postMessage`. Zendesk remains responsible for end-user login, segments, and page access.
 
 Reference:
 
@@ -422,10 +421,10 @@ Current pilot wiring exposes only the public Apps Script URL. Authentication use
 ### Apps Script Deployment
 
 1. Copy `apps_scripts/script0.json` into `appsscript.json`, save Script A, and leave Script B/C integrations intact.
-2. Set `BOOKING_ALLOWED_DOMAINS` and exact `BOOKING_ALLOWED_ORIGINS` Script Properties.
+2. Set the exact `BOOKING_ALLOWED_ORIGINS` Script Property.
 3. Run `initializeBookingSecurity()`, `verifyBookingSecurityConfiguration()`, and `selfTestBookingSecurityProtocol()`.
-4. Create a new version and deploy the web app with `DOMAIN` access as `USER_DEPLOYING`.
-5. Test through Zendesk's **Connect securely** popup while signed into the company Workspace account.
+4. Create a new version and deploy the web app with `ANYONE_ANONYMOUS` access as `USER_DEPLOYING`.
+5. Test through Zendesk's **Connect securely** popup; no Google Workspace end-user account is required.
 
 ### Theme Deployment
 

@@ -580,7 +580,7 @@
       bootstrap: function () {
         if (!bookingSessionPopup || typeof bookingSessionPopup.openSession !== "function") {
           return Promise.reject(
-            new Error("Secure booking sign-in is not available.")
+            new Error("Secure booking connection is not available.")
           );
         }
         return bookingSessionPopup.openSession({
@@ -588,13 +588,13 @@
           onStatus: function (status) {
             if (status === "popup_blocked") {
               setAlert(
-                "Secure booking sign-in was blocked. Allow popups and retry.",
+                "Secure booking connection was blocked. Allow popups and retry.",
                 "error"
               );
             } else if (status === "closed") {
-              setAlert("Secure booking sign-in was cancelled. Please retry.", "error");
+              setAlert("Secure booking connection was cancelled. Please retry.", "error");
             } else if (status === "timeout") {
-              setAlert("Secure booking sign-in timed out. Please retry.", "error");
+              setAlert("Secure booking connection timed out. Please retry.", "error");
             }
           }
         });

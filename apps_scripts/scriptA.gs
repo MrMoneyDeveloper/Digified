@@ -10,11 +10,12 @@
  * - Dynamic sessions (Mon-Fri)
  * - Signed JSONP GET transport retained for Zendesk Help Centre business calls
  * - session_init is the only unsigned browser action and is served as an
- *   authenticated top-level popup; a session key is never returned as JSONP
+ *   top-level popup; a session key is never returned as JSONP
  * - Normal requests use SHA-256 + HMAC-SHA256 + timestamp + nonce
  * - Normal responses are SHA-256 hashed and HMAC-SHA256 signed
  * - Permanent master secret lives only in Apps Script Script Properties
- * - session_init requires a DOMAIN-restricted Google Workspace web-app deployment
+ * - Zendesk remains responsible for Help Center login, segments, and page access
+ * - Apps Script runs as the deploying account and performs no end-user authorization
  * - Legacy init/get_api_key/API-key authentication is retired
  * - Optional SESSIONS sheet overrides (capacity/cancel/manual reserve)
  ************************************************************/
@@ -79,7 +80,7 @@ function doGet(e) {
 
   try {
     // session_init is the only unsigned frontend action. It must remain a
-    // top-level authenticated popup and must never flow through JSON/JSONP.
+    // top-level popup and must never flow through JSON/JSONP.
     if (action === "session_init") {
       return bookingServeSessionInitPopup_(params, requestId);
     }
@@ -113,12 +114,6 @@ function doGet(e) {
       action,
       params,
       requestId
-    );
-
-    bookingEnforceRequesterIdentity_(
-      action,
-      params,
-      securityContext
     );
 
     let result;
@@ -170,7 +165,7 @@ function doGet(e) {
           weekdays: CFG.RULES.WEEKDAYS.join(","),
           allow_get_booking: CFG.ALLOW_GET_BOOKING,
           security_version: BOOKING_SECURITY_CFG.VERSION,
-          authenticated_user: securityContext.userEmail,
+          session_scope: securityContext.scope,
         },
         "Health OK"
       );
@@ -254,22 +249,12 @@ function doPost(e) {
       requestId
     );
 
-    bookingEnforceRequesterIdentity_(
-      action,
-      body,
-      securityContext
-    );
-
     let result;
 
     if (action === "book") {
       result = handleBook_(body, requestId);
     } else if (action === "cancel") {
-      result = bookingHandleSecureCancel_(
-        body,
-        requestId,
-        securityContext
-      );
+      result = handleCancel_(body, requestId);
     }
 
     result.meta = {
@@ -838,7 +823,8 @@ function handleCancel_(body, requestId) {
  * - HTTPS/TLS provides transport encryption.
  * - Requests use SHA-256 + HMAC-SHA256 + timestamp + nonce.
  * - Responses are SHA-256 hashed + HMAC-SHA256 signed.
- * - session_init is authenticated with the active Google Workspace user.
+ * - Zendesk controls Help Center login and booking-page access. Apps Script does
+ *   not duplicate user, role, tag, segment, domain, or IT-approval checks.
  *
  * Frontend contract:
  * docs/booking-security-protocol.md
@@ -849,19 +835,17 @@ const BOOKING_SECURITY_CFG = Object.freeze({
 
   // Keep these values aligned with the frontend contract in GitHub.
   FRONTEND_BASELINE_COMMIT: "703de41821eb4058a7bd6ef37980532bb29c45ea",
-  FRONTEND_PROTOCOL_DOC_SHA: "b7f77952cfea0991b55332f44eda438b63ec49d4",
+  FRONTEND_PROTOCOL_DOC_SHA: "4bec3fb186064950d2ece0d0077abfb76421b06b",
   FRONTEND_SECURITY_JS_SHA: "b58d62a4f49f25b843bd0899bbca98edfaf84bcdaf0224a5d5c71cc1ee7aec90",
-  FRONTEND_POPUP_JS_SHA: "0dd5b81d1e53dc1e046a7d78772b9f8ab52ccc09cc75b446265b6ae5f6018b77",
-  FRONTEND_BOOKING_CLIENT_SHA: "f4446745ff9954609d4150a5ef5a0446d22189873e4dd515596612f37502f14d",
-  FRONTEND_LEGACY_BOOKING_CLIENT_SHA: "afb149fc77875f41a23d5c94871de0033fa5f21fc3fc3f5208673d03dccfdb90",
+  FRONTEND_POPUP_JS_SHA: "50337d24e6f866d249becd135b7fab92225dac662ab73a287b84865d6de17fb4",
+  FRONTEND_BOOKING_CLIENT_SHA: "d4659ea25b61233e7d5bdce171c31f73c320443bc776266f441fc09ee372bf33",
+  FRONTEND_LEGACY_BOOKING_CLIENT_SHA: "6d9ff3b660e0e89e32a034797aa3fafc163ecda50c2abf9b5a75b16e710f3fb9",
   FRONTEND_THEME_SCRIPT_SHA: "236791d6af9e1afe5fdb8664e114f0d0b24c669e9bc5141a5155543b67ef3ee3",
   FRONTEND_CONFIG_JS_SHA: "c62f11b9f1aeba7144d962528cb362bbcc639b4de8d2a3e6dd74c6be2954940c",
-  THEME_VERSION: "2028.2.0",
-  REQUIRED_WEBAPP_ACCESS: "DOMAIN",
+  THEME_VERSION: "2028.2.1",
+  REQUIRED_WEBAPP_ACCESS: "ANYONE_ANONYMOUS",
   REQUIRED_EXECUTE_AS: "USER_DEPLOYING",
-  REQUIRED_USERINFO_SCOPE: "https://www.googleapis.com/auth/userinfo.email",
   MASTER_SECRET_PROP: "BOOKING_MASTER_SECRET",
-  ALLOWED_DOMAINS_PROP: "BOOKING_ALLOWED_DOMAINS",
   ALLOWED_ORIGINS_PROP: "BOOKING_ALLOWED_ORIGINS",
   LEGACY_API_KEY_PROP: "TRAINING_API_KEY",
   POPUP_MESSAGE_TYPE: "digify.booking.session.v1",
@@ -895,7 +879,6 @@ const BOOKING_SECURITY_CFG = Object.freeze({
  * - creates a fresh server-only master secret if one does not already exist
  * - removes the legacy exposed TRAINING_API_KEY Script Property
  * - overwrites the legacy SETTINGS-sheet value if the sheet exists
- * - defaults BOOKING_ALLOWED_DOMAINS to the deployer's Workspace domain
  * - requires BOOKING_ALLOWED_ORIGINS to contain the exact Zendesk HTTPS origin
  *
  * The master secret is never returned.
@@ -911,24 +894,6 @@ function initializeBookingSecurity() {
 
   // Revoke the formerly browser-visible key.
   props.deleteProperty(BOOKING_SECURITY_CFG.LEGACY_API_KEY_PROP);
-
-  let allowedDomains = bookingGetAllowedDomains_();
-  if (!allowedDomains.length) {
-    const effectiveEmail = String(Session.getEffectiveUser().getEmail() || "")
-      .trim()
-      .toLowerCase();
-    const inferredDomain = bookingEmailDomain_(effectiveEmail);
-
-    if (!inferredDomain || inferredDomain === "gmail.com" || inferredDomain === "googlemail.com") {
-      throw new Error(
-        "BOOKING_ALLOWED_DOMAINS is not configured and a safe Workspace domain could not be inferred. " +
-        "Add BOOKING_ALLOWED_DOMAINS in Project Settings > Script Properties (for example: cxexperts.co.za), then run initializeBookingSecurity() again."
-      );
-    }
-
-    props.setProperty(BOOKING_SECURITY_CFG.ALLOWED_DOMAINS_PROP, inferredDomain);
-    allowedDomains = [inferredDomain];
-  }
 
   const allowedOrigins = bookingGetAllowedOrigins_();
   if (!allowedOrigins.length) {
@@ -959,15 +924,12 @@ function initializeBookingSecurity() {
     ok: true,
     security_version: BOOKING_SECURITY_CFG.VERSION,
     master_secret_configured: true,
-    master_secret_fingerprint: bookingSha256Hex_(masterSecret).slice(0, 12),
-    allowed_domains: allowedDomains,
     allowed_origins: allowedOrigins,
     legacy_api_key_revoked: !props.getProperty(BOOKING_SECURITY_CFG.LEGACY_API_KEY_PROP),
     deployment_requirements: {
       webapp_access: BOOKING_SECURITY_CFG.REQUIRED_WEBAPP_ACCESS,
       execute_as: BOOKING_SECURITY_CFG.REQUIRED_EXECUTE_AS,
-      userinfo_scope: BOOKING_SECURITY_CFG.REQUIRED_USERINFO_SCOPE,
-      anonymous_supported: false,
+      anonymous_transport: true,
     },
   };
 }
@@ -985,7 +947,6 @@ function rotateBookingMasterSecret() {
   return {
     ok: true,
     rotated_at: new Date().toISOString(),
-    master_secret_fingerprint: bookingSha256Hex_(masterSecret).slice(0, 12),
   };
 }
 
@@ -995,40 +956,20 @@ function rotateBookingMasterSecret() {
 function verifyBookingSecurityConfiguration() {
   const props = PropertiesService.getScriptProperties();
   const masterSecret = props.getProperty(BOOKING_SECURITY_CFG.MASTER_SECRET_PROP) || "";
-  const allowedDomains = bookingGetAllowedDomains_();
   const allowedOrigins = bookingGetAllowedOrigins_();
-  const activeEmail = String(Session.getActiveUser().getEmail() || "")
-    .trim()
-    .toLowerCase();
-  const effectiveEmail = String(Session.getEffectiveUser().getEmail() || "")
-    .trim()
-    .toLowerCase();
-  const activeDomain = bookingEmailDomain_(activeEmail);
-
   return {
-    ok: !!masterSecret && allowedDomains.length > 0 && allowedOrigins.length > 0,
+    ok: !!masterSecret && allowedOrigins.length > 0,
     security_version: BOOKING_SECURITY_CFG.VERSION,
     master_secret_configured: !!masterSecret,
-    master_secret_fingerprint: masterSecret
-      ? bookingSha256Hex_(masterSecret).slice(0, 12)
-      : "",
-    allowed_domains: allowedDomains,
     allowed_origins: allowedOrigins,
-    active_user_email_available: !!activeEmail,
-    active_user_domain: activeDomain,
-    active_user_domain_allowed:
-      !!activeDomain && allowedDomains.indexOf(activeDomain) >= 0,
-    effective_user: effectiveEmail,
     deployment_requirements: {
       webapp_access: BOOKING_SECURITY_CFG.REQUIRED_WEBAPP_ACCESS,
       execute_as: BOOKING_SECURITY_CFG.REQUIRED_EXECUTE_AS,
-      userinfo_scope: BOOKING_SECURITY_CFG.REQUIRED_USERINFO_SCOPE,
-      anonymous_supported: false,
+      anonymous_transport: true,
     },
     important_note:
-      "Running this function in the editor does not prove web-app identity. " +
-      "The deployed /exec endpoint must be DOMAIN-restricted and action=session_init " +
-      "must return an authenticated Workspace user.",
+      "Zendesk controls end-user login and booking-page access. Apps Script " +
+      "runs as USER_DEPLOYING and keeps permanent credentials server-side.",
   };
 }
 
@@ -1048,14 +989,13 @@ function getBookingSecurityContractInfo() {
     frontend_theme_script_sha256_normalized: BOOKING_SECURITY_CFG.FRONTEND_THEME_SCRIPT_SHA,
     frontend_config_js_sha256: BOOKING_SECURITY_CFG.FRONTEND_CONFIG_JS_SHA,
     theme_version: BOOKING_SECURITY_CFG.THEME_VERSION,
-    transport: "Authenticated popup/postMessage bootstrap + signed JSONP business requests",
-    session_init_auth: "Top-level Google Workspace DOMAIN popup + active user identity",
+    transport: "Exact-origin popup/postMessage bootstrap + signed JSONP business requests",
+    session_init_auth: "No Apps Script end-user authorization; Zendesk controls page access",
     popup_message_type: BOOKING_SECURITY_CFG.POPUP_MESSAGE_TYPE,
     popup_target_origin_property: BOOKING_SECURITY_CFG.ALLOWED_ORIGINS_PROP,
     required_webapp_access: BOOKING_SECURITY_CFG.REQUIRED_WEBAPP_ACCESS,
     required_execute_as: BOOKING_SECURITY_CFG.REQUIRED_EXECUTE_AS,
-    required_userinfo_scope: BOOKING_SECURITY_CFG.REQUIRED_USERINFO_SCOPE,
-    anonymous_deployment_supported: false,
+    anonymous_deployment_supported: true,
     unsigned_actions: ["session_init"],
     request_hash: "SHA-256",
     request_signature: "HMAC-SHA256",
@@ -1068,7 +1008,7 @@ function getBookingSecurityContractInfo() {
 
 
 /**
- * Serve the authenticated session bootstrap shell. The HTML contains only the
+ * Serve the temporary-session bootstrap shell. The HTML contains only the
  * exact target origin and a one-time request id; it never contains a session key.
  */
 function bookingServeSessionInitPopup_(params, serverRequestId) {
@@ -1080,10 +1020,6 @@ function bookingServeSessionInitPopup_(params, serverRequestId) {
     bootstrapRequestId = bookingRequireBootstrapRequestId_(
       params && params.request_id
     );
-
-    // Force the Google Workspace identity check while session_init is running in
-    // the top-level popup. The RPC completion path repeats this authorization.
-    bookingAuthorizeSessionInit_();
 
     return bookingCreateSessionPopupHtml_(
       targetOrigin,
@@ -1107,9 +1043,9 @@ function bookingServeSessionInitPopup_(params, serverRequestId) {
 }
 
 /**
- * Public only so authenticated HtmlService can call it via google.script.run.
- * The origin, request id, Workspace identity, and Script Properties are all
- * revalidated before a short-lived session is generated.
+ * Public so HtmlService can call it through google.script.run. The exact origin,
+ * request id, and Script Properties are revalidated before a short-lived session
+ * is generated. Zendesk, not Apps Script, controls end-user page access.
  */
 function completeBookingSessionInitPopup(bootstrapRequestId, targetOrigin) {
   let requestId = "";
@@ -1151,14 +1087,14 @@ function bookingCreateSessionPopupHtml_(targetOrigin, requestId, initialError) {
     "<!doctype html>",
     '<html lang="en"><head><base target="_top"><meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width,initial-scale=1">',
-    "<title>Secure booking sign-in</title>",
+    "<title>Secure booking session</title>",
     "<style>",
     "html{font-family:Arial,sans-serif;background:#f6f8fb;color:#191936}",
     "body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box}",
     ".card{width:min(420px,100%);background:#fff;border:1px solid #d9dee8;border-radius:18px;padding:28px;box-shadow:0 16px 44px rgba(25,25,54,.12)}",
     "h1{font-size:1.35rem;margin:0 0 12px}p{line-height:1.55;margin:0;color:#52617d}",
-    "</style></head><body><main class=\"card\"><h1>Secure booking sign-in</h1>",
-    '<p id="status" role="status">Confirming your company Google Workspace account...</p></main>',
+    "</style></head><body><main class=\"card\"><h1>Secure booking session</h1>",
+    '<p id="status" role="status">Preparing a temporary booking session...</p></main>',
     "<script>",
     "(function(){'use strict';",
     "var targetOrigin=" + originJson + ";",
@@ -1175,7 +1111,7 @@ function bookingCreateSessionPopupHtml_(targetOrigin, requestId, initialError) {
     "}",
     "function finish(message){",
     "var opener=targetWindow();",
-    "if(!opener){scrub(message);status.textContent='Return to the Help Center and retry secure sign-in.';return;}",
+    "if(!opener){scrub(message);status.textContent='Return to the Help Center and retry the secure connection.';return;}",
     "opener.postMessage(message,targetOrigin);",
     "var ok=message&&message.success===true;scrub(message);message=null;",
     "status.textContent=ok?'Secure session established. This window will close.':'Secure booking session could not be established. Close this window and retry.';",
@@ -1189,7 +1125,7 @@ function bookingCreateSessionPopupHtml_(targetOrigin, requestId, initialError) {
   ].join("");
 
   return HtmlService.createHtmlOutput(html)
-    .setTitle("Secure booking sign-in")
+    .setTitle("Secure booking session")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
 }
 
@@ -1197,10 +1133,10 @@ function bookingCreateStandaloneBootstrapErrorHtml_() {
   return HtmlService.createHtmlOutput(
     "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">" +
       "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
-      "<title>Secure booking sign-in</title></head><body>" +
+      "<title>Secure booking session</title></head><body>" +
       "<p>Secure booking session could not be established. Close this window and retry.</p>" +
       "</body></html>"
-  ).setTitle("Secure booking sign-in");
+  ).setTitle("Secure booking session");
 }
 
 function bookingJsonForInlineScript_(value) {
@@ -1213,29 +1149,29 @@ function bookingJsonForInlineScript_(value) {
 }
 
 /**
- * Generate session material only after the authenticated popup RPC has repeated
- * the exact-origin, request-id, and active Workspace user checks.
+ * Generate session material after the popup RPC has repeated the exact-origin
+ * and request-id checks.
  *
  * SECURITY BOUNDARY:
  * The web app deployment MUST use:
  *   executeAs: USER_DEPLOYING
- *   access: DOMAIN
+ *   access: ANYONE_ANONYMOUS
  *
- * Anonymous deployments are intentionally unsupported because they do not provide
- * a trustworthy active Workspace identity. session_init is rejected unless Apps
- * Script can identify an active user whose email domain is explicitly allowed.
+ * Zendesk remains the end-user login and page-authorization boundary. This
+ * bootstrap does not duplicate Zendesk user, role, tag, segment, or domain checks.
+ * Its purpose is to keep permanent credentials out of browser-delivered code and
+ * provide short-lived request-integrity keys over HTTPS.
  */
 function bookingHandleSessionInit_(requestId) {
-  const identity = bookingAuthorizeSessionInit_();
   const now = Date.now();
   const expiresAt = now + BOOKING_SECURITY_CFG.SESSION_TTL_MS;
   const masterSecret = bookingGetMasterSecret_();
 
   const tokenPayload = {
-    e: identity.email,
     exp: expiresAt,
     iat: now,
     jti: bookingRandomHex32_(),
+    scope: "booking",
     v: BOOKING_SECURITY_CFG.VERSION,
   };
 
@@ -1262,7 +1198,7 @@ function bookingHandleSessionInit_(requestId) {
 }
 
 /**
- * Verify a signed business request and return the authenticated session context.
+ * Verify a signed business request and return its short-lived session context.
  *
  * params must be the exact business/security parameter object used by the
  * transport. For JSONP, callback and _ts are excluded from hashing.
@@ -1421,88 +1357,6 @@ function bookingVerifySignedRequest_(action, params, requestId) {
 }
 
 /**
- * Bind a booking identity to the authenticated Workspace user.
- * This prevents a valid session holder from changing requester_email and
- * signing a booking as another person.
- */
-function bookingEnforceRequesterIdentity_(action, params, context) {
-  const normalizedAction = String(action || "").toLowerCase();
-
-  if (normalizedAction !== "book") return;
-
-  const requesterEmail = String(
-    (params && params.requester_email) || ""
-  ).trim().toLowerCase();
-
-  if (!requesterEmail) {
-    throw bookingSecurityErrorWithContext_(
-      "REQUESTER_EMAIL_REQUIRED",
-      "Requester email is required.",
-      400,
-      context
-    );
-  }
-
-  if (requesterEmail !== context.userEmail) {
-    throw bookingSecurityErrorWithContext_(
-      "REQUESTER_IDENTITY_MISMATCH",
-      "Booking requester does not match the authenticated user.",
-      403,
-      context
-    );
-  }
-}
-
-/**
- * Only allow the owner of a booking to cancel it.
- */
-function bookingHandleSecureCancel_(body, requestId, context) {
-  const bookingId = String((body && body.booking_id) || "").trim();
-  if (!bookingId) {
-    return fail_(
-      requestId,
-      "MISSING_BOOKING_ID",
-      "booking_id is required",
-      400
-    );
-  }
-
-  const ss = getSS_();
-  const sh = ss && ss.getSheetByName(CFG.SHEETS.BOOKINGS);
-  if (!sh) {
-    return fail_(requestId, "NOT_FOUND", "Booking not found.", 404);
-  }
-
-  const values = sh.getDataRange().getValues();
-  if (values.length < 2) {
-    return fail_(requestId, "NOT_FOUND", "Booking not found.", 404);
-  }
-
-  const idx = indexMap_(values[0].map(String));
-
-  for (let i = 1; i < values.length; i++) {
-    if (String(values[i][idx.booking_id] || "") !== bookingId) continue;
-
-    const ownerEmail = String(values[i][idx.requester_email] || "")
-      .trim()
-      .toLowerCase();
-
-    if (!ownerEmail || ownerEmail !== context.userEmail) {
-      return fail_(
-        requestId,
-        "CANCEL_NOT_AUTHORIZED",
-        "You are not authorized to cancel this booking.",
-        403
-      );
-    }
-
-    return handleCancel_(body, requestId);
-  }
-
-  return fail_(requestId, "NOT_FOUND", "Booking not found.", 404);
-}
-
-/**
  * Attach signed security metadata to every normal business response.
  */
 function bookingSignResponse_(response, context) {
@@ -1610,110 +1464,6 @@ function bookingIsAllowedAction_(action, method) {
   return false;
 }
 
-function bookingAuthorizeSessionInit_() {
-  const activeEmail = String(Session.getActiveUser().getEmail() || "")
-    .trim()
-    .toLowerCase();
-
-  if (!activeEmail) {
-    throw bookingSecurityError_(
-      "SESSION_INIT_AUTH_REQUIRED",
-      "Secure booking requires a Workspace-authenticated Apps Script deployment. " +
-        "Redeploy the web app with access restricted to the Workspace domain; anonymous access is not supported.",
-      401
-    );
-  }
-
-  const domain = bookingEmailDomain_(activeEmail);
-  const allowedDomains = bookingGetAllowedDomains_();
-
-  if (!allowedDomains.length) {
-    throw bookingSecurityError_(
-      "SESSION_INIT_NOT_CONFIGURED",
-      "Secure booking authorization is not configured.",
-      500
-    );
-  }
-
-  if (allowedDomains.indexOf(domain) < 0) {
-    throw bookingSecurityError_(
-      "SESSION_INIT_FORBIDDEN",
-      "This Google Workspace account is not authorized for booking.",
-      403
-    );
-  }
-
-  return {
-    email: activeEmail,
-    domain: domain,
-  };
-}
-
-/**
- * Safe manual diagnostic for the current Apps Script identity boundary.
- * Run from the editor after changing the manifest/deployment.
- * The definitive runtime test is the Zendesk-generated popup URL containing an
- * allowlisted origin and a cryptographically random 32-character request id.
- */
-function diagnoseBookingSessionInitAuth() {
-  const activeEmail = String(Session.getActiveUser().getEmail() || "")
-    .trim()
-    .toLowerCase();
-  const effectiveEmail = String(Session.getEffectiveUser().getEmail() || "")
-    .trim()
-    .toLowerCase();
-  const allowedDomains = bookingGetAllowedDomains_();
-  const allowedOrigins = bookingGetAllowedOrigins_();
-  const activeDomain = bookingEmailDomain_(activeEmail);
-
-  return {
-    ok:
-      !!activeEmail &&
-      !!activeDomain &&
-      allowedDomains.indexOf(activeDomain) >= 0,
-    active_user_email_available: !!activeEmail,
-    active_user_email: activeEmail,
-    active_user_domain: activeDomain,
-    active_user_domain_allowed:
-      !!activeDomain && allowedDomains.indexOf(activeDomain) >= 0,
-    effective_user: effectiveEmail,
-    allowed_domains: allowedDomains,
-    allowed_origins: allowedOrigins,
-    required_webapp_access: BOOKING_SECURITY_CFG.REQUIRED_WEBAPP_ACCESS,
-    required_execute_as: BOOKING_SECURITY_CFG.REQUIRED_EXECUTE_AS,
-    required_userinfo_scope: BOOKING_SECURITY_CFG.REQUIRED_USERINFO_SCOPE,
-    anonymous_deployment_supported: false,
-    runtime_test:
-      CFG.DEPLOYMENT.WEBAPP_URL +
-      "?action=session_init&origin=" +
-      encodeURIComponent(allowedOrigins[0] || "https://support.example.com") +
-      "&request_id=<32-lowercase-hex>",
-    note:
-      "Editor identity is not the same as deployed web-app identity. " +
-      "Test session_init through the Zendesk Connect securely popup after redeployment.",
-  };
-}
-
-function bookingGetAllowedDomains_() {
-  const raw = String(
-    PropertiesService.getScriptProperties().getProperty(
-      BOOKING_SECURITY_CFG.ALLOWED_DOMAINS_PROP
-    ) || ""
-  );
-
-  const seen = {};
-  const domains = [];
-
-  raw.split(/[,;\s]+/).forEach(function (value) {
-    const domain = String(value || "").trim().toLowerCase();
-    if (!domain || seen[domain]) return;
-    seen[domain] = true;
-    domains.push(domain);
-  });
-
-  return domains;
-}
-
 function bookingGetAllowedOrigins_() {
   const raw = String(
     PropertiesService.getScriptProperties().getProperty(
@@ -1780,12 +1530,6 @@ function bookingRequireBootstrapRequestId_(value) {
     );
   }
   return requestId;
-}
-
-function bookingEmailDomain_(email) {
-  const value = String(email || "").trim().toLowerCase();
-  const at = value.lastIndexOf("@");
-  return at > 0 && at < value.length - 1 ? value.slice(at + 1) : "";
 }
 
 function bookingGetMasterSecret_() {
@@ -1873,7 +1617,7 @@ function bookingParseSessionContext_(sessionId) {
   if (
     !payload ||
     payload.v !== BOOKING_SECURITY_CFG.VERSION ||
-    !payload.e ||
+    payload.scope !== "booking" ||
     !Number.isFinite(Number(payload.iat)) ||
     !Number.isFinite(Number(payload.exp)) ||
     Number(payload.exp) <= Number(payload.iat) ||
@@ -1889,7 +1633,7 @@ function bookingParseSessionContext_(sessionId) {
   return {
     sessionId: value,
     sessionKey: bookingDeriveSessionKey_(masterSecret, value),
-    userEmail: String(payload.e).trim().toLowerCase(),
+    scope: "booking",
     issuedAt: Number(payload.iat),
     expiresAt: Number(payload.exp),
     jti: String(payload.jti),

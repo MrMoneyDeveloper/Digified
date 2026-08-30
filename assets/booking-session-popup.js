@@ -138,7 +138,7 @@
         reject(
           publicError(
             "SESSION_POPUP_BLOCKED",
-            "Secure booking sign-in was blocked. Allow popups and retry."
+            "Secure booking connection was blocked. Allow popups and retry."
           )
         );
         return;
@@ -203,7 +203,7 @@
         rejectOnce(
           publicError(
             "SESSION_POPUP_TIMEOUT",
-            "Secure booking sign-in timed out. Please retry."
+            "Secure booking connection timed out. Please retry."
           )
         );
       }, timeoutMs);
@@ -214,7 +214,7 @@
             rejectOnce(
               publicError(
                 "SESSION_POPUP_CLOSED",
-                "Secure booking sign-in was cancelled. Please retry."
+                "Secure booking connection was cancelled. Please retry."
               )
             );
           }
