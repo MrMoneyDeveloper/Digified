@@ -18,6 +18,13 @@ function sha256(relativePath) {
     .digest("hex");
 }
 
+function sha256NormalizedText(relativePath) {
+  return crypto
+    .createHash("sha256")
+    .update(read(relativePath).replace(/\r\n/g, "\n"))
+    .digest("hex");
+}
+
 function assertIncludes(source, expected, label) {
   assert.ok(source.includes(expected), `${label} must include ${expected}`);
 }
@@ -154,8 +161,8 @@ assert.strictEqual(
   "booking security implementation must remain unchanged"
 );
 assert.strictEqual(
-  sha256("assets/training-bookings-calendar.js"),
-  "4276e29be4687e8bf56e7469f932764df0c4781ee368ce5b220e1bea476a41cf",
+  sha256NormalizedText("assets/training-bookings-calendar.js"),
+  "70b9b45322d4e06c4a56302027e9cee7930b169a320edfc0259b34adc02ac6f4",
   "booking client behavior must match the room preview regression baseline"
 );
 assert.strictEqual(
