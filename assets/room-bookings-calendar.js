@@ -65,6 +65,7 @@
   const settings = (window.HelpCenter && window.HelpCenter.themeSettings) || {};
   const cfg = window.ROOM_BOOKING_CFG || {};
   const bookingSecurity = window.BookingSecurity;
+  const bookingSessionPopup = window.BookingSessionPopup;
 
   const baseUrl = (
     (settings.room_booking_api_url && settings.room_booking_api_url.trim()) ||
@@ -577,7 +578,26 @@
   if (bookingSecurity && typeof bookingSecurity.init === "function") {
     bookingSecurity.init({
       bootstrap: function () {
-        return jsonpRaw("session_init", {});
+        if (!bookingSessionPopup || typeof bookingSessionPopup.openSession !== "function") {
+          return Promise.reject(
+            new Error("Secure booking connection is not available.")
+          );
+        }
+        return bookingSessionPopup.openSession({
+          baseUrl: baseUrl,
+          onStatus: function (status) {
+            if (status === "popup_blocked") {
+              setAlert(
+                "Secure booking connection was blocked. Allow popups and retry.",
+                "error"
+              );
+            } else if (status === "closed") {
+              setAlert("Secure booking connection was cancelled. Please retry.", "error");
+            } else if (status === "timeout") {
+              setAlert("Secure booking connection timed out. Please retry.", "error");
+            }
+          }
+        });
       },
       onStatus: function (status) {
         if (status === "session_expired") {

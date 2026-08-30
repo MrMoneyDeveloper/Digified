@@ -1,16 +1,28 @@
 /************************************************************
  * Script A - Room Booking API (Google Apps Script Web App)
  * ----------------------------------------------------------
- * CLEAN: 2025-12-31
+ * SECURITY UPDATE: 2026-08-30
  *
- * - Dynamic sessions (Mon-Fri, 08:00-20:00, 60min)
- * - JSONP support for GET endpoints (sessions/days/health/book/get_api_key)
- * - Booking via GET (JSONP) for Zendesk Help Centre CORS-safe calls
- * - POST support for same-origin or server-to-server calls
- * - API key auth required except init + get_api_key
+ * Repo-aligned frontend contract:
+ *   Digified main @ 473e64baec266ea7bb5a37ab1c5186aefbf0417e
+ *   docs/booking-security-protocol.md (v1)
+ *
+ * - Dynamic sessions (Mon-Fri)
+ * - Signed JSONP GET transport retained for Zendesk Help Centre business calls
+ * - session_init is the only unsigned browser action and is served as an
+ *   top-level popup; a session key is never returned as JSONP
+ * - Normal requests use SHA-256 + HMAC-SHA256 + timestamp + nonce
+ * - Normal responses are SHA-256 hashed and HMAC-SHA256 signed
+ * - Permanent master secret lives only in Apps Script Script Properties
+ * - Zendesk remains responsible for Help Center login, segments, and page access
+ * - Apps Script runs as the deploying account and performs no end-user authorization
+ * - Legacy init/get_api_key/API-key authentication is retired
  * - Optional SESSIONS sheet overrides (capacity/cancel/manual reserve)
  ************************************************************/
 
+// IMPORTANT: Do not add browser-visible credentials to CFG.
+// The public frontend may know only the web-app URL. Authentication is handled
+// by the signed-session protocol implemented later in this file.
 const CFG = {
   DEPLOYMENT: {
     ID: "AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU",
@@ -59,31 +71,65 @@ const CFG = {
 function doGet(e) {
   const requestId = makeId_("req");
   const started = Date.now();
+  const params = e && e.parameter ? e.parameter : {};
+  const action = String(params.action || "sessions")
+    .trim()
+    .toLowerCase();
+
+  let securityContext = null;
 
   try {
-    const params = (e && e.parameter) ? e.parameter : {};
-    const action = (params.action || "sessions").toLowerCase();
+    // session_init is the only unsigned frontend action. It must remain a
+    // top-level popup and must never flow through JSON/JSONP.
+    if (action === "session_init") {
+      return bookingServeSessionInitPopup_(params, requestId);
+    }
 
-    // init + get_api_key are open (bootstrapping)
-    if (action !== "init" && action !== "get_api_key") requireApiKey_(e, requestId);
+    // Permanently retire the credential-bootstrap endpoints.
+    if (action === "init" || action === "get_api_key") {
+      const retired = fail_(
+        requestId,
+        "ENDPOINT_RETIRED",
+        "This endpoint has been retired.",
+        410
+      );
+      retired.meta = {
+        request_id: requestId,
+        took_ms: Date.now() - started,
+        tz: CFG.DEFAULT_TIMEZONE,
+      };
+      return jsonResponse_(retired, e);
+    }
+
+    if (!bookingIsAllowedAction_(action, "GET")) {
+      const unknown = bookingSecurityError_(
+        "UNKNOWN_ACTION",
+        "Unknown action: " + action,
+        400
+      );
+      throw unknown;
+    }
+
+    securityContext = bookingVerifySignedRequest_(
+      action,
+      params,
+      requestId
+    );
 
     let result;
 
-    if (action === "init") {
-      result = handleInit_(requestId, params);
-
-    } else if (action === "get_api_key") {
-      result = handleGetApiKey_(requestId);
-
-    } else if (action === "sessions") {
+    if (action === "sessions") {
       result = handleSessions_(params, requestId);
-
     } else if (action === "days") {
       result = handleDays_(params, requestId);
-
     } else if (action === "book") {
       if (!CFG.ALLOW_GET_BOOKING) {
-        result = fail_(requestId, "GET_BOOKING_DISABLED", "Booking via GET is disabled.", 403);
+        result = fail_(
+          requestId,
+          "GET_BOOKING_DISABLED",
+          "Booking via GET is disabled.",
+          403
+        );
       } else {
         result = handleBook_(
           {
@@ -104,7 +150,6 @@ function doGet(e) {
           requestId
         );
       }
-
     } else if (action === "health") {
       result = ok_(
         requestId,
@@ -113,53 +158,139 @@ function doGet(e) {
           now: new Date().toISOString(),
           timezone: CFG.DEFAULT_TIMEZONE,
           rules_enabled: CFG.RULES.ENABLED,
-          working_hours: `${CFG.RULES.START_HHMM}-${CFG.RULES.END_HHMM}`,
+          working_hours:
+            CFG.RULES.START_HHMM +
+            "-" +
+            CFG.RULES.END_HHMM,
           weekdays: CFG.RULES.WEEKDAYS.join(","),
           allow_get_booking: CFG.ALLOW_GET_BOOKING,
+          security_version: BOOKING_SECURITY_CFG.VERSION,
+          session_scope: securityContext.scope,
         },
         "Health OK"
       );
-
-    } else {
-      result = fail_(requestId, "UNKNOWN_ACTION", "Unknown action: " + action, 400);
     }
 
-    result.meta = { request_id: requestId, took_ms: Date.now() - started, tz: CFG.DEFAULT_TIMEZONE };
-    return jsonResponse_(result, e);
+    result.meta = {
+      request_id: requestId,
+      took_ms: Date.now() - started,
+      tz: CFG.DEFAULT_TIMEZONE,
+    };
 
+    return jsonResponse_(
+      bookingSignResponse_(result, securityContext),
+      e
+    );
   } catch (err) {
-    const payload = errorPayload_(requestId, "UNHANDLED_GET_ERROR", err);
-    payload.meta = { request_id: requestId, took_ms: Date.now() - started };
-    return jsonResponse_(payload, e);
+    const context =
+      securityContext ||
+      (err && err.bookingSecurityContext) ||
+      bookingRecoverSecurityContext_(params);
+
+    const payload = bookingPublicErrorPayload_(
+      requestId,
+      "UNHANDLED_GET_ERROR",
+      err
+    );
+
+    payload.meta = {
+      request_id: requestId,
+      took_ms: Date.now() - started,
+      tz: CFG.DEFAULT_TIMEZONE,
+    };
+
+    return jsonResponse_(
+      context
+        ? bookingSignResponse_(payload, context)
+        : payload,
+      e
+    );
   }
 }
 
 function doPost(e) {
   const requestId = makeId_("req");
   const started = Date.now();
+  const body = parseBody_(e);
+  const action = String(body.action || "")
+    .trim()
+    .toLowerCase();
+
+  let securityContext = null;
 
   try {
-    requireApiKey_(e, requestId);
+    if (action === "session_init") {
+      throw bookingSecurityError_(
+        "SESSION_INIT_METHOD_NOT_ALLOWED",
+        "session_init must use the unsigned GET bootstrap.",
+        405
+      );
+    }
 
-    const body = parseBody_(e);
-    const action = (body.action || "").toLowerCase();
+    if (action === "init" || action === "get_api_key") {
+      throw bookingSecurityError_(
+        "ENDPOINT_RETIRED",
+        "This endpoint has been retired.",
+        410
+      );
+    }
+
+    if (!bookingIsAllowedAction_(action, "POST")) {
+      throw bookingSecurityError_(
+        "UNKNOWN_ACTION",
+        "Unknown action: " + action,
+        400
+      );
+    }
+
+    securityContext = bookingVerifySignedRequest_(
+      action,
+      body,
+      requestId
+    );
 
     let result;
+
     if (action === "book") {
       result = handleBook_(body, requestId);
     } else if (action === "cancel") {
       result = handleCancel_(body, requestId);
-    } else {
-      result = fail_(requestId, "UNKNOWN_ACTION", "Unknown action: " + action, 400);
     }
 
-    result.meta = { request_id: requestId, took_ms: Date.now() - started, tz: CFG.DEFAULT_TIMEZONE };
-    return jsonResponse_(result, e);
+    result.meta = {
+      request_id: requestId,
+      took_ms: Date.now() - started,
+      tz: CFG.DEFAULT_TIMEZONE,
+    };
 
+    return jsonResponse_(
+      bookingSignResponse_(result, securityContext),
+      e
+    );
   } catch (err) {
-    const payload = errorPayload_(requestId, "UNHANDLED_POST_ERROR", err);
-    payload.meta = { request_id: requestId, took_ms: Date.now() - started };
-    return jsonResponse_(payload, e);
+    const context =
+      securityContext ||
+      (err && err.bookingSecurityContext) ||
+      bookingRecoverSecurityContext_(body);
+
+    const payload = bookingPublicErrorPayload_(
+      requestId,
+      "UNHANDLED_POST_ERROR",
+      err
+    );
+
+    payload.meta = {
+      request_id: requestId,
+      took_ms: Date.now() - started,
+      tz: CFG.DEFAULT_TIMEZONE,
+    };
+
+    return jsonResponse_(
+      context
+        ? bookingSignResponse_(payload, context)
+        : payload,
+      e
+    );
   }
 }
 
@@ -174,22 +305,25 @@ function getSS_() {
 }
 
 /**
- * ===== INIT =====
+ * ===== ADMIN-ONLY DATA MODEL INITIALIZER =====
+ *
+ * Run manually from the Apps Script editor when setting up a new spreadsheet.
+ * It is intentionally NOT exposed through doGet/doPost and never returns or
+ * creates a browser-visible API key.
  */
-function handleInit_(requestId, params) {
+function initializeBookingDataModel() {
   const ss = getSS_();
 
-  // SESSIONS = optional overrides (vendor = manual reserve)
   ensureSheetWithHeader_(ss, CFG.SHEETS.SESSIONS, [
     "slot_id",
     "date",
     "start_time",
     "end_time",
-    "vendor",      // Reserved By (manual override)
+    "vendor",
     "topic",
     "dept",
     "capacity",
-    "status",      // open / cancelled
+    "status",
     "created_at",
     "updated_at",
   ]);
@@ -197,11 +331,11 @@ function handleInit_(requestId, params) {
   ensureSheetWithHeader_(ss, CFG.SHEETS.BOOKINGS, [
     "booking_id",
     "slot_id",
-    "booking_status",   // booked / failed / cancelled
+    "booking_status",
     "fail_code",
     "requester_email",
     "requester_name",
-    "attendees",        // kept for compatibility; always forced to 1
+    "attendees",
     "notes",
     "dept",
     "start_date",
@@ -211,106 +345,81 @@ function handleInit_(requestId, params) {
     "duration_minutes",
     "booked_at",
     "debug_json",
-    "meeting_type",      // in_person_only / in_person_plus_online
-    "attendee_emails",   // comma-separated remote participant emails
+    "meeting_type",
+    "attendee_emails",
     "meet_link",
     "meet_event_id",
-    "meet_status",       // pending / ok / failed (blank for in_person_only)
+    "meet_status",
     "meet_error_code",
     "meet_error_details",
     "meet_created_at",
   ]);
 
-  ensureSheetWithHeader_(ss, CFG.SHEETS.SETTINGS, ["key", "value", "updated_at"]);
+  ensureSheetWithHeader_(ss, CFG.SHEETS.SETTINGS, [
+    "key",
+    "value",
+    "updated_at"
+  ]);
 
-  // API key generate/rotate
-  const props = PropertiesService.getScriptProperties();
-  const rotate = String((params && params.rotate_key) ? params.rotate_key : "").trim() === "1";
-  const settingsApiKey = getSettingValue_(ss, "TRAINING_API_KEY");
-
-  let apiKey = props.getProperty("TRAINING_API_KEY");
-  if (!rotate && settingsApiKey) {
-    // Keep the existing SETTINGS value authoritative during normal deployments.
-    apiKey = settingsApiKey;
-    if (props.getProperty("TRAINING_API_KEY") !== apiKey) {
-      props.setProperty("TRAINING_API_KEY", apiKey);
-    }
-  }
-  if (!apiKey || rotate) {
-    apiKey = Utilities.getUuid().replace(/-/g, "");
-    props.setProperty("TRAINING_API_KEY", apiKey);
-  }
-
-  // Store settings in sheet (for visibility)
   upsertSetting_(ss, "DEPLOYMENT_ID", CFG.DEPLOYMENT.ID);
   upsertSetting_(ss, "WEBAPP_URL", CFG.DEPLOYMENT.WEBAPP_URL);
-  if (rotate || !settingsApiKey) {
-    upsertSetting_(ss, "TRAINING_API_KEY", apiKey);
-  }
   upsertSetting_(ss, "TIMEZONE", CFG.DEFAULT_TIMEZONE);
   upsertSetting_(ss, "ALLOW_GET_BOOKING", String(CFG.ALLOW_GET_BOOKING));
   upsertSetting_(ss, "RULES_ENABLED", String(CFG.RULES.ENABLED));
-  upsertSetting_(ss, "WORKING_HOURS", `${CFG.RULES.START_HHMM}-${CFG.RULES.END_HHMM}`);
-  upsertSetting_(ss, "INTERVIEW_WORKING_HOURS", `${CFG.RULES.INTERVIEW_START_HHMM}-${CFG.RULES.END_HHMM}`);
-  upsertSetting_(ss, "WORKING_WEEKDAYS", CFG.RULES.WEEKDAYS.join(","));
-  upsertSetting_(ss, "SLOT_MINUTES", String(CFG.RULES.SLOT_MINUTES));
-  upsertSetting_(ss, "TRAINING_SLOT_MINUTES", String(CFG.RULES.TRAINING_SLOT_MINUTES));
-  upsertSetting_(ss, "MEET_MAX_DURATION_MINUTES", String(CFG.RULES.MEET_MAX_DURATION_MINUTES));
-
-  return ok_(
-    requestId,
-    {
-      sheets_ready: true,
-      api_key: apiKey,
-      webapp_url: CFG.DEPLOYMENT.WEBAPP_URL,
-      rules: {
-        enabled: CFG.RULES.ENABLED,
-        weekdays: CFG.RULES.WEEKDAYS,
-        working_hours: `${CFG.RULES.START_HHMM}-${CFG.RULES.END_HHMM}`,
-        slot_minutes: CFG.RULES.SLOT_MINUTES,
-        training_slot_minutes: CFG.RULES.TRAINING_SLOT_MINUTES,
-        meet_max_duration_minutes: CFG.RULES.MEET_MAX_DURATION_MINUTES,
-        interview_working_hours: `${CFG.RULES.INTERVIEW_START_HHMM}-${CFG.RULES.END_HHMM}`,
-        example_slot_id: buildSlotId_("2026-01-15", "08:00"),
-        note: "Training rooms use 30-minute slots from 08:00-20:00. Interview room uses 60-minute slots from 12:00-20:00. Google Meet bookings are limited to 60 minutes.",
-      },
-      next_steps: [
-        "1) Test sessions: ?action=sessions&from=2026-01-01&to=2026-01-31&dept=Training%20Room%201&api_key=YOUR_KEY",
-        "2) Book via JSONP GET: ?action=book&start_date=2026-01-15&start_time=09:00&end_time=10:30&dept=Training%20Room%201&requester_email=...&api_key=...&callback=cb",
-        "3) Optional overrides: add a row to SESSIONS to cancel/change a specific slot",
-      ],
-    },
-    rotate ? "Init complete - API key rotated" : "Init complete - API key ready"
+  upsertSetting_(
+    ss,
+    "WORKING_HOURS",
+    CFG.RULES.START_HHMM + "-" + CFG.RULES.END_HHMM
   );
+  upsertSetting_(
+    ss,
+    "INTERVIEW_WORKING_HOURS",
+    CFG.RULES.INTERVIEW_START_HHMM + "-" + CFG.RULES.END_HHMM
+  );
+  upsertSetting_(
+    ss,
+    "WORKING_WEEKDAYS",
+    CFG.RULES.WEEKDAYS.join(",")
+  );
+  upsertSetting_(
+    ss,
+    "SLOT_MINUTES",
+    String(CFG.RULES.SLOT_MINUTES)
+  );
+  upsertSetting_(
+    ss,
+    "TRAINING_SLOT_MINUTES",
+    String(CFG.RULES.TRAINING_SLOT_MINUTES)
+  );
+  upsertSetting_(
+    ss,
+    "MEET_MAX_DURATION_MINUTES",
+    String(CFG.RULES.MEET_MAX_DURATION_MINUTES)
+  );
+  upsertSetting_(ss, "BOOKING_SECURITY_VERSION", "v1");
+  upsertSetting_(
+    ss,
+    "BOOKING_SECURITY_MODE",
+    "SIGNED_SESSION_HMAC_SHA256"
+  );
+
+  return {
+    ok: true,
+    spreadsheet_id: ss.getId(),
+    spreadsheet_name: ss.getName(),
+    sheets_ready: true,
+    webapp_url: CFG.DEPLOYMENT.WEBAPP_URL,
+    security_version: "v1",
+    note:
+      "No API credential is stored in the SETTINGS sheet. " +
+      "Run initializeBookingSecurity() separately to create the server-only master secret."
+  };
 }
 
-/**
- * ===== GET API KEY (masked) =====
- */
-function handleGetApiKey_(requestId) {
-  const props = PropertiesService.getScriptProperties();
-  const apiKey = props.getProperty("TRAINING_API_KEY");
-
-  if (!apiKey) {
-    return fail_(requestId, "NO_API_KEY", "No API key found. Run ?action=init first.", 404, {
-      hint: "Visit: " + CFG.DEPLOYMENT.WEBAPP_URL + "?action=init",
-    });
-  }
-
-  return ok_(
-    requestId,
-    {
-      api_key_masked: mask_(apiKey),
-      api_key_length: apiKey.length,
-      test_url: CFG.DEPLOYMENT.WEBAPP_URL + "?action=health&api_key=" + apiKey,
-    },
-    "API key info retrieved"
-  );
-}
 
 /**
  * ===== SESSIONS LISTING (DYNAMIC) =====
- * GET ?action=sessions&from=YYYY-MM-DD&to=YYYY-MM-DD&api_key=...
+ * GET signed request: action=sessions&from=YYYY-MM-DD&to=YYYY-MM-DD + v1 security fields
  */
 function handleSessions_(params, requestId) {
   const from = (params.from || "").trim();
@@ -391,7 +500,7 @@ function handleSessions_(params, requestId) {
 
 /**
  * ===== DAYS (CALENDAR SUMMARY) =====
- * GET ?action=days&from=YYYY-MM-DD&to=YYYY-MM-DD&api_key=...
+ * GET signed request: action=days&from=YYYY-MM-DD&to=YYYY-MM-DD + v1 security fields
  */
 function handleDays_(params, requestId) {
   const from = (params.from || "").trim();
@@ -415,7 +524,7 @@ function handleDays_(params, requestId) {
 /**
  * ===== BOOKING =====
  * POST { action:"book", slot_id, requester_email, requester_name, notes, dept, user_type, meeting_type, attendee_emails }
- * GET  ?action=book&slot_id=...&requester_email=...&api_key=...&callback=cb
+ * GET  signed JSONP request: action=book + business fields + v1 security fields
  */
 function handleBook_(body, requestId) {
   body = body || {};
@@ -706,36 +815,1175 @@ function handleCancel_(body, requestId) {
 }
 
 /**
- * ===== SECURITY =====
+ * Booking_Security.gs
+ * Signed booking protocol backend for Digified booking client v1.
+ *
+ * IMPORTANT
+ * - Permanent master secret lives only in Script Properties.
+ * - HTTPS/TLS provides transport encryption.
+ * - Requests use SHA-256 + HMAC-SHA256 + timestamp + nonce.
+ * - Responses are SHA-256 hashed + HMAC-SHA256 signed.
+ * - Zendesk controls Help Center login and booking-page access. Apps Script does
+ *   not duplicate user, role, tag, segment, domain, or IT-approval checks.
+ *
+ * Frontend contract:
+ * docs/booking-security-protocol.md
  */
-function requireApiKey_(e, requestId) {
+
+const BOOKING_SECURITY_CFG = Object.freeze({
+  VERSION: "v1",
+
+  // Keep these values aligned with the frontend contract in GitHub.
+  FRONTEND_BASELINE_COMMIT: "703de41821eb4058a7bd6ef37980532bb29c45ea",
+  FRONTEND_PROTOCOL_DOC_SHA: "4bec3fb186064950d2ece0d0077abfb76421b06b",
+  FRONTEND_SECURITY_JS_SHA: "b58d62a4f49f25b843bd0899bbca98edfaf84bcdaf0224a5d5c71cc1ee7aec90",
+  FRONTEND_POPUP_JS_SHA: "50337d24e6f866d249becd135b7fab92225dac662ab73a287b84865d6de17fb4",
+  FRONTEND_BOOKING_CLIENT_SHA: "d4659ea25b61233e7d5bdce171c31f73c320443bc776266f441fc09ee372bf33",
+  FRONTEND_LEGACY_BOOKING_CLIENT_SHA: "6d9ff3b660e0e89e32a034797aa3fafc163ecda50c2abf9b5a75b16e710f3fb9",
+  FRONTEND_THEME_SCRIPT_SHA: "236791d6af9e1afe5fdb8664e114f0d0b24c669e9bc5141a5155543b67ef3ee3",
+  FRONTEND_CONFIG_JS_SHA: "c62f11b9f1aeba7144d962528cb362bbcc639b4de8d2a3e6dd74c6be2954940c",
+  THEME_VERSION: "2028.2.1",
+  REQUIRED_WEBAPP_ACCESS: "ANYONE_ANONYMOUS",
+  REQUIRED_EXECUTE_AS: "USER_DEPLOYING",
+  MASTER_SECRET_PROP: "BOOKING_MASTER_SECRET",
+  ALLOWED_ORIGINS_PROP: "BOOKING_ALLOWED_ORIGINS",
+  LEGACY_API_KEY_PROP: "TRAINING_API_KEY",
+  POPUP_MESSAGE_TYPE: "digify.booking.session.v1",
+
+  // Frontend accepts responses inside a 5 minute window.
+  REQUEST_WINDOW_MS: 5 * 60 * 1000,
+  SESSION_TTL_MS: 10 * 60 * 1000,
+
+  TOKEN_CONTEXT: "booking-session-token-v1",
+  KEY_CONTEXT: "booking-session-key-v1",
+  NONCE_CACHE_PREFIX: "booking_nonce_v1_",
+
+  RESERVED_FIELDS: Object.freeze({
+    action: true,
+    callback: true,
+    _ts: true,
+    security: true,
+    security_version: true,
+    session_id: true,
+    timestamp: true,
+    nonce: true,
+    payload_hash: true,
+    signature: true,
+  }),
+});
+
+/**
+ * Run ONCE from the Apps Script editor before deploying the secure frontend.
+ *
+ * This:
+ * - creates a fresh server-only master secret if one does not already exist
+ * - removes the legacy exposed TRAINING_API_KEY Script Property
+ * - overwrites the legacy SETTINGS-sheet value if the sheet exists
+ * - requires BOOKING_ALLOWED_ORIGINS to contain the exact Zendesk HTTPS origin
+ *
+ * The master secret is never returned.
+ */
+function initializeBookingSecurity() {
   const props = PropertiesService.getScriptProperties();
-  const expected = props.getProperty("TRAINING_API_KEY");
+  let masterSecret = props.getProperty(BOOKING_SECURITY_CFG.MASTER_SECRET_PROP);
 
-  if (!expected) {
-    const err = new Error("TRAINING_API_KEY not set. Run GET ?action=init first to generate API key.");
-    err.statusCode = 500;
-    err.code = "API_KEY_NOT_CONFIGURED";
-    throw err;
+  if (!masterSecret) {
+    masterSecret = bookingGenerateMasterSecret_();
+    props.setProperty(BOOKING_SECURITY_CFG.MASTER_SECRET_PROP, masterSecret);
   }
 
-  const provided =
-    (e && e.parameter && e.parameter.api_key ? String(e.parameter.api_key) : "") ||
-    getHeader_(e, "x-api-key");
+  // Revoke the formerly browser-visible key.
+  props.deleteProperty(BOOKING_SECURITY_CFG.LEGACY_API_KEY_PROP);
 
-  if (!provided) {
-    const err = new Error("API key required. Provide via ?api_key=YOUR_KEY or x-api-key header.");
-    err.statusCode = 401;
-    err.code = "API_KEY_MISSING";
-    throw err;
+  const allowedOrigins = bookingGetAllowedOrigins_();
+  if (!allowedOrigins.length) {
+    throw new Error(
+      "BOOKING_ALLOWED_ORIGINS is not configured. Add the exact Zendesk Help Center HTTPS origin " +
+      "in Project Settings > Script Properties (for example: https://support.example.com), then run initializeBookingSecurity() again."
+    );
   }
 
-  if (provided !== expected) {
-    const err = new Error("Invalid API key. Use GET ?action=get_api_key to verify.");
-    err.statusCode = 401;
-    err.code = "UNAUTHORIZED";
+  // Scrub the current spreadsheet copy of the old key where possible.
+  try {
+    const ss = getSS_();
+    if (ss) {
+      upsertSetting_(
+        ss,
+        BOOKING_SECURITY_CFG.LEGACY_API_KEY_PROP,
+        "[REVOKED - SIGNED SESSION PROTOCOL ACTIVE]"
+      );
+      upsertSetting_(ss, "BOOKING_SECURITY_VERSION", BOOKING_SECURITY_CFG.VERSION);
+      upsertSetting_(ss, "BOOKING_SECURITY_MODE", "SIGNED_SESSION_HMAC_SHA256");
+    }
+  } catch (ignore) {
+    // Security initialization must not reveal the secret or fail only because
+    // the optional settings sheet is unavailable.
+  }
+
+  return {
+    ok: true,
+    security_version: BOOKING_SECURITY_CFG.VERSION,
+    master_secret_configured: true,
+    allowed_origins: allowedOrigins,
+    legacy_api_key_revoked: !props.getProperty(BOOKING_SECURITY_CFG.LEGACY_API_KEY_PROP),
+    deployment_requirements: {
+      webapp_access: BOOKING_SECURITY_CFG.REQUIRED_WEBAPP_ACCESS,
+      execute_as: BOOKING_SECURITY_CFG.REQUIRED_EXECUTE_AS,
+      anonymous_transport: true,
+    },
+  };
+}
+
+/**
+ * Explicit emergency rotation. Existing signed sessions become invalid.
+ * Run from the Apps Script editor only.
+ */
+function rotateBookingMasterSecret() {
+  const props = PropertiesService.getScriptProperties();
+  const masterSecret = bookingGenerateMasterSecret_();
+  props.setProperty(BOOKING_SECURITY_CFG.MASTER_SECRET_PROP, masterSecret);
+  props.deleteProperty(BOOKING_SECURITY_CFG.LEGACY_API_KEY_PROP);
+
+  return {
+    ok: true,
+    rotated_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Safe diagnostic. Does not expose the master or a session key.
+ */
+function verifyBookingSecurityConfiguration() {
+  const props = PropertiesService.getScriptProperties();
+  const masterSecret = props.getProperty(BOOKING_SECURITY_CFG.MASTER_SECRET_PROP) || "";
+  const allowedOrigins = bookingGetAllowedOrigins_();
+  return {
+    ok: !!masterSecret && allowedOrigins.length > 0,
+    security_version: BOOKING_SECURITY_CFG.VERSION,
+    master_secret_configured: !!masterSecret,
+    allowed_origins: allowedOrigins,
+    deployment_requirements: {
+      webapp_access: BOOKING_SECURITY_CFG.REQUIRED_WEBAPP_ACCESS,
+      execute_as: BOOKING_SECURITY_CFG.REQUIRED_EXECUTE_AS,
+      anonymous_transport: true,
+    },
+    important_note:
+      "Zendesk controls end-user login and booking-page access. Apps Script " +
+      "runs as USER_DEPLOYING and keeps permanent credentials server-side.",
+  };
+}
+
+/**
+ * Safe alignment diagnostic. Use this after frontend/backend changes so the
+ * deployed Apps Script can be checked against the GitHub contract it expects.
+ */
+function getBookingSecurityContractInfo() {
+  return {
+    protocol_version: BOOKING_SECURITY_CFG.VERSION,
+    frontend_baseline_commit: BOOKING_SECURITY_CFG.FRONTEND_BASELINE_COMMIT,
+    frontend_protocol_doc_sha: BOOKING_SECURITY_CFG.FRONTEND_PROTOCOL_DOC_SHA,
+    frontend_security_js_sha256: BOOKING_SECURITY_CFG.FRONTEND_SECURITY_JS_SHA,
+    frontend_popup_js_sha256: BOOKING_SECURITY_CFG.FRONTEND_POPUP_JS_SHA,
+    frontend_booking_client_sha256_normalized: BOOKING_SECURITY_CFG.FRONTEND_BOOKING_CLIENT_SHA,
+    frontend_legacy_booking_client_sha256_normalized: BOOKING_SECURITY_CFG.FRONTEND_LEGACY_BOOKING_CLIENT_SHA,
+    frontend_theme_script_sha256_normalized: BOOKING_SECURITY_CFG.FRONTEND_THEME_SCRIPT_SHA,
+    frontend_config_js_sha256: BOOKING_SECURITY_CFG.FRONTEND_CONFIG_JS_SHA,
+    theme_version: BOOKING_SECURITY_CFG.THEME_VERSION,
+    transport: "Exact-origin popup/postMessage bootstrap + signed JSONP business requests",
+    session_init_auth: "No Apps Script end-user authorization; Zendesk controls page access",
+    popup_message_type: BOOKING_SECURITY_CFG.POPUP_MESSAGE_TYPE,
+    popup_target_origin_property: BOOKING_SECURITY_CFG.ALLOWED_ORIGINS_PROP,
+    required_webapp_access: BOOKING_SECURITY_CFG.REQUIRED_WEBAPP_ACCESS,
+    required_execute_as: BOOKING_SECURITY_CFG.REQUIRED_EXECUTE_AS,
+    anonymous_deployment_supported: true,
+    unsigned_actions: ["session_init"],
+    request_hash: "SHA-256",
+    request_signature: "HMAC-SHA256",
+    response_hash: "SHA-256",
+    response_signature: "HMAC-SHA256",
+    session_storage: "browser memory only",
+    master_secret_storage: "Apps Script Script Properties only"
+  };
+}
+
+
+/**
+ * Serve the temporary-session bootstrap shell. The HTML contains only the
+ * exact target origin and a one-time request id; it never contains a session key.
+ */
+function bookingServeSessionInitPopup_(params, serverRequestId) {
+  let targetOrigin = "";
+  let bootstrapRequestId = "";
+
+  try {
+    targetOrigin = bookingRequireAllowedOrigin_(params && params.origin);
+    bootstrapRequestId = bookingRequireBootstrapRequestId_(
+      params && params.request_id
+    );
+
+    return bookingCreateSessionPopupHtml_(
+      targetOrigin,
+      bootstrapRequestId,
+      null
+    );
+  } catch (err) {
+    if (targetOrigin && bootstrapRequestId) {
+      return bookingCreateSessionPopupHtml_(targetOrigin, bootstrapRequestId, {
+        type: BOOKING_SECURITY_CFG.POPUP_MESSAGE_TYPE,
+        request_id: bootstrapRequestId,
+        success: false,
+        code: "SESSION_INIT_FAILED",
+        message: "Secure booking session could not be established.",
+        data: {},
+      });
+    }
+
+    return bookingCreateStandaloneBootstrapErrorHtml_();
+  }
+}
+
+/**
+ * Public so HtmlService can call it through google.script.run. The exact origin,
+ * request id, and Script Properties are revalidated before a short-lived session
+ * is generated. Zendesk, not Apps Script, controls end-user page access.
+ */
+function completeBookingSessionInitPopup(bootstrapRequestId, targetOrigin) {
+  let requestId = "";
+
+  try {
+    bookingRequireAllowedOrigin_(targetOrigin);
+    requestId = bookingRequireBootstrapRequestId_(bootstrapRequestId);
+    const result = bookingHandleSessionInit_(requestId);
+
+    return {
+      type: BOOKING_SECURITY_CFG.POPUP_MESSAGE_TYPE,
+      request_id: requestId,
+      success: true,
+      data: result.data,
+    };
+  } catch (err) {
+    return {
+      type: BOOKING_SECURITY_CFG.POPUP_MESSAGE_TYPE,
+      request_id: requestId,
+      success: false,
+      code: "SESSION_INIT_FAILED",
+      message: "Secure booking session could not be established.",
+      data: {},
+    };
+  }
+}
+
+function bookingCreateSessionPopupHtml_(targetOrigin, requestId, initialError) {
+  const originJson = bookingJsonForInlineScript_(targetOrigin);
+  const requestIdJson = bookingJsonForInlineScript_(requestId);
+  const messageTypeJson = bookingJsonForInlineScript_(
+    BOOKING_SECURITY_CFG.POPUP_MESSAGE_TYPE
+  );
+  const initialErrorJson = initialError
+    ? bookingJsonForInlineScript_(initialError)
+    : "null";
+
+  const html = [
+    "<!doctype html>",
+    '<html lang="en"><head><base target="_top"><meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width,initial-scale=1">',
+    "<title>Secure booking session</title>",
+    "<style>",
+    "html{font-family:Arial,sans-serif;background:#f6f8fb;color:#191936}",
+    "body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box}",
+    ".card{width:min(420px,100%);background:#fff;border:1px solid #d9dee8;border-radius:18px;padding:28px;box-shadow:0 16px 44px rgba(25,25,54,.12)}",
+    "h1{font-size:1.35rem;margin:0 0 12px}p{line-height:1.55;margin:0;color:#52617d}",
+    "</style></head><body><main class=\"card\"><h1>Secure booking session</h1>",
+    '<p id="status" role="status">Preparing a temporary booking session...</p></main>',
+    "<script>",
+    "(function(){'use strict';",
+    "var targetOrigin=" + originJson + ";",
+    "var requestId=" + requestIdJson + ";",
+    "var messageType=" + messageTypeJson + ";",
+    "var initialError=" + initialErrorJson + ";",
+    "var status=document.getElementById('status');",
+    "function targetWindow(){",
+    "try{if(window.top&&window.top.opener&&!window.top.opener.closed)return window.top.opener;}catch(ignore){}",
+    "try{if(window.opener&&!window.opener.closed)return window.opener;}catch(ignore){}",
+    "return null;}",
+    "function scrub(message){",
+    "try{if(message&&message.data&&message.data.session_key)message.data.session_key='';}catch(ignore){}",
+    "}",
+    "function finish(message){",
+    "var opener=targetWindow();",
+    "if(!opener){scrub(message);status.textContent='Return to the Help Center and retry the secure connection.';return;}",
+    "opener.postMessage(message,targetOrigin);",
+    "var ok=message&&message.success===true;scrub(message);message=null;",
+    "status.textContent=ok?'Secure session established. This window will close.':'Secure booking session could not be established. Close this window and retry.';",
+    "setTimeout(function(){try{window.top.close();}catch(ignore){try{window.close();}catch(inner){}}},150);",
+    "}",
+    "function fail(){finish({type:messageType,request_id:requestId,success:false,code:'SESSION_INIT_FAILED',message:'Secure booking session could not be established.',data:{}});}",
+    "if(initialError){finish(initialError);return;}",
+    "google.script.run.withSuccessHandler(finish).withFailureHandler(fail).completeBookingSessionInitPopup(requestId,targetOrigin);",
+    "})();",
+    "<\/script></body></html>",
+  ].join("");
+
+  return HtmlService.createHtmlOutput(html)
+    .setTitle("Secure booking session")
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
+}
+
+function bookingCreateStandaloneBootstrapErrorHtml_() {
+  return HtmlService.createHtmlOutput(
+    "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">" +
+      "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
+      "<title>Secure booking session</title></head><body>" +
+      "<p>Secure booking session could not be established. Close this window and retry.</p>" +
+      "</body></html>"
+  ).setTitle("Secure booking session");
+}
+
+function bookingJsonForInlineScript_(value) {
+  return JSON.stringify(value)
+    .replace(/&/g, "\\u0026")
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
+/**
+ * Generate session material after the popup RPC has repeated the exact-origin
+ * and request-id checks.
+ *
+ * SECURITY BOUNDARY:
+ * The web app deployment MUST use:
+ *   executeAs: USER_DEPLOYING
+ *   access: ANYONE_ANONYMOUS
+ *
+ * Zendesk remains the end-user login and page-authorization boundary. This
+ * bootstrap does not duplicate Zendesk user, role, tag, segment, or domain checks.
+ * Its purpose is to keep permanent credentials out of browser-delivered code and
+ * provide short-lived request-integrity keys over HTTPS.
+ */
+function bookingHandleSessionInit_(requestId) {
+  const now = Date.now();
+  const expiresAt = now + BOOKING_SECURITY_CFG.SESSION_TTL_MS;
+  const masterSecret = bookingGetMasterSecret_();
+
+  const tokenPayload = {
+    exp: expiresAt,
+    iat: now,
+    jti: bookingRandomHex32_(),
+    scope: "booking",
+    v: BOOKING_SECURITY_CFG.VERSION,
+  };
+
+  const payloadJson = bookingCanonicalJson_(tokenPayload, false);
+  const payloadB64 = bookingBase64UrlEncode_(payloadJson);
+  const tokenSignature = bookingHmacSha256Hex_(
+    masterSecret,
+    BOOKING_SECURITY_CFG.TOKEN_CONTEXT + "\n" + payloadB64
+  );
+  const sessionId = payloadB64 + "." + tokenSignature;
+  const sessionKey = bookingDeriveSessionKey_(masterSecret, sessionId);
+
+  return ok_(
+    requestId,
+    {
+      session_id: sessionId,
+      session_key: sessionKey,
+      expires_at: expiresAt,
+      server_time: now,
+      security_version: BOOKING_SECURITY_CFG.VERSION,
+    },
+    "Secure booking session established"
+  );
+}
+
+/**
+ * Verify a signed business request and return its short-lived session context.
+ *
+ * params must be the exact business/security parameter object used by the
+ * transport. For JSONP, callback and _ts are excluded from hashing.
+ */
+function bookingVerifySignedRequest_(action, params, requestId) {
+  const normalizedAction = String(action || "").trim().toLowerCase();
+  const source = params && typeof params === "object" ? params : {};
+
+  let context = null;
+
+  try {
+    if (
+      !normalizedAction ||
+      normalizedAction === "session_init" ||
+      /[\r\n]/.test(normalizedAction)
+    ) {
+      throw bookingSecurityError_(
+        "INVALID_ACTION",
+        "Secure booking request is invalid.",
+        400
+      );
+    }
+
+    const version = String(source.security_version || "");
+    const sessionId = String(source.session_id || "");
+    const timestampText = String(source.timestamp || "");
+    const nonce = String(source.nonce || "").toLowerCase();
+    const payloadHash = String(source.payload_hash || "").toLowerCase();
+    const signature = String(source.signature || "").toLowerCase();
+
+    if (version !== BOOKING_SECURITY_CFG.VERSION) {
+      throw bookingSecurityError_(
+        "SECURITY_VERSION_INVALID",
+        "Secure booking protocol version is invalid.",
+        401
+      );
+    }
+
+    if (!sessionId || /[\r\n]/.test(sessionId)) {
+      throw bookingSecurityError_(
+        "SESSION_INVALID",
+        "Secure booking session is invalid.",
+        401
+      );
+    }
+
+    // Verify the stateless server-signed session token first. Once this succeeds
+    // we can derive the temporary session key and sign authentication failures.
+    context = bookingParseSessionContext_(sessionId);
+
+    if (!/^\d+$/.test(timestampText)) {
+      throw bookingSecurityErrorWithContext_(
+        "REQUEST_TIMESTAMP_INVALID",
+        "Secure booking request timestamp is invalid.",
+        401,
+        context
+      );
+    }
+
+    if (!/^[0-9a-f]{32}$/.test(nonce)) {
+      throw bookingSecurityErrorWithContext_(
+        "NONCE_INVALID",
+        "Secure booking request nonce is invalid.",
+        401,
+        context
+      );
+    }
+
+    if (!/^[0-9a-f]{64}$/.test(payloadHash)) {
+      throw bookingSecurityErrorWithContext_(
+        "PAYLOAD_HASH_INVALID",
+        "Secure booking payload hash is invalid.",
+        401,
+        context
+      );
+    }
+
+    if (!/^[0-9a-f]{64}$/.test(signature)) {
+      throw bookingSecurityErrorWithContext_(
+        "SIGNATURE_INVALID",
+        "Secure booking request signature is invalid.",
+        401,
+        context
+      );
+    }
+
+    const now = Date.now();
+    const timestamp = Number(timestampText);
+
+    if (now > context.expiresAt) {
+      throw bookingSecurityErrorWithContext_(
+        "SESSION_EXPIRED",
+        "Secure booking session expired.",
+        401,
+        context
+      );
+    }
+
+    if (
+      Math.abs(now - timestamp) > BOOKING_SECURITY_CFG.REQUEST_WINDOW_MS ||
+      timestamp < context.issuedAt - BOOKING_SECURITY_CFG.REQUEST_WINDOW_MS ||
+      timestamp > context.expiresAt
+    ) {
+      throw bookingSecurityErrorWithContext_(
+        "REQUEST_TIMESTAMP_INVALID",
+        "Secure booking request timestamp is outside the accepted window.",
+        401,
+        context
+      );
+    }
+
+    const canonicalBusiness = bookingCanonicalizeBusinessParameters_(source);
+    const calculatedPayloadHash = bookingSha256Hex_(canonicalBusiness);
+
+    if (!bookingConstantTimeHexEqual_(calculatedPayloadHash, payloadHash)) {
+      throw bookingSecurityErrorWithContext_(
+        "PAYLOAD_HASH_MISMATCH",
+        "Secure booking payload validation failed.",
+        401,
+        context
+      );
+    }
+
+    const stringToSign = [
+      BOOKING_SECURITY_CFG.VERSION,
+      normalizedAction,
+      timestampText,
+      nonce,
+      sessionId,
+      payloadHash,
+    ].join("\n");
+
+    const expectedSignature = bookingHmacSha256Hex_(
+      context.sessionKey,
+      stringToSign
+    );
+
+    if (!bookingConstantTimeHexEqual_(expectedSignature, signature)) {
+      throw bookingSecurityErrorWithContext_(
+        "SIGNATURE_INVALID",
+        "Secure booking request signature is invalid.",
+        401,
+        context
+      );
+    }
+
+    bookingReserveNonce_(sessionId, nonce, context.expiresAt);
+
+    return context;
+  } catch (err) {
+    if (context && !err.bookingSecurityContext) {
+      err.bookingSecurityContext = context;
+    }
     throw err;
   }
+}
+
+/**
+ * Attach signed security metadata to every normal business response.
+ */
+function bookingSignResponse_(response, context) {
+  if (!context || !context.sessionId || !context.sessionKey) {
+    throw new Error("Cannot sign booking response without a session context.");
+  }
+
+  const body = {};
+  Object.keys(response || {}).forEach(function (key) {
+    if (key !== "security") body[key] = response[key];
+  });
+
+  const canonicalBody = bookingCanonicalJson_(body, false);
+  const bodyHash = bookingSha256Hex_(canonicalBody);
+  const timestamp = String(Date.now());
+  const nonce = bookingRandomHex32_();
+
+  const stringToSign = [
+    BOOKING_SECURITY_CFG.VERSION,
+    "response",
+    timestamp,
+    nonce,
+    context.sessionId,
+    bodyHash,
+  ].join("\n");
+
+  const signature = bookingHmacSha256Hex_(
+    context.sessionKey,
+    stringToSign
+  );
+
+  body.security = {
+    version: BOOKING_SECURITY_CFG.VERSION,
+    session_id: context.sessionId,
+    timestamp: Number(timestamp),
+    nonce: nonce,
+    body_hash: bodyHash,
+    signature: signature,
+  };
+
+  return body;
+}
+
+/**
+ * Safe error payload for browser responses.
+ * Deliberately omits stack traces and internal exception details.
+ */
+function bookingPublicErrorPayload_(requestId, fallbackCode, err) {
+  const statusCode =
+    err && Number(err.statusCode) ? Number(err.statusCode) : 500;
+  const code =
+    err && err.code ? String(err.code) : String(fallbackCode || "ERROR");
+
+  const safeMessage =
+    err && err.bookingSafeMessage
+      ? String(err.bookingSafeMessage)
+      : statusCode >= 500
+        ? "Booking request could not be completed."
+        : err && err.message
+          ? String(err.message)
+          : "Booking request could not be completed.";
+
+  return {
+    statusCode: statusCode,
+    success: false,
+    code: code,
+    message: safeMessage,
+    data: {},
+  };
+}
+
+/**
+ * Recover a signing context from a syntactically valid server-issued session
+ * token so that authentication errors can still be signed.
+ */
+function bookingRecoverSecurityContext_(params) {
+  try {
+    const sessionId = String(
+      (params && params.session_id) || ""
+    ).trim();
+    if (!sessionId) return null;
+    return bookingParseSessionContext_(sessionId);
+  } catch (ignore) {
+    return null;
+  }
+}
+
+function bookingIsAllowedAction_(action, method) {
+  const normalizedAction = String(action || "").toLowerCase();
+  const normalizedMethod = String(method || "GET").toUpperCase();
+
+  if (normalizedMethod === "GET") {
+    return (
+      normalizedAction === "sessions" ||
+      normalizedAction === "days" ||
+      normalizedAction === "book" ||
+      normalizedAction === "health"
+    );
+  }
+
+  if (normalizedMethod === "POST") {
+    return normalizedAction === "book" || normalizedAction === "cancel";
+  }
+
+  return false;
+}
+
+function bookingGetAllowedOrigins_() {
+  const raw = String(
+    PropertiesService.getScriptProperties().getProperty(
+      BOOKING_SECURITY_CFG.ALLOWED_ORIGINS_PROP
+    ) || ""
+  );
+  const seen = {};
+  const origins = [];
+
+  raw.split(/[,;\s]+/).forEach(function (value) {
+    const origin = bookingNormalizeHttpsOrigin_(value);
+    if (!origin || seen[origin]) return;
+    seen[origin] = true;
+    origins.push(origin);
+  });
+
+  return origins;
+}
+
+function bookingNormalizeHttpsOrigin_(value) {
+  const candidate = String(value || "").trim().replace(/\/+$/, "");
+  const match = candidate.match(
+    /^https:\/\/([a-z0-9](?:[a-z0-9.-]*[a-z0-9])?)(?::([0-9]{1,5}))?$/i
+  );
+  if (!match) return "";
+
+  const hostname = String(match[1] || "").toLowerCase();
+  if (!hostname || hostname.indexOf("..") >= 0) return "";
+
+  const port = match[2] ? Number(match[2]) : 443;
+  if (!Number.isInteger(port) || port < 1 || port > 65535) return "";
+
+  return "https://" + hostname + (port === 443 ? "" : ":" + String(port));
+}
+
+function bookingRequireAllowedOrigin_(value) {
+  const origin = bookingNormalizeHttpsOrigin_(value);
+  const allowedOrigins = bookingGetAllowedOrigins_();
+
+  if (!allowedOrigins.length) {
+    throw bookingSecurityError_(
+      "BOOKING_ALLOWED_ORIGINS_NOT_CONFIGURED",
+      "Secure booking is not configured.",
+      500
+    );
+  }
+  if (!origin || allowedOrigins.indexOf(origin) < 0) {
+    throw bookingSecurityError_(
+      "SESSION_INIT_ORIGIN_NOT_ALLOWED",
+      "Secure booking origin is not allowed.",
+      403
+    );
+  }
+  return origin;
+}
+
+function bookingRequireBootstrapRequestId_(value) {
+  const requestId = String(value || "").trim().toLowerCase();
+  if (!/^[a-f0-9]{32}$/.test(requestId)) {
+    throw bookingSecurityError_(
+      "SESSION_INIT_REQUEST_INVALID",
+      "Secure booking request is invalid.",
+      400
+    );
+  }
+  return requestId;
+}
+
+function bookingGetMasterSecret_() {
+  const secret = String(
+    PropertiesService.getScriptProperties().getProperty(
+      BOOKING_SECURITY_CFG.MASTER_SECRET_PROP
+    ) || ""
+  );
+
+  if (!secret) {
+    throw bookingSecurityError_(
+      "BOOKING_SECURITY_NOT_CONFIGURED",
+      "Secure booking is not configured.",
+      500
+    );
+  }
+
+  return secret;
+}
+
+function bookingGenerateMasterSecret_() {
+  // Multiple independent UUIDs are hashed so the stored value is fixed-length
+  // and never needs to leave Apps Script.
+  const entropy = [
+    Utilities.getUuid(),
+    Utilities.getUuid(),
+    Utilities.getUuid(),
+    Utilities.getUuid(),
+    String(Date.now()),
+  ].join("|");
+
+  return bookingSha256Hex_(entropy);
+}
+
+function bookingParseSessionContext_(sessionId) {
+  const value = String(sessionId || "");
+  const parts = value.split(".");
+
+  if (
+    parts.length !== 2 ||
+    !parts[0] ||
+    !/^[0-9a-f]{64}$/.test(parts[1])
+  ) {
+    throw bookingSecurityError_(
+      "SESSION_INVALID",
+      "Secure booking session is invalid.",
+      401
+    );
+  }
+
+  const payloadB64 = parts[0];
+  const providedTokenSignature = parts[1];
+  const masterSecret = bookingGetMasterSecret_();
+
+  const expectedTokenSignature = bookingHmacSha256Hex_(
+    masterSecret,
+    BOOKING_SECURITY_CFG.TOKEN_CONTEXT + "\n" + payloadB64
+  );
+
+  if (
+    !bookingConstantTimeHexEqual_(
+      expectedTokenSignature,
+      providedTokenSignature
+    )
+  ) {
+    throw bookingSecurityError_(
+      "SESSION_INVALID",
+      "Secure booking session is invalid.",
+      401
+    );
+  }
+
+  let payload;
+  try {
+    const json = bookingBase64UrlDecode_(payloadB64);
+    payload = JSON.parse(json);
+  } catch (ignore) {
+    throw bookingSecurityError_(
+      "SESSION_INVALID",
+      "Secure booking session is invalid.",
+      401
+    );
+  }
+
+  if (
+    !payload ||
+    payload.v !== BOOKING_SECURITY_CFG.VERSION ||
+    payload.scope !== "booking" ||
+    !Number.isFinite(Number(payload.iat)) ||
+    !Number.isFinite(Number(payload.exp)) ||
+    Number(payload.exp) <= Number(payload.iat) ||
+    !payload.jti
+  ) {
+    throw bookingSecurityError_(
+      "SESSION_INVALID",
+      "Secure booking session is invalid.",
+      401
+    );
+  }
+
+  return {
+    sessionId: value,
+    sessionKey: bookingDeriveSessionKey_(masterSecret, value),
+    scope: "booking",
+    issuedAt: Number(payload.iat),
+    expiresAt: Number(payload.exp),
+    jti: String(payload.jti),
+  };
+}
+
+function bookingDeriveSessionKey_(masterSecret, sessionId) {
+  return bookingHmacSha256Hex_(
+    masterSecret,
+    BOOKING_SECURITY_CFG.KEY_CONTEXT + "\n" + String(sessionId)
+  );
+}
+
+function bookingReserveNonce_(sessionId, nonce, expiresAt) {
+  const now = Date.now();
+  const ttlSeconds = Math.max(
+    60,
+    Math.ceil((Number(expiresAt) - now) / 1000) +
+      Math.ceil(BOOKING_SECURITY_CFG.REQUEST_WINDOW_MS / 1000)
+  );
+
+  const nonceKeyHash = bookingSha256Hex_(
+    String(sessionId) + "\n" + String(nonce)
+  );
+  const cacheKey =
+    BOOKING_SECURITY_CFG.NONCE_CACHE_PREFIX + nonceKeyHash.slice(0, 48);
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(5000);
+
+  try {
+    const cache = CacheService.getScriptCache();
+
+    if (cache.get(cacheKey)) {
+      throw bookingSecurityError_(
+        "REPLAY_DETECTED",
+        "Secure booking request was already processed.",
+        409
+      );
+    }
+
+    cache.put(cacheKey, "1", ttlSeconds);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function bookingCanonicalizeBusinessParameters_(params) {
+  const normalized = {};
+  const source = params && typeof params === "object" ? params : {};
+
+  Object.keys(source).forEach(function (key) {
+    const value = source[key];
+
+    if (
+      BOOKING_SECURITY_CFG.RESERVED_FIELDS[key] ||
+      value === undefined ||
+      value === null
+    ) {
+      return;
+    }
+
+    normalized[String(key)] = bookingRequestValueToString_(value);
+  });
+
+  return Object.keys(normalized)
+    .sort()
+    .map(function (key) {
+      return (
+        bookingEncodeRfc3986_(key) +
+        "=" +
+        bookingEncodeRfc3986_(normalized[key])
+      );
+    })
+    .join("&");
+}
+
+function bookingRequestValueToString_(value) {
+  if (
+    Array.isArray(value) ||
+    (value && typeof value === "object")
+  ) {
+    return bookingCanonicalJson_(value, false);
+  }
+
+  return String(value);
+}
+
+/**
+ * Mirrors assets/booking-security.js canonicalJson().
+ */
+function bookingCanonicalJson_(value, inArray) {
+  if (value === null) return "null";
+
+  const valueType = typeof value;
+
+  if (valueType === "string" || valueType === "boolean") {
+    return JSON.stringify(value);
+  }
+
+  if (valueType === "number") {
+    return Number.isFinite(value) ? JSON.stringify(value) : "null";
+  }
+
+  if (
+    valueType === "undefined" ||
+    valueType === "function" ||
+    valueType === "symbol"
+  ) {
+    return inArray ? "null" : undefined;
+  }
+
+  if (valueType === "bigint") {
+    throw new TypeError(
+      "BigInt values are not supported in booking payloads."
+    );
+  }
+
+  if (Array.isArray(value)) {
+    return (
+      "[" +
+      value
+        .map(function (item) {
+          const encoded = bookingCanonicalJson_(item, true);
+          return encoded === undefined ? "null" : encoded;
+        })
+        .join(",") +
+      "]"
+    );
+  }
+
+  if (value && valueType === "object") {
+    const entries = [];
+
+    Object.keys(value)
+      .sort()
+      .forEach(function (key) {
+        const encoded = bookingCanonicalJson_(
+          value[key],
+          false
+        );
+
+        if (encoded !== undefined) {
+          entries.push(JSON.stringify(key) + ":" + encoded);
+        }
+      });
+
+    return "{" + entries.join(",") + "}";
+  }
+
+  return inArray ? "null" : undefined;
+}
+
+function bookingEncodeRfc3986_(value) {
+  return encodeURIComponent(String(value)).replace(
+    /[!'()*]/g,
+    function (character) {
+      return (
+        "%" +
+        character.charCodeAt(0).toString(16).toUpperCase()
+      );
+    }
+  );
+}
+
+function bookingSha256Hex_(value) {
+  const bytes = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    String(value),
+    Utilities.Charset.UTF_8
+  );
+  return bookingBytesToHex_(bytes);
+}
+
+/**
+ * Argument order intentionally matches Utilities:
+ * value first, key second.
+ */
+function bookingHmacSha256Hex_(key, value) {
+  const bytes = Utilities.computeHmacSha256Signature(
+    String(value),
+    String(key),
+    Utilities.Charset.UTF_8
+  );
+  return bookingBytesToHex_(bytes);
+}
+
+function bookingBytesToHex_(bytes) {
+  return (bytes || [])
+    .map(function (byte) {
+      const unsigned = (Number(byte) + 256) % 256;
+      return unsigned.toString(16).padStart(2, "0");
+    })
+    .join("");
+}
+
+function bookingConstantTimeHexEqual_(left, right) {
+  const a = String(left || "").toLowerCase();
+  const b = String(right || "").toLowerCase();
+
+  if (a.length !== b.length) return false;
+
+  let difference = 0;
+
+  for (let i = 0; i < a.length; i++) {
+    difference |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+
+  return difference === 0;
+}
+
+function bookingRandomHex32_() {
+  return Utilities.getUuid().replace(/-/g, "").toLowerCase();
+}
+
+function bookingBase64UrlEncode_(value) {
+  return Utilities.base64EncodeWebSafe(
+    String(value),
+    Utilities.Charset.UTF_8
+  ).replace(/=+$/g, "");
+}
+
+function bookingBase64UrlDecode_(value) {
+  let input = String(value || "");
+  const remainder = input.length % 4;
+
+  if (remainder) {
+    input += "=".repeat(4 - remainder);
+  }
+
+  const bytes = Utilities.base64DecodeWebSafe(input);
+  return Utilities.newBlob(bytes).getDataAsString("UTF-8");
+}
+
+function bookingSecurityError_(code, message, statusCode) {
+  const err = new Error(String(message || "Secure booking request failed."));
+  err.code = String(code || "BOOKING_SECURITY_ERROR");
+  err.statusCode = Number(statusCode || 401);
+  err.bookingSafeMessage = String(
+    message || "Secure booking request failed."
+  );
+  return err;
+}
+
+function bookingSecurityErrorWithContext_(
+  code,
+  message,
+  statusCode,
+  context
+) {
+  const err = bookingSecurityError_(code, message, statusCode);
+  err.bookingSecurityContext = context || null;
+  return err;
+}
+
+/**
+ * Lightweight protocol self-test. Run from the editor after setup.
+ * Returns hashes/fingerprints only, never secrets.
+ */
+function selfTestBookingSecurityProtocol() {
+  const canonical = bookingCanonicalizeBusinessParameters_({
+    b: 2,
+    a: "hello world",
+    arr: ["x", 2, { z: true, a: "first" }],
+    nil: null,
+    signature: "ignored"
+  });
+
+  const expectedCanonical =
+    "a=hello%20world&arr=%5B%22x%22%2C2%2C%7B%22a%22%3A%22first%22%2C%22z%22%3Atrue%7D%5D&b=2";
+
+  const shaVector = bookingSha256Hex_("abc");
+  const expectedSha =
+    "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
+
+  const hmacVector = bookingHmacSha256Hex_(
+    "key",
+    "The quick brown fox jumps over the lazy dog"
+  );
+  const expectedHmac =
+    "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8";
+
+  const requestPayloadHash = bookingSha256Hex_("a=1&b=2");
+  const requestString = [
+    "v1",
+    "book",
+    "1700000000000",
+    "00112233445566778899aabbccddeeff",
+    "test-session",
+    requestPayloadHash
+  ].join("\\n");
+
+  const requestSignature = bookingHmacSha256Hex_(
+    "temporary-test-session-key",
+    requestString
+  );
+
+  const responseBody = {
+    success: true,
+    data: {
+      sessions: [
+        { slot_id: "one", available: true }
+      ]
+    }
+  };
+  const responseCanonical = bookingCanonicalJson_(responseBody, false);
+  const responseBodyHash = bookingSha256Hex_(responseCanonical);
+  const responseString = [
+    "v1",
+    "response",
+    "1700000000000",
+    "00112233445566778899aabbccddeeff",
+    "test-session",
+    responseBodyHash
+  ].join("\\n");
+  const responseSignature = bookingHmacSha256Hex_(
+    "temporary-test-session-key",
+    responseString
+  );
+
+  const checks = {
+    canonicalization_matches_frontend_test:
+      canonical === expectedCanonical,
+    sha256_known_vector_matches:
+      shaVector === expectedSha,
+    hmac_sha256_known_vector_matches:
+      hmacVector === expectedHmac,
+    request_payload_hash_is_hex64:
+      /^[0-9a-f]{64}$/.test(requestPayloadHash),
+    request_signature_is_hex64:
+      /^[0-9a-f]{64}$/.test(requestSignature),
+    response_body_hash_is_hex64:
+      /^[0-9a-f]{64}$/.test(responseBodyHash),
+    response_signature_is_hex64:
+      /^[0-9a-f]{64}$/.test(responseSignature),
+    protocol_is_v1:
+      BOOKING_SECURITY_CFG.VERSION === "v1"
+  };
+
+  return {
+    ok: Object.keys(checks).every(function (key) { return checks[key] === true; }),
+    checks: checks,
+    protocol_version: BOOKING_SECURITY_CFG.VERSION,
+    frontend_baseline_commit: BOOKING_SECURITY_CFG.FRONTEND_BASELINE_COMMIT,
+    theme_version: BOOKING_SECURITY_CFG.THEME_VERSION,
+    required_webapp_access: BOOKING_SECURITY_CFG.REQUIRED_WEBAPP_ACCESS,
+    canonical_request_test_value: canonical,
+    sha256_test_value: shaVector,
+    hmac_test_value: hmacVector
+  };
 }
 
 /**
@@ -2147,4 +3395,3 @@ function indexMap_(header) {
 function repairBookingWindowFields() {
   return repairBookingWindowFields_();
 }
-
