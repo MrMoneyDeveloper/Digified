@@ -1,5 +1,5 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-<!-- BUILD_MARKER: 2026-08-29-01 -->
+<!-- BUILD_MARKER: 2026-08-30-01 -->
 <link rel="icon" type="image/png" href="{{#if settings.favicon}}{{settings.favicon}}{{else}}{{asset 'settings/favicon.png'}}{{/if}}">
 <link rel="stylesheet" href="{{asset 'bootstrap.min.css'}}">
 <!-- Font Awesome icon set (after Zendesk core CSS, before custom theme CSS) -->
@@ -11,6 +11,10 @@
 </script>
 <script src="{{asset 'booking-config.js'}}"></script>
 <script src="{{asset 'booking-security.js'}}"></script>
+<script src="{{asset 'theme-ui.js'}}" defer></script>
+<script src="{{asset 'alpine-csp.min.js'}}" defer></script>
+<script src="{{asset 'gsap.min.js'}}" defer></script>
+<script src="{{asset 'theme-motion.js'}}" defer></script>
 <script type="text/javascript">
   // Load ES module polyfill only for browsers that don't support ES modules
   if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {

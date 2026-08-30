@@ -6,10 +6,10 @@
   };
 </script>
 
-<section class="training-bookings training-bookings--room-page">
+<section class="training-bookings training-bookings--room-page" data-digify-motion-page="booking">
   <div class="container">
     <p class="tb-build-tag" data-room-booking-build="2026-04-02-03">Room booking UI build 2026-04-02-03</p>
-    <div class="tb-hero">
+    <div class="tb-hero" data-digify-motion="hero">
       <h1>Book Rooms</h1>
       <p class="tb-intro">
         Training Room 1 and Training Room 2 are available from 08:00 to 20:00 in 30-minute steps.
@@ -17,7 +17,7 @@
       </p>
     </div>
 
-    <div class="tb-guide" aria-label="How training room booking works">
+    <div class="tb-guide" aria-label="How training room booking works" data-digify-motion-stagger>
       <div class="tb-guide__card">
         <span class="tb-guide__eyebrow">1. Choose the room</span>
         <p>Each room has its own calendar. Training Room 1, Training Room 2, and the Interview Room load separate availability.</p>
@@ -40,6 +40,7 @@
       <div
         id="training-booking-root"
         class="tb-app"
+        data-digify-motion="reveal"
         data-room-booking-version="v3"
         data-room-base-url="https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
   data-room-image-training-1="{{asset 'room-preview-training-room-1-v2.jpeg'}}"
@@ -86,8 +87,12 @@
             <img
               id="training-room-preview-image"
               class="tb-room-preview__image"
-          src="{{asset 'room-preview-training-room-1-v2.jpeg'}}"
+              src="{{asset 'room-preview-training-room-1-v2.jpeg'}}"
               alt="Training Room 1 preview"
+              loading="lazy"
+              decoding="async"
+              width="1600"
+              height="1200"
             >
             <div id="training-room-preview-placeholder" class="tb-room-preview__placeholder" hidden></div>
           </div>
@@ -170,5 +175,4 @@
   </div>
 </section>
 
-<script src="{{asset 'room-preview-inline.js'}}" defer></script>
 <script src="{{asset 'training-bookings-calendar.js'}}" defer></script>

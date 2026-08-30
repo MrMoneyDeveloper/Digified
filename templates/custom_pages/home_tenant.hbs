@@ -3,19 +3,19 @@
 
 <div id="tsparticles"></div>
 
-<main id="main-content" class="home-main homepage-sections">
-  <section class="digify-brand-strip digify-brand-strip--signed-in" aria-label="Digify CX brands">
+<main id="main-content" class="home-main homepage-sections" data-digify-motion-page="home-tenant">
+  <section class="digify-brand-strip digify-brand-strip--signed-in" aria-label="Digify CX brands" data-digify-motion="reveal">
     <div class="container">
       <div class="digify-brand-carousel">
-        <div class="digify-brand-carousel__track">
-          <img src="{{settings.home_logo_digify_bpo}}" alt="Digify BPO" class="digify-brand-carousel__logo">
-          <img src="{{asset 'home-logo-cx-leads.png'}}" alt="CX Leads" class="digify-brand-carousel__logo">
-          <img src="{{settings.home_logo_outbound_cx}}" alt="Outbound CX" class="digify-brand-carousel__logo">
-          <img src="{{settings.home_logo_cx_experts}}" alt="CX Experts" class="digify-brand-carousel__logo">
-          <img src="{{settings.home_logo_digify_bpo}}" alt="Digify BPO" class="digify-brand-carousel__logo">
-          <img src="{{asset 'home-logo-cx-leads.png'}}" alt="CX Leads" class="digify-brand-carousel__logo">
-          <img src="{{settings.home_logo_outbound_cx}}" alt="Outbound CX" class="digify-brand-carousel__logo">
-          <img src="{{settings.home_logo_cx_experts}}" alt="CX Experts" class="digify-brand-carousel__logo">
+        <div class="digify-brand-carousel__track" data-digify-motion-stagger>
+          <img src="{{settings.home_logo_digify_bpo}}" alt="Digify BPO" class="digify-brand-carousel__logo" width="953" height="293" loading="lazy" decoding="async">
+          <img src="{{asset 'home-logo-cx-leads.png'}}" alt="CX Leads" class="digify-brand-carousel__logo" width="1343" height="568" loading="lazy" decoding="async">
+          <img src="{{settings.home_logo_outbound_cx}}" alt="Outbound CX" class="digify-brand-carousel__logo" width="990" height="156" loading="lazy" decoding="async">
+          <img src="{{settings.home_logo_cx_experts}}" alt="CX Experts" class="digify-brand-carousel__logo" width="917" height="198" loading="lazy" decoding="async">
+          <img src="{{settings.home_logo_digify_bpo}}" alt="" class="digify-brand-carousel__logo" width="953" height="293" loading="lazy" decoding="async">
+          <img src="{{asset 'home-logo-cx-leads.png'}}" alt="" class="digify-brand-carousel__logo" width="1343" height="568" loading="lazy" decoding="async">
+          <img src="{{settings.home_logo_outbound_cx}}" alt="" class="digify-brand-carousel__logo" width="990" height="156" loading="lazy" decoding="async">
+          <img src="{{settings.home_logo_cx_experts}}" alt="" class="digify-brand-carousel__logo" width="917" height="198" loading="lazy" decoding="async">
         </div>
       </div>
     </div>
@@ -23,13 +23,13 @@
 
   <section class="access-hub-hero" style="background-image:url('{{settings.digify_cx_hero_image}}');">
     <div class="access-hub-hero__overlay"></div>
-    <div class="access-hub-content container">
+    <div class="access-hub-content container" data-digify-motion="hero">
       <p class="access-hub-eyebrow">Tenant experience</p>
       <h1>Tenant access simplified</h1>
       <p class="access-hub-subtitle">
         External CX partners only see the forms, SLAs, and policies that apply to their tenant agreement.
       </p>
-      <div class="access-hub-cards">
+      <div class="access-hub-cards" data-digify-motion-stagger>
         <div class="access-hub-card access-hub-card-tenant">
           <h2>Tenant requests</h2>
           <p>Provision logins, request facility help, or escalate incidents for your program.</p>
@@ -55,7 +55,7 @@
     </div>
   </section>
 
-  <section class="featured-policies container">
+  <section class="featured-policies container" data-digify-motion="reveal">
     <header class="section-header">
       <p class="eyebrow">Guides for partners</p>
       <h2>Top tenant references</h2>

@@ -1,12 +1,43 @@
-<div id="digify-global-loader" class="digify-global-loader" role="status" aria-live="polite" aria-label="Loading page">
-  <video class="digify-global-loader__video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
-    <source src="{{asset 'digify-cx-looped-loader.mp4'}}" type="video/mp4">
-  </video>
-  <div class="digify-global-loader__overlay" aria-hidden="true"></div>
-  <p class="digify-global-loader__text">Loading Digify CX</p>
+<div id="digify-brand-intro" class="digify-brand-intro" aria-hidden="true">
+  <div class="digify-brand-intro__mark"><span>D</span></div>
+  <span class="digify-brand-intro__name">Digify CX</span>
 </div>
+<script>
+  (function () {
+    var intro = document.getElementById("digify-brand-intro");
+    var storageKey = "digify_intro_seen_v1";
+    var reduceMotion = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var seen = false;
 
-<header class="digify-header">
+    try {
+      seen = window.sessionStorage.getItem(storageKey) === "1";
+    } catch (error) {
+      seen = false;
+    }
+
+    if (!intro || reduceMotion || seen) {
+      if (intro) intro.remove();
+      return;
+    }
+
+    try {
+      window.sessionStorage.setItem(storageKey, "1");
+    } catch (error) {
+      // The intro remains non-blocking when storage is unavailable.
+    }
+
+    intro.classList.add("digify-brand-intro--visible");
+    window.setTimeout(function () {
+      intro.classList.add("digify-brand-intro--leaving");
+    }, 260);
+    window.setTimeout(function () {
+      if (intro.parentNode) intro.parentNode.removeChild(intro);
+    }, 400);
+  })();
+</script>
+
+<header class="digify-header" data-digify-motion="reveal">
   <div class="digify-header__inner container">
     <a class="digify-header__brand" href="/hc/{{help_center.locale}}">
       <img
@@ -14,6 +45,10 @@
         alt="Digify CX"
         class="digify-header__logo"
         data-digify-check="header-logo"
+        width="96"
+        height="73"
+        decoding="async"
+        fetchpriority="high"
       >
       <span class="digify-header__brand-text">Digify CX Group</span>
     </a>
@@ -24,10 +59,21 @@
       {{/if}}
       <div class="digify-header__quick-links">
         {{#if signed_in}}
-          <div class="dropdown">
-            <button class="dropdown-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+          <details
+            class="dropdown digify-header__disclosure"
+            x-data="digifyHeader"
+            @toggle="sync"
+            @click.outside="close"
+            @keydown.escape.stop="closeAndFocus"
+          >
+            <summary
+              class="dropdown-toggle"
+              aria-haspopup="menu"
+              x-ref="toggle"
+              x-bind:aria-expanded="open"
+            >
               Quick Links
-            </button>
+            </summary>
             <ul class="dropdown-menu" role="menu">
               <!-- INTERNAL USERS -->
               <li class="dropdown-menu__label nav-internal" role="presentation">Actions</li>
@@ -80,7 +126,7 @@
                 <a href="/hc/{{help_center.locale}}/p/policies">Shared Policies</a>
               </li>
             </ul>
-          </div>
+          </details>
         {{/if}}
       </div>
 

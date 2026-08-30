@@ -7,7 +7,7 @@
             <path fill="currentColor" d="M6 0C2.7 0 0 2.7 0 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm2.3 7H3.7c-.3 0-.4-.3-.3-.5C3.9 7.6 4.9 7 6 7s2.1.6 2.6 1.5c.1.2 0 .5-.3.5z"/>
           </svg>
         {{/if}}
-        <img class="user-avatar" src="{{user.avatar_url}}" alt=""/>
+        <img class="user-avatar" src="{{user.avatar_url}}" alt="" decoding="async"/>
       </div>
       <div class="basic-info">
         <div class="community-name-and-title-badges">
@@ -30,7 +30,7 @@
         <ul aria-label="{{t 'badges'}}" class="community-badge-achievements">
           {{#each (slice (filter user.badges on="category_slug" equals="achievements") 0 4)}}
             <li class="community-badge community-badge-achievement">
-              <img src="{{icon_url}}" alt="{{name}}" title="{{name}} | {{description}}" />
+              <img src="{{icon_url}}" alt="{{name}}" title="{{name}} | {{description}}" loading="lazy" decoding="async" />
             </li>
           {{/each}}
 
@@ -172,7 +172,7 @@
                     {{/contains}}
                   </span>
                   <header class="profile-activity-header">
-                    <img class="user-avatar" src="{{../user.avatar_url}}" alt=""/>
+                    <img class="user-avatar" src="{{../user.avatar_url}}" alt="" loading="lazy" decoding="async"/>
                     <p class="profile-activity-description">{{label}}</p>
                   </header>
 
@@ -264,7 +264,7 @@
                 <li role="region" class="profile-badges-item" aria-labelledby="title-{{id}}" aria-describedby="desc-{{id}}">
                   <div class="profile-badges-item-image">
                     {{#if icon_url}}
-                      <img class="badge" src="{{icon_url}}" alt="">
+                      <img class="badge" src="{{icon_url}}" alt="" loading="lazy" decoding="async">
                     {{/if}}
                   </div>
                   <div>
