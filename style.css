@@ -6349,3 +6349,108 @@ section.community-footer.container {
   }
 }
 
+/* Live theme regression fixes — 2028.1.1 */
+.policies-page .policy-card-grid > .row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--digify-space-3);
+  margin-inline: 0;
+}
+
+.policies-page .policy-card-grid > .row > .col {
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  padding-inline: 0;
+}
+
+.policies-page .policy-card.cxi-policy-card {
+  min-width: 0;
+  height: 100%;
+}
+
+.policies-page .policy-card.cxi-policy-card h3,
+.policies-page .policy-card.cxi-policy-card p,
+.policies-page .policy-card.cxi-policy-card li {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.access-hub-cards .access-hub-card-internal {
+  background: linear-gradient(145deg, #17162f, #213c63);
+  color: #ffffff;
+}
+
+.access-hub-cards .access-hub-card-internal h2 {
+  color: #ffffff;
+}
+
+.access-hub-cards .access-hub-card-internal p {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.access-hub-cards .access-hub-card-internal .btn {
+  border-color: rgba(255, 255, 255, 0.82);
+  background: #ffffff;
+  color: #17162f !important;
+}
+
+.access-hub-cards .access-hub-card-tenant {
+  background: linear-gradient(145deg, #f8fffc, #dff7ed);
+  color: var(--digify-night);
+}
+
+.access-hub-cards .access-hub-card-tenant h2 {
+  color: var(--digify-night);
+}
+
+.access-hub-cards .access-hub-card-tenant p {
+  color: var(--digify-ink-soft);
+}
+
+.access-hub-cards .access-hub-card-tenant .btn {
+  border-color: #123a59;
+  background: #123a59;
+  color: #ffffff !important;
+}
+
+.signup-options-section .landing-card--staff,
+.signup-options-section .landing-card--tenant {
+  background: #ffffff;
+  color: var(--digify-night);
+}
+
+.signup-options-section .landing-card--staff h3,
+.signup-options-section .landing-card--tenant h3 {
+  color: var(--digify-night);
+}
+
+.signup-options-section .landing-card--staff p,
+.signup-options-section .landing-card--tenant p {
+  color: var(--digify-ink-soft);
+}
+
+.signup-options-section .landing-card .btn.btn-primary {
+  border-color: #17162f;
+  background: linear-gradient(135deg, #17162f, #323066);
+  color: #ffffff !important;
+}
+
+.signup-options-section .landing-card .btn.btn-secondary {
+  border-color: #187c73;
+  background: #ffffff;
+  color: #17162f !important;
+}
+
+@media (min-width: 40rem) {
+  .policies-page .policy-card-grid > .row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .policies-page .policy-card-grid > .row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
