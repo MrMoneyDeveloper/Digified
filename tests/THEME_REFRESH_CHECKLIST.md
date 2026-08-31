@@ -41,5 +41,5 @@ Open `tests/booking-ui-harness.html` locally. It is a non-production visual fixt
 - Confirm below-fold media uses native lazy loading and known local images have intrinsic dimensions
 - Confirm Alpine and GSAP are deferred and no HTMX, Workbox, lozad, Lenis, date-fns, or Tailwind runtime is present
 - Compare Lighthouse accessibility and Core Web Vitals against the current production theme
-- Rebuild `digified-theme.zip`, inspect forward-slash archive paths, and confirm `manifest.json` reports `2028.2.2`
+- Rebuild `digified-theme.zip`, inspect forward-slash archive paths, and confirm `manifest.json` reports `2028.2.3`
 - Do not publish the ZIP to Zendesk until the automatic Apps Script bootstrap is deployed and verified

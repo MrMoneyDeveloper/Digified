@@ -4,7 +4,7 @@
  * SECURITY UPDATE: 2026-08-30
  *
  * Repo-aligned frontend contract:
- *   Digified automatic-bootstrap contract (theme 2028.2.2)
+ *   Digified automatic-bootstrap contract (theme 2028.2.3)
  *   docs/booking-security-protocol.md (v1)
  *
  * - Dynamic sessions (Mon-Fri)
@@ -848,7 +848,7 @@ const BOOKING_SECURITY_CFG = Object.freeze({
   FRONTEND_LEGACY_BOOKING_CLIENT_SHA: "205e2d88a5183a35489fd88749af5a4eb5e2b817a53a048e328e9678f40f221d",
   FRONTEND_THEME_SCRIPT_SHA: "2bc98edc5a312346c1134fb187b926e91ae58933d4e45b87e69bb9fb5e891a27",
   FRONTEND_CONFIG_JS_SHA: "c62f11b9f1aeba7144d962528cb362bbcc639b4de8d2a3e6dd74c6be2954940c",
-  THEME_VERSION: "2028.2.2",
+  THEME_VERSION: "2028.2.3",
   REQUIRED_WEBAPP_ACCESS: "ANYONE_ANONYMOUS",
   REQUIRED_EXECUTE_AS: "USER_DEPLOYING",
   MASTER_SECRET_PROP: "BOOKING_MASTER_SECRET",

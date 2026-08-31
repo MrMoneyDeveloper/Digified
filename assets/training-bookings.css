@@ -604,12 +604,17 @@
 .tb-modal {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: rgba(10, 20, 39, 0.58);
-  z-index: 999;
+  z-index: 2147483000;
 }
 
 .tb-modal[hidden] {
@@ -619,6 +624,9 @@
 .tb-modal-dialog {
   width: min(100%, 560px);
   max-height: 92vh;
+  max-height: 92dvh;
+  margin: auto;
+  flex: 0 0 auto;
   overflow-y: auto;
   border-radius: 18px;
   border: 1px solid rgba(18, 35, 63, 0.12);

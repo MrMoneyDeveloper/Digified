@@ -106,7 +106,9 @@
             Choose a date and room to load the training calendar.
           </div>
         </div>
+      </div>
 
+      {{!-- Keep the fixed modal outside the container-query root so it is viewport anchored. --}}
         <div id="training-booking-modal" class="tb-modal" aria-hidden="true" hidden>
           <div class="tb-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="training-booking-modal-title">
             <div class="tb-modal-header">
@@ -155,7 +157,6 @@
             </div>
           </div>
         </div>
-      </div>
     {{else}}
       <div class="tb-signed-out">
         <p>Please sign in to view and book rooms.</p>
