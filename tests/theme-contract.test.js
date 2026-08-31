@@ -48,6 +48,34 @@ function assertExcludes(source, unexpected, label) {
   assert.ok(!source.includes(unexpected), `${label} must not include ${unexpected}`);
 }
 
+function assertModalOutsideBookingRoot(source, label) {
+  const tags = source.match(/<div\b[^>]*>|<\/div>/gi) || [];
+  let depth = 0;
+  let rootDepth = null;
+  let modalSeen = false;
+
+  tags.forEach((tag) => {
+    if (/^<\/div/i.test(tag)) {
+      if (rootDepth === depth) rootDepth = null;
+      depth -= 1;
+      return;
+    }
+
+    depth += 1;
+    if (/id="training-booking-root"/i.test(tag)) rootDepth = depth;
+    if (/id="training-booking-modal"/i.test(tag)) {
+      modalSeen = true;
+      assert.strictEqual(
+        rootDepth,
+        null,
+        `${label} modal must remain outside the container-query booking root`
+      );
+    }
+  });
+
+  assert.ok(modalSeen, `${label} must include the booking modal`);
+}
+
 const bookingTemplates = [
   "templates/custom_pages/room_booking.hbs",
   "templates/custom_pages/training_booking.hbs"
@@ -84,6 +112,7 @@ const bookingIds = [
 
 bookingTemplates.forEach((relativePath) => {
   const source = read(relativePath);
+  assertModalOutsideBookingRoot(source, relativePath);
   bookingIds.forEach((id) => {
     assertIncludes(source, `id="${id}"`, relativePath);
   });
@@ -128,6 +157,11 @@ bookingTemplates.forEach((relativePath) => {
 
 const trainingTemplate = read("templates/custom_pages/training_booking.hbs");
 assertExcludes(trainingTemplate, "<style>", "training booking template");
+
+const bookingStyles = read("assets/training-bookings.css");
+assertIncludes(bookingStyles, ".tb-modal {\n  position: fixed;", "booking modal styles");
+assertIncludes(bookingStyles, "min-height: 100dvh;", "booking modal styles");
+assertIncludes(bookingStyles, "overscroll-behavior: contain;", "booking modal styles");
 
 const bookingHarness = read("tests/booking-ui-harness.html");
 bookingIds.forEach((id) => assertIncludes(bookingHarness, `id="${id}"`, "booking harness"));
@@ -260,6 +294,6 @@ assert.strictEqual(
 );
 
 const manifest = JSON.parse(read("manifest.json"));
-assert.strictEqual(manifest.version, "2028.2.2", "theme version must be bumped");
+assert.strictEqual(manifest.version, "2028.2.3", "theme version must be bumped");
 
 console.log("theme contract tests passed");
