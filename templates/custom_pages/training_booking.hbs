@@ -43,10 +43,10 @@
         data-digify-motion="reveal"
         data-training-booking-version="v2"
         data-training-base-url="https://script.google.com/macros/s/AKfycbwLge7qDCPemVqE2MsmB11HTZBOJcjFWYjj5yNLGzXKh_qVieGo8Yf5QWVTqt7xB_FU/exec"
-      data-room-image-training-1="{{asset 'room-preview-training-room-1-v3.jpeg'}}"
-      data-room-image-training-1-fallback="{{asset 'room-preview-training-room-1-fallback-v2.jpeg'}}"
-      data-room-image-training-2="{{asset 'room-preview-training-room-2-v3.jpeg'}}"
-      data-room-image-training-2-fallback="{{asset 'room-preview-training-room-2-fallback-v2.jpeg'}}"
+        data-room-image-training-1="{{asset 'room-preview-training-room-1-v3.jpeg'}}"
+        data-room-image-training-1-fallback="{{asset 'room-preview-training-room-1-fallback-v2.jpeg'}}"
+        data-room-image-training-2="{{asset 'room-preview-training-room-2-v3.jpeg'}}"
+        data-room-image-training-2-fallback="{{asset 'room-preview-training-room-2-fallback-v2.jpeg'}}"
         data-room-image-interview="{{asset 'room-preview-interview-room.jpeg'}}"
         data-room-image-interview-fallback="{{asset 'room-preview-interview-room.jpeg'}}"
       >
@@ -108,53 +108,51 @@
         </div>
       </div>
 
-      {{!-- Keep the fixed modal outside the container-query root so it is viewport anchored. --}}
-        <div id="training-booking-modal" class="tb-modal" aria-hidden="true" hidden>
-          <div class="tb-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="training-booking-modal-title">
-            <div class="tb-modal-header">
-              <h2 class="tb-modal-title" id="training-booking-modal-title">Book Room</h2>
-              <button class="tb-modal-close" type="button" id="training-booking-modal-close" aria-label="Close">x</button>
-            </div>
-            <div class="tb-modal-body">
-              <div id="training-booking-session-summary" class="tb-session-summary"></div>
-              <form id="training-booking-form" class="tb-form">
-                <input id="training-booking-slot-id" name="slot_id" type="hidden">
-                <input id="training-booking-start-date" name="start_date" type="hidden">
-                <input id="training-booking-start-time" name="start_time" type="hidden">
-                <input id="training-booking-end-time" name="end_time" type="hidden">
-                <input id="training-booking-room-value" name="dept" type="hidden">
-                <input id="training-booking-repeat-days-value" name="repeat_days" type="hidden">
-                <div class="tb-form-grid">
-                  <div class="tb-field">
-                    <label for="training-booking-requester-name">Requester name</label>
-                    <input class="form-control" id="training-booking-requester-name" name="requester_name" type="text" readonly required>
-                  </div>
-                  <div class="tb-field">
-                    <label for="training-booking-requester-email">Requester email</label>
-                    <input class="form-control" id="training-booking-requester-email" name="requester_email" type="email" readonly required>
-                  </div>
-                  <div class="tb-field">
-                    <label for="training-booking-notes">Notes</label>
-                    <textarea class="form-control" id="training-booking-notes" name="notes" rows="3" placeholder="Any questions or special requirements?"></textarea>
-                  </div>
-                  <div class="tb-field">
-                    <label class="tb-checkbox" for="training-booking-online">
-                      <input id="training-booking-online" name="online_meeting" type="checkbox" value="1">
-                      <span>Include remote participants (create Google Meet link)</span>
-                    </label>
-                  </div>
-                  <div class="tb-field" id="training-booking-attendees-field" hidden>
-                    <div class="tb-field-label" id="training-booking-attendees-label">Attendee emails</div>
-                    <div id="training-booking-attendees" class="tb-attendee-list"></div>
-                    <button class="btn btn-secondary" id="training-booking-add-attendee" type="button">+ Add attendee</button>
-                  </div>
+      <div id="training-booking-modal" class="tb-modal" aria-hidden="true" hidden>
+        <div class="tb-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="training-booking-modal-title">
+          <div class="tb-modal-header">
+            <h2 class="tb-modal-title" id="training-booking-modal-title">Book Room</h2>
+            <button class="tb-modal-close" type="button" id="training-booking-modal-close" aria-label="Close">x</button>
+          </div>
+          <div class="tb-modal-body">
+            <div id="training-booking-session-summary" class="tb-session-summary"></div>
+            <form id="training-booking-form" class="tb-form">
+              <input id="training-booking-slot-id" name="slot_id" type="hidden">
+              <input id="training-booking-start-date" name="start_date" type="hidden">
+              <input id="training-booking-start-time" name="start_time" type="hidden">
+              <input id="training-booking-end-time" name="end_time" type="hidden">
+              <input id="training-booking-room-value" name="dept" type="hidden">
+              <input id="training-booking-repeat-days-value" name="repeat_days" type="hidden">
+              <div class="tb-form-grid">
+                <div class="tb-field">
+                  <label for="training-booking-requester-name">Requester name</label>
+                  <input class="form-control" id="training-booking-requester-name" name="requester_name" type="text" readonly required>
                 </div>
-                <div class="tb-modal-actions">
-                  <button class="btn btn-primary" id="training-booking-submit" type="submit">Book now</button>
-                  <button class="btn btn-secondary" id="training-booking-modal-cancel" type="button">Cancel</button>
+                <div class="tb-field">
+                  <label for="training-booking-requester-email">Requester email</label>
+                  <input class="form-control" id="training-booking-requester-email" name="requester_email" type="email" readonly required>
                 </div>
-              </form>
-            </div>
+                <div class="tb-field">
+                  <label for="training-booking-notes">Notes</label>
+                  <textarea class="form-control" id="training-booking-notes" name="notes" rows="3" placeholder="Any questions or special requirements?"></textarea>
+                </div>
+                <div class="tb-field">
+                  <label class="tb-checkbox" for="training-booking-online">
+                    <input id="training-booking-online" name="online_meeting" type="checkbox" value="1">
+                    <span>Include remote participants (create Google Meet link)</span>
+                  </label>
+                </div>
+                <div class="tb-field" id="training-booking-attendees-field" hidden>
+                  <div class="tb-field-label" id="training-booking-attendees-label">Attendee emails</div>
+                  <div id="training-booking-attendees" class="tb-attendee-list"></div>
+                  <button class="btn btn-secondary" id="training-booking-add-attendee" type="button">+ Add attendee</button>
+                </div>
+              </div>
+              <div class="tb-modal-actions">
+                <button class="btn btn-primary" id="training-booking-submit" type="submit">Book now</button>
+                <button class="btn btn-secondary" id="training-booking-modal-cancel" type="button">Cancel</button>
+              </div>
+            </form>
           </div>
         </div>
     {{else}}
