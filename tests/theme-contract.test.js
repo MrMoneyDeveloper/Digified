@@ -159,7 +159,10 @@ const trainingTemplate = read("templates/custom_pages/training_booking.hbs");
 assertExcludes(trainingTemplate, "<style>", "training booking template");
 
 const bookingStyles = read("assets/training-bookings.css");
-assertIncludes(bookingStyles, ".tb-modal {\n  position: fixed;", "booking modal styles");
+assert.ok(
+  /\.tb-modal\s*\{\s*position:\s*fixed;/.test(bookingStyles),
+  "booking modal styles must keep the overlay fixed to the viewport"
+);
 assertIncludes(bookingStyles, "min-height: 100dvh;", "booking modal styles");
 assertIncludes(bookingStyles, "overscroll-behavior: contain;", "booking modal styles");
 
