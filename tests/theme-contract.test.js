@@ -207,6 +207,25 @@ const bookingClient = read("assets/training-bookings-calendar.js");
 assertIncludes(bookingClient, "const probe = new Image()", "booking room preview loader");
 assertIncludes(bookingClient, "previewRequestId", "booking room preview loader");
 assertExcludes(bookingClient, "swapPreviewExtension", "booking room preview loader");
+[
+  "data-room-image-training-1",
+  "data-room-image-training-1-fallback",
+  "data-room-image-training-2",
+  "data-room-image-training-2-fallback",
+  "data-room-image-interview",
+  "data-room-image-interview-fallback"
+].forEach((attribute) => {
+  assertIncludes(
+    bookingClient,
+    `readPreviewAsset("${attribute}")`,
+    "booking room preview attribute mapping"
+  );
+});
+assertExcludes(
+  bookingClient,
+  "root.dataset.roomImageTraining",
+  "booking room preview attribute mapping"
+);
 assertIncludes(bookingClient, 'jsonpRaw("session_init", {})', "automatic bootstrap integration");
 assertExcludes(bookingClient, "BookingSessionPopup", "automatic bootstrap integration");
 assertExcludes(bookingClient, "Connect securely", "automatic bootstrap integration");
@@ -282,7 +301,7 @@ assert.strictEqual(
 );
 assert.strictEqual(
   sha256NormalizedText("assets/training-bookings-calendar.js"),
-  "0ebb6745df7e547699cb56f2fb4e0c41611567c8bd9b37f55c725c5a6e2602a9",
+  "52f4d2d9abe4355ed698216937058952211aa68565c8a075eb541f0d19e51211",
   "booking client behavior must match the automatic bootstrap/fallback baseline"
 );
 assert.strictEqual(
@@ -297,6 +316,6 @@ assert.strictEqual(
 );
 
 const manifest = JSON.parse(read("manifest.json"));
-assert.strictEqual(manifest.version, "2028.2.3", "theme version must be bumped");
+assert.strictEqual(manifest.version, "2028.2.4", "theme version must be bumped");
 
 console.log("theme contract tests passed");

@@ -68,6 +68,10 @@
     return out;
   }
 
+  function readPreviewAsset(attributeName) {
+    return String(root.getAttribute(attributeName) || "").trim();
+  }
+
   const inlinePreviewImages =
     window.ROOM_PREVIEW_INLINE && typeof window.ROOM_PREVIEW_INLINE === "object"
       ? window.ROOM_PREVIEW_INLINE
@@ -75,18 +79,18 @@
 
   const roomPreviewImages = {
     "Training Room 1": buildPreviewCandidates(
-      root.dataset.roomImageTraining1,
-      root.dataset.roomImageTraining1Fallback,
+      readPreviewAsset("data-room-image-training-1"),
+      readPreviewAsset("data-room-image-training-1-fallback"),
       inlinePreviewImages["Training Room 1"]
     ),
     "Training Room 2": buildPreviewCandidates(
-      root.dataset.roomImageTraining2,
-      root.dataset.roomImageTraining2Fallback,
+      readPreviewAsset("data-room-image-training-2"),
+      readPreviewAsset("data-room-image-training-2-fallback"),
       inlinePreviewImages["Training Room 2"]
     ),
     "Interview Room": buildPreviewCandidates(
-      root.dataset.roomImageInterview,
-      root.dataset.roomImageInterviewFallback,
+      readPreviewAsset("data-room-image-interview"),
+      readPreviewAsset("data-room-image-interview-fallback"),
       inlinePreviewImages["Interview Room"]
     )
   };
