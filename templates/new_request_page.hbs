@@ -15,15 +15,14 @@
 </section>
 
 <style>
-  /* Zendesk owns the subject value/state. This only guarantees that the native
-     renderer's text input stays reachable if surrounding theme CSS or a stale
-     field attribute makes it non-interactive. */
+  /* Keep Zendesk's native subject input above decorative/request-form layers. */
   .digify-form-page #new-request-form input[name="request[subject]"] {
     pointer-events: auto !important;
     user-select: text !important;
     -webkit-user-select: text !important;
     position: relative;
-    z-index: 2;
+    z-index: 20;
+    cursor: text !important;
   }
 </style>
 
@@ -31,6 +30,7 @@
   import { renderNewRequestForm } from "new-request-form";
 
   const container = document.getElementById("new-request-form");
+  const subjectSelector = 'input[name="request[subject]"]';
 
   const settings = {{json settings}};
 
@@ -59,13 +59,12 @@
 
   renderNewRequestForm(settings, props, container);
 
+  const getSubject = () => container.querySelector(subjectSelector);
+
   const keepSubjectEditable = () => {
-    const subject = container.querySelector('input[name="request[subject]"]');
+    const subject = getSubject();
     if (!subject) return false;
 
-    // The standard Zendesk subject is an editable text field. If stale theme
-    // code or returned markup leaves these attributes behind, remove only those
-    // blockers and leave Zendesk's React onChange/state wiring untouched.
     if (subject.disabled || subject.hasAttribute("disabled")) {
       subject.disabled = false;
       subject.removeAttribute("disabled");
@@ -78,12 +77,153 @@
       subject.tabIndex = 0;
     }
 
+    if (!subject.dataset.digifySubjectReady) {
+      subject.dataset.digifySubjectReady = "true";
+      console.log("[SubjectInputFix] Subject input ready", {
+        disabled: subject.disabled,
+        readOnly: subject.readOnly,
+        tabIndex: subject.tabIndex
+      });
+    }
+
     return true;
   };
 
-  // Zendesk renders the form asynchronously and may replace field nodes when
-  // end-user conditions change, so re-apply the narrow subject guard whenever
-  // the renderer changes the form subtree.
+  const emitZendeskSubjectInput = (subject, nextValue, start, end, inputType, data) => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      "value"
+    );
+
+    if (!descriptor || typeof descriptor.set !== "function") return;
+
+    // Use the browser's native value setter so React's internal value tracker
+    // notices the subsequent input event and updates requestForm subject state.
+    descriptor.set.call(subject, nextValue);
+
+    let inputEvent;
+    try {
+      inputEvent = new InputEvent("input", {
+        bubbles: true,
+        composed: true,
+        inputType,
+        data
+      });
+    } catch (error) {
+      inputEvent = new Event("input", { bubbles: true, composed: true });
+    }
+    subject.dispatchEvent(inputEvent);
+
+    if (typeof subject.setSelectionRange === "function") {
+      subject.setSelectionRange(start, end);
+    }
+
+    console.warn("[SubjectInputFix] Recovered blocked subject input", {
+      inputType,
+      valueLength: nextValue.length
+    });
+  };
+
+  const replaceSelection = (value, start, end, inserted) => ({
+    value: value.slice(0, start) + inserted + value.slice(end),
+    caret: start + inserted.length
+  });
+
+  const scheduleKeyFallback = (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || !target.matches(subjectSelector)) {
+      return;
+    }
+    if (event.isComposing || event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+
+    const key = event.key;
+    const isPrintable = typeof key === "string" && key.length === 1;
+    if (!isPrintable && key !== "Backspace" && key !== "Delete") return;
+
+    const beforeValue = target.value;
+    const selectionStart = target.selectionStart ?? beforeValue.length;
+    const selectionEnd = target.selectionEnd ?? selectionStart;
+
+    window.setTimeout(() => {
+      const subject = getSubject();
+      if (!subject || subject.value !== beforeValue) return;
+
+      let result = { value: beforeValue, caret: selectionStart };
+      let inputType = "insertText";
+      let data = null;
+
+      if (isPrintable) {
+        result = replaceSelection(beforeValue, selectionStart, selectionEnd, key);
+        data = key;
+      } else if (key === "Backspace") {
+        inputType = "deleteContentBackward";
+        if (selectionStart !== selectionEnd) {
+          result = replaceSelection(beforeValue, selectionStart, selectionEnd, "");
+        } else if (selectionStart > 0) {
+          result = replaceSelection(beforeValue, selectionStart - 1, selectionStart, "");
+        }
+      } else if (key === "Delete") {
+        inputType = "deleteContentForward";
+        if (selectionStart !== selectionEnd) {
+          result = replaceSelection(beforeValue, selectionStart, selectionEnd, "");
+        } else if (selectionStart < beforeValue.length) {
+          result = replaceSelection(beforeValue, selectionStart, selectionStart + 1, "");
+        }
+      }
+
+      if (result.value === beforeValue) return;
+      emitZendeskSubjectInput(
+        subject,
+        result.value,
+        result.caret,
+        result.caret,
+        inputType,
+        data
+      );
+    }, 0);
+  };
+
+  const schedulePasteFallback = (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || !target.matches(subjectSelector)) {
+      return;
+    }
+
+    const pastedText = event.clipboardData && event.clipboardData.getData("text");
+    if (!pastedText) return;
+
+    const beforeValue = target.value;
+    const selectionStart = target.selectionStart ?? beforeValue.length;
+    const selectionEnd = target.selectionEnd ?? selectionStart;
+
+    window.setTimeout(() => {
+      const subject = getSubject();
+      if (!subject || subject.value !== beforeValue) return;
+
+      const result = replaceSelection(
+        beforeValue,
+        selectionStart,
+        selectionEnd,
+        pastedText
+      );
+      emitZendeskSubjectInput(
+        subject,
+        result.value,
+        result.caret,
+        result.caret,
+        "insertFromPaste",
+        pastedText
+      );
+    }, 0);
+  };
+
+  // Capture before theme/third-party handlers. We do not cancel the browser's
+  // normal edit. The fallback only runs when the value failed to change.
+  window.addEventListener("keydown", scheduleKeyFallback, true);
+  window.addEventListener("paste", schedulePasteFallback, true);
+
   const subjectObserver = new MutationObserver(() => {
     keepSubjectEditable();
   });
