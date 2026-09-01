@@ -6,6 +6,7 @@ This release removes permanent browser credentials and uses an automatic unsigne
 
 - `node tests/booking-security.test.js`
 - `node tests/booking-automatic-bootstrap.test.js`
+- `node tests/request-form-contract.test.js`
 - `node tests/theme-contract.test.js`
 - JavaScript syntax checks for `script.js`, `assets/theme-ui.js`, `assets/theme-motion.js`, `assets/booking-security.js`, `assets/room-bookings-calendar.js`, and `assets/training-bookings-calendar.js`
 - CSS structural validation for `style.css` and `assets/training-bookings.css`
@@ -20,6 +21,8 @@ This release removes permanent browser credentials and uses an automatic unsigne
 - Include a short mobile viewport and 200% browser zoom
 - Check anonymous, untagged/pending, internal, tenant, management, and learner navigation states
 - Check home, policies, article, category, section, search, new request, request history/detail, community, profile, subscriptions, services, approval, and error views
+- From a generic **Submit a request** link, confirm internal users reach the configured internal form and tenant users reach the configured tenant form
+- Submit one internal and one tenant request, confirming the subject accepts input and Zendesk returns the created request rather than a client-side validation block
 - Confirm the header disclosure works with mouse, touch, Enter/Space, Escape, outside click, and JavaScript disabled
 - Confirm focus is visible, touch targets remain usable, contrast remains readable, and content order is logical for a screen reader
 - Confirm reduced-motion and data-saving preferences suppress optional motion
@@ -41,5 +44,5 @@ Open `tests/booking-ui-harness.html` locally. It is a non-production visual fixt
 - Confirm below-fold media uses native lazy loading and known local images have intrinsic dimensions
 - Confirm Alpine and GSAP are deferred and no HTMX, Workbox, lozad, Lenis, date-fns, or Tailwind runtime is present
 - Compare Lighthouse accessibility and Core Web Vitals against the current production theme
-- Rebuild `digified-theme.zip`, inspect forward-slash archive paths, and confirm `manifest.json` reports `2028.2.4`
+- Rebuild `digified-theme.zip`, inspect forward-slash archive paths, and confirm `manifest.json` reports `2028.2.5`
 - Do not publish the ZIP to Zendesk until the automatic Apps Script bootstrap is deployed and verified

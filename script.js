@@ -454,12 +454,12 @@
       if (segments.isInternalUser) {
         console.info("[Digified] Redirecting internal user to staff form");
         window.location.replace(
-          `/hc/en-us/requests/new?ticket_form_id=${STAFF_SUPPORT_FORM}`
+          `${window.location.pathname}?ticket_form_id=${segmentSettings.internalFormId}`
         );
       } else if (segments.isTenantUser) {
         console.info("[Digified] Redirecting tenant user to tenant form");
         window.location.replace(
-          `/hc/en-us/requests/new?ticket_form_id=${TENANT_SUPPORT_FORM}`
+          `${window.location.pathname}?ticket_form_id=${segmentSettings.tenantFormId}`
         );
       }
     }
@@ -1093,70 +1093,6 @@
     }
   });
 
-})();
-
-(function () {
-  "use strict";
-
-  // Only run on request pages
-  if (!/\/hc\/.+\/requests\/new/.test(window.location.pathname)) {
-    return;
-  }
-
-  function fixGardenDropdowns() {
-    const fields = document.querySelectorAll(
-      '[data-garden-id="dropdowns.combobox.field"]'
-    );
-
-    if (!fields.length) {
-      return;
-    }
-
-    console.log("[DropdownFix] Checking combobox fields:", fields.length);
-
-    fields.forEach((field) => {
-      const label = field.querySelector(
-        '[data-garden-id="dropdowns.combobox.label"]'
-      );
-      const trigger = field.querySelector(
-        '[data-garden-id="dropdowns.combobox.trigger"]'
-      );
-
-      if (!label || !trigger) {
-        return;
-      }
-
-      const text = (label.textContent || "").trim();
-
-      // 1) Hide the form selector ("Please choose your issue below")
-      if (text.includes("Please choose your issue")) {
-        field.style.display = "none";
-        console.log("[DropdownFix] Hiding form selector field");
-        return;
-      }
-
-      // 2) Make all other dropdown triggers visible
-      trigger.hidden = false;
-      trigger.style.display = "";
-      trigger.style.visibility = "";
-      trigger.style.opacity = "";
-      trigger.style.height = "";
-      trigger.style.maxHeight = "";
-      trigger.style.overflow = "";
-
-      console.log("[DropdownFix] Unhid field dropdown with label:", text);
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", function () {
-    setTimeout(fixGardenDropdowns, 800);
-
-    const observer = new MutationObserver(fixGardenDropdowns);
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-  });
 })();
 
 (function () {
