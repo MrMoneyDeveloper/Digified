@@ -89,6 +89,45 @@
     return true;
   };
 
+  const getReactSubjectOnChange = (subject) => {
+    // Zendesk's request form is a controlled React input. React stores the
+    // current DOM props on the input using a private __reactProps$ key.
+    const propsKey = Object.keys(subject).find((key) => key.startsWith("__reactProps$"));
+    if (!propsKey) return null;
+
+    const reactProps = subject[propsKey];
+    return reactProps && typeof reactProps.onChange === "function"
+      ? reactProps.onChange
+      : null;
+  };
+
+  const callReactSubjectOnChange = (subject) => {
+    const onChange = getReactSubjectOnChange(subject);
+    if (!onChange) return false;
+
+    try {
+      // ticket-fields reads event.target.value and forwards that value into
+      // new-request-form's requestForm state. Calling the mounted input's own
+      // React handler keeps the DOM and React state in sync instead of letting
+      // the next render restore the previous (blank) subject value.
+      onChange({
+        target: subject,
+        currentTarget: subject,
+        type: "change",
+        nativeEvent: null,
+        preventDefault() {},
+        stopPropagation() {},
+        isDefaultPrevented() { return false; },
+        isPropagationStopped() { return false; },
+        persist() {}
+      });
+      return true;
+    } catch (error) {
+      console.error("[SubjectInputFix] React subject sync failed", error);
+      return false;
+    }
+  };
+
   const emitZendeskSubjectInput = (subject, nextValue, start, end, inputType, data) => {
     const descriptor = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
@@ -97,9 +136,21 @@
 
     if (!descriptor || typeof descriptor.set !== "function") return;
 
-    // Use the browser's native value setter so React's internal value tracker
-    // notices the subsequent input event and updates requestForm subject state.
+    const previousValue = subject.value;
+    const tracker = subject._valueTracker;
+
+    // Update the actual DOM value first. If React has installed a value tracker,
+    // leave it representing the previous value so the input event is also seen
+    // as a genuine change by React's synthetic event system.
     descriptor.set.call(subject, nextValue);
+    if (tracker && typeof tracker.setValue === "function") {
+      tracker.setValue(previousValue);
+    }
+
+    // The key difference from the earlier bridge: update Zendesk's mounted
+    // React handler directly as well. The screenshot proved that a DOM-only
+    // write was immediately being reverted by the controlled component.
+    const syncedReactState = callReactSubjectOnChange(subject);
 
     let inputEvent;
     try {
@@ -113,15 +164,37 @@
       inputEvent = new Event("input", { bubbles: true, composed: true });
     }
     subject.dispatchEvent(inputEvent);
+    subject.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
 
-    if (typeof subject.setSelectionRange === "function") {
-      subject.setSelectionRange(start, end);
+    const liveSubject = getSubject();
+    if (liveSubject && typeof liveSubject.setSelectionRange === "function") {
+      liveSubject.setSelectionRange(start, end);
     }
 
     console.warn("[SubjectInputFix] Recovered blocked subject input", {
       inputType,
-      valueLength: nextValue.length
+      valueLength: nextValue.length,
+      reactStateSynced: syncedReactState
     });
+
+    // Verify after React has had a chance to flush. If Zendesk replaced the input
+    // node, log exactly what happened instead of silently pretending it worked.
+    window.setTimeout(() => {
+      const currentSubject = getSubject();
+      if (!currentSubject) return;
+
+      if (currentSubject.value !== nextValue) {
+        console.error("[SubjectInputFix] React reset subject after recovery", {
+          expectedLength: nextValue.length,
+          actualLength: currentSubject.value.length,
+          reactHandlerAvailable: Boolean(getReactSubjectOnChange(currentSubject))
+        });
+      } else {
+        console.log("[SubjectInputFix] Subject value persisted", {
+          valueLength: currentSubject.value.length
+        });
+      }
+    }, 25);
   };
 
   const replaceSelection = (value, start, end, inserted) => ({
