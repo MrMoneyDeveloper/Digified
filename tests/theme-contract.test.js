@@ -316,6 +316,6 @@ assert.strictEqual(
 );
 
 const manifest = JSON.parse(read("manifest.json"));
-assert.strictEqual(manifest.version, "2028.2.9", "theme version must be bumped");
+assert.strictEqual(manifest.version, "2028.2.10", "theme version must be bumped");
 
 console.log("theme contract tests passed");

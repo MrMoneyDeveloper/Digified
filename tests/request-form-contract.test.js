@@ -32,6 +32,7 @@ const requestTemplate = read("templates/new_request_page.hbs");
 const requestBundle = read("assets/new-request-form-bundle.js");
 const documentHead = read("templates/document_head.hbs");
 const themeScript = read("script.js");
+const themeStyles = read("style.css");
 const manifest = JSON.parse(read("manifest.json"));
 const componentProvenance = JSON.parse(
   read("docs/copenhagen-component-provenance.json")
@@ -109,6 +110,12 @@ assert.ok(
     requestTemplate
   ),
   "only the real request subject may be routed through the text renderer"
+);
+assert.ok(
+  /\.digify-form-page #new-request-form input\[name="request\[subject\]"\]\s*\{[\s\S]{0,160}font-size:\s*1rem;[\s\S]{0,80}line-height:\s*1\.5;[\s\S]{0,40}\}/.test(
+    themeStyles
+  ),
+  "subject text renderer must override Bootstrap's inherited zero-sized typography"
 );
 
 // Guard the vendored Zendesk bundle contract that renders and updates the
