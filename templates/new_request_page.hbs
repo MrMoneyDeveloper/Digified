@@ -14,28 +14,44 @@
   </div>
 </section>
 
-<style>
-  /* Keep Zendesk's native subject input above decorative/request-form layers. */
-  .digify-form-page #new-request-form input[name="request[subject]"] {
-    pointer-events: auto !important;
-    user-select: text !important;
-    -webkit-user-select: text !important;
-    position: relative;
-    z-index: 20;
-    cursor: text !important;
-  }
-</style>
-
 <script type="module">
   import { renderNewRequestForm } from "new-request-form";
 
   const container = document.getElementById("new-request-form");
-  const subjectSelector = 'input[name="request[subject]"]';
-
   const settings = {{json settings}};
+  const requestForm = {{json new_request_form}};
+
+  // Subject is the only Zendesk request field sent through a special renderer
+  // that also mounts article-deflection/suggestion behavior. Every ordinary
+  // text field uses the standard ticket-field input path and remains editable.
+  // Keep the real request[subject] name/value/validation, but present its runtime
+  // field type as text so it follows the same proven renderer as the other text
+  // inputs. This intentionally disables only Subject's suggested-article branch.
+  if (requestForm && Array.isArray(requestForm.ticket_fields)) {
+    let subjectRoutedToText = false;
+
+    requestForm.ticket_fields = requestForm.ticket_fields.map((field) => {
+      if (
+        field &&
+        field.type === "subject" &&
+        field.name === "request[subject]"
+      ) {
+        subjectRoutedToText = true;
+        return { ...field, type: "text" };
+      }
+
+      return field;
+    });
+
+    if (subjectRoutedToText) {
+      console.log(
+        "[SubjectInputFix] Subject routed through standard text renderer"
+      );
+    }
+  }
 
   const props = {
-    requestForm: {{json new_request_form}},
+    requestForm,
     newRequestPath: {{json (page_path 'new_request')}},
     parentId: {{json parent.id}},
     parentIdPath: {{json parent.url}},
@@ -58,253 +74,4 @@
   };
 
   renderNewRequestForm(settings, props, container);
-
-  const getSubject = () => container.querySelector(subjectSelector);
-
-  const keepSubjectEditable = () => {
-    const subject = getSubject();
-    if (!subject) return false;
-
-    if (subject.disabled || subject.hasAttribute("disabled")) {
-      subject.disabled = false;
-      subject.removeAttribute("disabled");
-    }
-    if (subject.readOnly || subject.hasAttribute("readonly")) {
-      subject.readOnly = false;
-      subject.removeAttribute("readonly");
-    }
-    if (subject.tabIndex < 0) {
-      subject.tabIndex = 0;
-    }
-
-    if (!subject.dataset.digifySubjectReady) {
-      subject.dataset.digifySubjectReady = "true";
-      console.log("[SubjectInputFix] Subject input ready", {
-        disabled: subject.disabled,
-        readOnly: subject.readOnly,
-        tabIndex: subject.tabIndex
-      });
-    }
-
-    return true;
-  };
-
-  const getReactSubjectOnChange = (subject) => {
-    // Zendesk's request form is a controlled React input. React stores the
-    // current DOM props on the input using a private __reactProps$ key.
-    const propsKey = Object.keys(subject).find((key) => key.startsWith("__reactProps$"));
-    if (!propsKey) return null;
-
-    const reactProps = subject[propsKey];
-    return reactProps && typeof reactProps.onChange === "function"
-      ? reactProps.onChange
-      : null;
-  };
-
-  const callReactSubjectOnChange = (subject) => {
-    const onChange = getReactSubjectOnChange(subject);
-    if (!onChange) return false;
-
-    try {
-      // ticket-fields reads event.target.value and forwards that value into
-      // new-request-form's requestForm state. Calling the mounted input's own
-      // React handler keeps the DOM and React state in sync instead of letting
-      // the next render restore the previous (blank) subject value.
-      onChange({
-        target: subject,
-        currentTarget: subject,
-        type: "change",
-        nativeEvent: null,
-        preventDefault() {},
-        stopPropagation() {},
-        isDefaultPrevented() { return false; },
-        isPropagationStopped() { return false; },
-        persist() {}
-      });
-      return true;
-    } catch (error) {
-      console.error("[SubjectInputFix] React subject sync failed", error);
-      return false;
-    }
-  };
-
-  const emitZendeskSubjectInput = (subject, nextValue, start, end, inputType, data) => {
-    const descriptor = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype,
-      "value"
-    );
-
-    if (!descriptor || typeof descriptor.set !== "function") return;
-
-    const previousValue = subject.value;
-    const tracker = subject._valueTracker;
-
-    // Update the actual DOM value first. If React has installed a value tracker,
-    // leave it representing the previous value so the input event is also seen
-    // as a genuine change by React's synthetic event system.
-    descriptor.set.call(subject, nextValue);
-    if (tracker && typeof tracker.setValue === "function") {
-      tracker.setValue(previousValue);
-    }
-
-    // The key difference from the earlier bridge: update Zendesk's mounted
-    // React handler directly as well. The screenshot proved that a DOM-only
-    // write was immediately being reverted by the controlled component.
-    const syncedReactState = callReactSubjectOnChange(subject);
-
-    let inputEvent;
-    try {
-      inputEvent = new InputEvent("input", {
-        bubbles: true,
-        composed: true,
-        inputType,
-        data
-      });
-    } catch (error) {
-      inputEvent = new Event("input", { bubbles: true, composed: true });
-    }
-    subject.dispatchEvent(inputEvent);
-    subject.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
-
-    const liveSubject = getSubject();
-    if (liveSubject && typeof liveSubject.setSelectionRange === "function") {
-      liveSubject.setSelectionRange(start, end);
-    }
-
-    console.warn("[SubjectInputFix] Recovered blocked subject input", {
-      inputType,
-      valueLength: nextValue.length,
-      reactStateSynced: syncedReactState
-    });
-
-    // Verify after React has had a chance to flush. If Zendesk replaced the input
-    // node, log exactly what happened instead of silently pretending it worked.
-    window.setTimeout(() => {
-      const currentSubject = getSubject();
-      if (!currentSubject) return;
-
-      if (currentSubject.value !== nextValue) {
-        console.error("[SubjectInputFix] React reset subject after recovery", {
-          expectedLength: nextValue.length,
-          actualLength: currentSubject.value.length,
-          reactHandlerAvailable: Boolean(getReactSubjectOnChange(currentSubject))
-        });
-      } else {
-        console.log("[SubjectInputFix] Subject value persisted", {
-          valueLength: currentSubject.value.length
-        });
-      }
-    }, 25);
-  };
-
-  const replaceSelection = (value, start, end, inserted) => ({
-    value: value.slice(0, start) + inserted + value.slice(end),
-    caret: start + inserted.length
-  });
-
-  const scheduleKeyFallback = (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement) || !target.matches(subjectSelector)) {
-      return;
-    }
-    if (event.isComposing || event.ctrlKey || event.metaKey || event.altKey) {
-      return;
-    }
-
-    const key = event.key;
-    const isPrintable = typeof key === "string" && key.length === 1;
-    if (!isPrintable && key !== "Backspace" && key !== "Delete") return;
-
-    const beforeValue = target.value;
-    const selectionStart = target.selectionStart ?? beforeValue.length;
-    const selectionEnd = target.selectionEnd ?? selectionStart;
-
-    window.setTimeout(() => {
-      const subject = getSubject();
-      if (!subject || subject.value !== beforeValue) return;
-
-      let result = { value: beforeValue, caret: selectionStart };
-      let inputType = "insertText";
-      let data = null;
-
-      if (isPrintable) {
-        result = replaceSelection(beforeValue, selectionStart, selectionEnd, key);
-        data = key;
-      } else if (key === "Backspace") {
-        inputType = "deleteContentBackward";
-        if (selectionStart !== selectionEnd) {
-          result = replaceSelection(beforeValue, selectionStart, selectionEnd, "");
-        } else if (selectionStart > 0) {
-          result = replaceSelection(beforeValue, selectionStart - 1, selectionStart, "");
-        }
-      } else if (key === "Delete") {
-        inputType = "deleteContentForward";
-        if (selectionStart !== selectionEnd) {
-          result = replaceSelection(beforeValue, selectionStart, selectionEnd, "");
-        } else if (selectionStart < beforeValue.length) {
-          result = replaceSelection(beforeValue, selectionStart, selectionStart + 1, "");
-        }
-      }
-
-      if (result.value === beforeValue) return;
-      emitZendeskSubjectInput(
-        subject,
-        result.value,
-        result.caret,
-        result.caret,
-        inputType,
-        data
-      );
-    }, 0);
-  };
-
-  const schedulePasteFallback = (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement) || !target.matches(subjectSelector)) {
-      return;
-    }
-
-    const pastedText = event.clipboardData && event.clipboardData.getData("text");
-    if (!pastedText) return;
-
-    const beforeValue = target.value;
-    const selectionStart = target.selectionStart ?? beforeValue.length;
-    const selectionEnd = target.selectionEnd ?? selectionStart;
-
-    window.setTimeout(() => {
-      const subject = getSubject();
-      if (!subject || subject.value !== beforeValue) return;
-
-      const result = replaceSelection(
-        beforeValue,
-        selectionStart,
-        selectionEnd,
-        pastedText
-      );
-      emitZendeskSubjectInput(
-        subject,
-        result.value,
-        result.caret,
-        result.caret,
-        "insertFromPaste",
-        pastedText
-      );
-    }, 0);
-  };
-
-  // Capture before theme/third-party handlers. We do not cancel the browser's
-  // normal edit. The fallback only runs when the value failed to change.
-  window.addEventListener("keydown", scheduleKeyFallback, true);
-  window.addEventListener("paste", schedulePasteFallback, true);
-
-  const subjectObserver = new MutationObserver(() => {
-    keepSubjectEditable();
-  });
-  subjectObserver.observe(container, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ["disabled", "readonly", "tabindex"]
-  });
-  keepSubjectEditable();
 </script>
