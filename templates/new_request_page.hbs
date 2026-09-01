@@ -19,39 +19,10 @@
 
   const container = document.getElementById("new-request-form");
   const settings = {{json settings}};
-  const requestForm = {{json new_request_form}};
-
-  // Subject is the only Zendesk request field sent through a special renderer
-  // that also mounts article-deflection/suggestion behavior. Every ordinary
-  // text field uses the standard ticket-field input path and remains editable.
-  // Keep the real request[subject] name/value/validation, but present its runtime
-  // field type as text so it follows the same proven renderer as the other text
-  // inputs. This intentionally disables only Subject's suggested-article branch.
-  if (requestForm && Array.isArray(requestForm.ticket_fields)) {
-    let subjectRoutedToText = false;
-
-    requestForm.ticket_fields = requestForm.ticket_fields.map((field) => {
-      if (
-        field &&
-        field.type === "subject" &&
-        field.name === "request[subject]"
-      ) {
-        subjectRoutedToText = true;
-        return { ...field, type: "text" };
-      }
-
-      return field;
-    });
-
-    if (subjectRoutedToText) {
-      console.log(
-        "[SubjectInputFix] Subject routed through standard text renderer"
-      );
-    }
-  }
+  const showSuggestedArticles = settings.show_suggested_articles ?? true;
 
   const props = {
-    requestForm,
+    requestForm: {{json new_request_form}},
     newRequestPath: {{json (page_path 'new_request')}},
     parentId: {{json parent.id}},
     parentIdPath: {{json parent.url}},
@@ -63,13 +34,15 @@
     brandId: {{json brand.id}},
     organizations: {{json user.organizations}},
     wysiwyg: true,
+    showSuggestedArticles: showSuggestedArticles,
     answerBotModal: {
-      answerBot: {{json answer_bot}},
+      answerBot: {{#if answer_bot}}{{json answer_bot}}{{else}}null{{/if}},
+      answerBotGenerativeExperience: {{#if answer_bot_generative_experience}}{{json answer_bot_generative_experience}}{{else}}null{{/if}},
       hasRequestManagement: {{json help_center.request_management_enabled}},
       isSignedIn: {{json signed_in}},
       helpCenterPath: {{json (page_path 'help_center')}},
       requestsPath: {{json (page_path 'requests')}},
-      requestPath: {{json (page_path 'request' id=answer_bot.request_id)}}
+      requestPath: {{json (page_path 'request' id=request_id)}}
     },
   };
 
