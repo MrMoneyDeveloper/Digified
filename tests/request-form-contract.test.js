@@ -42,9 +42,7 @@ assert.ok(
 );
 const requestRouting = themeScript.slice(requestRoutingStart, requestRoutingEnd);
 
-// Zendesk's renderer owns the subject field, its React state, validation errors,
-// CSRF setup and final submission. Theme code may style the form, but must not
-// intercept that submit pipeline or replace the renderer-owned subject state.
+// Zendesk still owns form rendering, CSRF and native submission.
 assertIncludes(
   requestTemplate,
   'import { renderNewRequestForm } from "new-request-form";',
@@ -52,7 +50,7 @@ assertIncludes(
 );
 assertIncludes(
   requestTemplate,
-  "requestForm: {{json new_request_form}}",
+  "const requestForm = {{json new_request_form}};",
   "new request template"
 );
 assertIncludes(
@@ -69,28 +67,39 @@ assertExcludes(requestTemplate, "stopImmediatePropagation", "new request templat
 assertExcludes(requestTemplate, "checkValidity()", "new request template");
 assertExcludes(requestTemplate, "reportValidity()", "new request template");
 
-// The Subject field must remain physically interactive as well as wired to
-// Zendesk React state. Guard against stale disabled/readonly attributes and
-// theme layers that can swallow pointer input without replacing the field.
+// Subject is the only field Zendesk routes through its special subject branch,
+// which also mounts article-deflection logic. The theme deliberately keeps the
+// real request[subject] field name while routing its runtime type through the
+// same standard text renderer used by ordinary working text fields.
+assertIncludes(requestTemplate, 'field.type === "subject"', "subject routing");
 assertIncludes(
   requestTemplate,
-  'input[name="request[subject]"]',
-  "subject editability guard"
+  'field.name === "request[subject]"',
+  "subject routing"
 );
-assertIncludes(requestTemplate, "pointer-events: auto !important", "subject editability guard");
-assertIncludes(requestTemplate, "user-select: text !important", "subject editability guard");
-assertIncludes(requestTemplate, "subject.disabled = false", "subject editability guard");
-assertIncludes(requestTemplate, "subject.readOnly = false", "subject editability guard");
-assertIncludes(requestTemplate, "new MutationObserver", "subject editability guard");
-assertExcludes(requestTemplate, "subject.value =", "subject editability guard");
+assertIncludes(
+  requestTemplate,
+  'return { ...field, type: "text" };',
+  "subject routing"
+);
+assertIncludes(
+  requestTemplate,
+  "Subject routed through standard text renderer",
+  "subject routing"
+);
 
-// Guard the vendored Zendesk bundle contract that renders and updates the
-// standard request subject before its native submit handler posts the form.
+// The old DOM/React recovery bridge must stay removed. It obscured the actual
+// subject-only renderer problem and introduced synthetic key/input behavior.
+assertExcludes(requestTemplate, "scheduleKeyFallback", "subject routing");
+assertExcludes(requestTemplate, "schedulePasteFallback", "subject routing");
+assertExcludes(requestTemplate, "_valueTracker", "subject routing");
+assertExcludes(requestTemplate, "__reactProps$", "subject routing");
+assertExcludes(requestTemplate, "new MutationObserver", "subject routing");
+
+// Guard the vendored Zendesk bundle contract: the special subject branch still
+// exists upstream, but this template intentionally bypasses it at runtime by
+// presenting Subject as a normal text ticket field before render.
 assertIncludes(requestBundle, '"subject"===t.type', "Zendesk request renderer");
-assert.ok(
-  /"subject"===t\.type[\s\S]{0,300}onChange/.test(requestBundle),
-  "Zendesk request renderer must keep subject state wired to onChange"
-);
 assertIncludes(requestBundle, "handleSubmit", "Zendesk request renderer");
 
 // A global document-head redirect used to send generic request URLs (including
