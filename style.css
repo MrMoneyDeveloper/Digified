@@ -2203,6 +2203,17 @@ a[href*="/hc/"][href*="activities"],
   box-shadow: none;
 }
 
+/*
+ * Zendesk Garden intentionally gives its Field wrapper zero-sized typography.
+ * Bootstrap's global form reset makes the standard text renderer inherit those
+ * values, so the Subject accepts input but paints it at 0px. Keep this override
+ * limited to the renderer bypass for the real request subject.
+ */
+.digify-form-page #new-request-form input[name="request[subject]"] {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
 .digify-form-page .hbs-form input:where(:not([type=checkbox])):focus,
 .digify-form-page .hbs-form select:focus,
 .digify-form-page .hbs-form textarea:focus,

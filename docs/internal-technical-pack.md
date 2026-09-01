@@ -4,7 +4,7 @@
 
 Status: Internal replication document  
 Last updated: 2026-03-25  
-Current theme build: `2028.2.9`
+Current theme build: `2028.2.10`
 Current Zendesk build marker: `2026-08-30-04`
 
 ## 1. Purpose
@@ -111,7 +111,7 @@ All three scripts currently live in the same Apps Script project:
 
 ### 6.1 Theme Build And Packaging
 
-- Theme version: `2028.2.9`
+- Theme version: `2028.2.10`
 - Build marker: `2026-08-30-04`
 - Build marker source: `C:\Workspace\Digified\templates\document_head.hbs:2`
 - Room page build marker: `C:\Workspace\Digified\templates\custom_pages\room_booking.hbs:1`
