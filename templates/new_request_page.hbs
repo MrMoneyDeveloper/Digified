@@ -14,6 +14,19 @@
   </div>
 </section>
 
+<style>
+  /* Zendesk owns the subject value/state. This only guarantees that the native
+     renderer's text input stays reachable if surrounding theme CSS or a stale
+     field attribute makes it non-interactive. */
+  .digify-form-page #new-request-form input[name="request[subject]"] {
+    pointer-events: auto !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    position: relative;
+    z-index: 2;
+  }
+</style>
+
 <script type="module">
   import { renderNewRequestForm } from "new-request-form";
 
@@ -45,4 +58,40 @@
   };
 
   renderNewRequestForm(settings, props, container);
+
+  const keepSubjectEditable = () => {
+    const subject = container.querySelector('input[name="request[subject]"]');
+    if (!subject) return false;
+
+    // The standard Zendesk subject is an editable text field. If stale theme
+    // code or returned markup leaves these attributes behind, remove only those
+    // blockers and leave Zendesk's React onChange/state wiring untouched.
+    if (subject.disabled || subject.hasAttribute("disabled")) {
+      subject.disabled = false;
+      subject.removeAttribute("disabled");
+    }
+    if (subject.readOnly || subject.hasAttribute("readonly")) {
+      subject.readOnly = false;
+      subject.removeAttribute("readonly");
+    }
+    if (subject.tabIndex < 0) {
+      subject.tabIndex = 0;
+    }
+
+    return true;
+  };
+
+  // Zendesk renders the form asynchronously and may replace field nodes when
+  // end-user conditions change, so re-apply the narrow subject guard whenever
+  // the renderer changes the form subtree.
+  const subjectObserver = new MutationObserver(() => {
+    keepSubjectEditable();
+  });
+  subjectObserver.observe(container, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["disabled", "readonly", "tabindex"]
+  });
+  keepSubjectEditable();
 </script>

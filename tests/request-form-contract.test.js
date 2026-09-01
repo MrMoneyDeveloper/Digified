@@ -44,7 +44,7 @@ const requestRouting = themeScript.slice(requestRoutingStart, requestRoutingEnd)
 
 // Zendesk's renderer owns the subject field, its React state, validation errors,
 // CSRF setup and final submission. Theme code may style the form, but must not
-// intercept that submit pipeline or mutate the renderer-owned subject contract.
+// intercept that submit pipeline or replace the renderer-owned subject state.
 assertIncludes(
   requestTemplate,
   'import { renderNewRequestForm } from "new-request-form";',
@@ -68,6 +68,21 @@ assertExcludes(
 assertExcludes(requestTemplate, "stopImmediatePropagation", "new request template");
 assertExcludes(requestTemplate, "checkValidity()", "new request template");
 assertExcludes(requestTemplate, "reportValidity()", "new request template");
+
+// The Subject field must remain physically interactive as well as wired to
+// Zendesk React state. Guard against stale disabled/readonly attributes and
+// theme layers that can swallow pointer input without replacing the field.
+assertIncludes(
+  requestTemplate,
+  'input[name="request[subject]"]',
+  "subject editability guard"
+);
+assertIncludes(requestTemplate, "pointer-events: auto !important", "subject editability guard");
+assertIncludes(requestTemplate, "user-select: text !important", "subject editability guard");
+assertIncludes(requestTemplate, "subject.disabled = false", "subject editability guard");
+assertIncludes(requestTemplate, "subject.readOnly = false", "subject editability guard");
+assertIncludes(requestTemplate, "new MutationObserver", "subject editability guard");
+assertExcludes(requestTemplate, "subject.value =", "subject editability guard");
 
 // Guard the vendored Zendesk bundle contract that renders and updates the
 // standard request subject before its native submit handler posts the form.
