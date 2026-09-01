@@ -20,9 +20,28 @@
   const container = document.getElementById("new-request-form");
   const settings = {{json settings}};
   const showSuggestedArticles = settings.show_suggested_articles ?? true;
+  const requestForm = {{json new_request_form}};
+
+  // Zendesk's dedicated Subject renderer is currently discarding keyboard
+  // input in this Help Center, while the standard text renderer remains stable.
+  // Preserve the real request[subject] field and all of its validation, but send
+  // only that field through the standard text input component.
+  if (requestForm && Array.isArray(requestForm.ticket_fields)) {
+    requestForm.ticket_fields = requestForm.ticket_fields.map((field) => {
+      if (
+        field &&
+        field.type === "subject" &&
+        field.name === "request[subject]"
+      ) {
+        return { ...field, type: "text" };
+      }
+
+      return field;
+    });
+  }
 
   const props = {
-    requestForm: {{json new_request_form}},
+    requestForm,
     newRequestPath: {{json (page_path 'new_request')}},
     parentId: {{json parent.id}},
     parentIdPath: {{json parent.url}},
