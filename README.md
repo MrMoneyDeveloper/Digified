@@ -12,7 +12,7 @@ powershell -ExecutionPolicy Bypass -File .\package-theme.ps1
 
 The script runs `tar -a -c -f digified-theme.zip assets settings templates translations script.js style.css manifest.json settings_schema.json`, ensuring the resulting `digified-theme.zip` is ready for import with POSIX-style paths. Use the `-ExecutionPolicy Bypass` flag if your PowerShell policy blocks local scripts.
 
-Run `node tests/booking-security.test.js`, `node tests/booking-automatic-bootstrap.test.js`, `node tests/booking-backend-boundary.test.js`, and `node tests/theme-contract.test.js` to verify the signed-client cryptography, automatic bootstrap, browser-credential boundary, room fallbacks, and backend/frontend alignment metadata.
+Run `node tests/booking-security.test.js`, `node tests/booking-automatic-bootstrap.test.js`, `node tests/booking-backend-boundary.test.js`, `node tests/request-form-contract.test.js`, and `node tests/theme-contract.test.js` to verify the signed-client cryptography, automatic bootstrap, browser-credential boundary, request-form subject/routing behavior, room fallbacks, and backend/frontend alignment metadata.
 
 ### GitHub pull deployment
 
