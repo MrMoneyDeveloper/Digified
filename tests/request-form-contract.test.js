@@ -54,7 +54,7 @@ assertIncludes(
 );
 assertIncludes(
   requestTemplate,
-  "requestForm: {{json new_request_form}}",
+  "const requestForm = {{json new_request_form}};",
   "new request template"
 );
 assertIncludes(
@@ -87,12 +87,29 @@ assertExcludes(requestTemplate, "checkValidity()", "new request template");
 assertExcludes(requestTemplate, "reportValidity()", "new request template");
 
 // Do not patch controlled inputs through React's private instance properties or
-// fabricated events. The official renderer must own the subject end to end.
+// fabricated events. Bypass only Zendesk's broken special Subject component by
+// presenting request[subject] to the stable standard text renderer.
 assertExcludes(requestTemplate, "__reactProps$", "new request template");
 assertExcludes(requestTemplate, "_valueTracker", "new request template");
 assertExcludes(requestTemplate, "SubjectInputFix", "new request template");
 assertExcludes(requestTemplate, "new MutationObserver", "new request template");
-assertExcludes(requestTemplate, 'type: "text"', "new request template");
+assertIncludes(requestTemplate, 'field.type === "subject"', "subject renderer bypass");
+assertIncludes(
+  requestTemplate,
+  'field.name === "request[subject]"',
+  "subject renderer bypass"
+);
+assertIncludes(
+  requestTemplate,
+  'return { ...field, type: "text" };',
+  "subject renderer bypass"
+);
+assert.ok(
+  /field\.type === "subject"[\s\S]{0,120}field\.name === "request\[subject\]"[\s\S]{0,120}type: "text"/.test(
+    requestTemplate
+  ),
+  "only the real request subject may be routed through the text renderer"
+);
 
 // Guard the vendored Zendesk bundle contract that renders and updates the
 // standard request subject before its native submit handler posts the form.
