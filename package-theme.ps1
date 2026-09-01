@@ -1,6 +1,6 @@
 param(
   [string]$Output = "digified-theme.zip",
-  [string]$ReleaseVersion = "2028.2.6"
+  [string]$ReleaseVersion = "2028.2.7"
 )
 
 $ErrorActionPreference = 'Stop'
