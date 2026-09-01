@@ -1,7 +1,7 @@
 {
   "name": "Digified",
   "author": "Zendesk",
-  "version": "2028.2.5",
+  "version": "2028.2.6",
   "api_version": 4,
   "default_locale": "en-us",
   "settings": [
@@ -460,8 +460,8 @@
         {
           "identifier": "show_recent_activity",
           "type": "checkbox",
-          "description": "recent_activity_description",
-          "label": "recent_activity_label",
+          "description": "show_recent_activity_description",
+          "label": "show_recent_activity_label",
           "value": false
         },
         {
@@ -490,50 +490,50 @@
         {
           "identifier": "show_articles_in_section",
           "type": "checkbox",
-          "description": "articles_in_section_description",
-          "label": "articles_in_section_label",
+          "description": "show_articles_in_section_description",
+          "label": "show_articles_in_section_label",
           "value": false
         },
         {
           "identifier": "show_article_author",
           "type": "checkbox",
-          "description": "article_author_description",
-          "label": "article_author_label",
+          "description": "show_article_author_description",
+          "label": "show_article_author_label",
           "value": false
         },
         {
           "identifier": "show_article_comments",
           "type": "checkbox",
-          "description": "article_comments_description",
-          "label": "article_comments_label",
+          "description": "show_article_comments_description",
+          "label": "show_article_comments_label",
           "value": false
         },
         {
           "identifier": "show_follow_article",
           "type": "checkbox",
-          "description": "follow_article_description",
-          "label": "follow_article_label",
+          "description": "show_follow_article_description",
+          "label": "show_follow_article_label",
           "value": false
         },
         {
           "identifier": "show_recently_viewed_articles",
           "type": "checkbox",
-          "description": "recently_viewed_articles_description",
-          "label": "recently_viewed_articles_label",
+          "description": "show_recently_viewed_articles_description",
+          "label": "show_recently_viewed_articles_label",
           "value": true
         },
         {
           "identifier": "show_related_articles",
           "type": "checkbox",
-          "description": "related_articles_description",
-          "label": "related_articles_label",
+          "description": "show_related_articles_description",
+          "label": "show_related_articles_label",
           "value": false
         },
         {
           "identifier": "show_article_sharing",
           "type": "checkbox",
-          "description": "article_sharing_description",
-          "label": "article_sharing_label",
+          "description": "show_article_sharing_description",
+          "label": "show_article_sharing_label",
           "value": false
         }
       ]
@@ -544,8 +544,8 @@
         {
           "identifier": "show_follow_section",
           "type": "checkbox",
-          "description": "follow_section_description",
-          "label": "follow_section_label",
+          "description": "show_follow_section_description",
+          "label": "show_follow_section_label",
           "value": true
         }
       ]
@@ -556,15 +556,15 @@
         {
           "identifier": "show_follow_post",
           "type": "checkbox",
-          "description": "follow_post_description",
-          "label": "follow_post_label",
+          "description": "show_follow_post_description",
+          "label": "show_follow_post_label",
           "value": true
         },
         {
           "identifier": "show_post_sharing",
           "type": "checkbox",
-          "description": "post_sharing_description",
-          "label": "post_sharing_label",
+          "description": "show_post_sharing_description",
+          "label": "show_post_sharing_label",
           "value": true
         }
       ]
@@ -575,8 +575,8 @@
         {
           "identifier": "show_follow_topic",
           "type": "checkbox",
-          "description": "follow_topic_description",
-          "label": "follow_topic_label",
+          "description": "show_follow_topic_description",
+          "label": "show_follow_topic_label",
           "value": true
         }
       ]
@@ -798,7 +798,7 @@
           "identifier": "locker_policy_icon_url",
           "type": "text",
           "label": "Locker policy icon URL",
-          "description": "Icon for the Locker policy card.",
+          "description": "Icon for the Locker Policy card.",
           "value": ""
         },
         {
@@ -812,7 +812,7 @@
           "identifier": "smoking_policy_icon_url",
           "type": "text",
           "label": "Smoking policy icon URL",
-          "description": "Icon for the Smoking policy card.",
+          "description": "Icon for the Smoking Policy card.",
           "value": ""
         },
         {
@@ -851,13 +851,13 @@
           "identifier": "locker_policy_url",
           "type": "text",
           "label": "Locker policy URL",
-          "description": "Full URL for the Locker policy article.",
+          "description": "Full URL for the Locker Policy article.",
           "value": "/hc/en-us/articles/INSERT_ID_HERE-Locker-Policy"
         },
         {
           "identifier": "pci_policy_url",
           "type": "text",
-          "label": "PCI policy URL",
+          "label": "PCI compliance policy URL",
           "description": "Full URL for the PCI compliance policy article.",
           "value": "/hc/en-us/articles/23441658995356-PCI-Compliance-Policy"
         },
@@ -865,14 +865,14 @@
           "identifier": "smoking_policy_url",
           "type": "text",
           "label": "Smoking policy URL",
-          "description": "Full URL for the Smoking policy article.",
+          "description": "Full URL for the Smoking Policy article.",
           "value": "/hc/en-us/articles/23441672237980-Smoking-Policy"
         },
         {
           "identifier": "harassment_policy_url",
           "type": "text",
           "label": "Sexual harassment policy URL",
-          "description": "Full URL for the Sexual harassment policy article.",
+          "description": "Full URL for the Sexual Harassment policy article.",
           "value": "/hc/en-us/articles/23441684280348-Sexual-Harassment-Policy"
         }
       ]
@@ -923,14 +923,14 @@
         {
           "identifier": "training_api_mode",
           "type": "text",
-          "label": "Training API mode",
+          "label": "Training booking API mode",
           "description": "Set to jsonp or fetch. Defaults to jsonp.",
           "value": "jsonp"
         },
         {
           "identifier": "training_iframe_url",
           "type": "text",
-          "label": "Training iframe URL",
+          "label": "Training booking iframe URL",
           "description": "Optional URL for the embedded booking UI.",
           "value": ""
         },
@@ -945,6 +945,3 @@
     }
   ]
 }
-
-
-
