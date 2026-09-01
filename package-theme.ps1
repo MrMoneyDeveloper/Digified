@@ -34,8 +34,9 @@ foreach ($entry in $entries) {
   }
 }
 
-if (Test-Path $Output) {
-  Remove-Item $Output -Force
+$archivePath = Join-Path $repoRoot $Output
+if (Test-Path $archivePath) {
+  Remove-Item $archivePath -Force
 }
 
 $stagingRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("digified-theme-" + [guid]::NewGuid().ToString("N"))
@@ -51,29 +52,41 @@ try {
   $manifest.version = $ReleaseVersion
 
   # Zendesk is fussy about manifest parsing. Write UTF-8 without a BOM so the
-  # imported archive contains a plain JSON manifest with an unambiguous SemVer.
+  # imported archive contains plain JSON with an unambiguous SemVer.
   $manifestJson = $manifest | ConvertTo-Json -Depth 100
   $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
   [System.IO.File]::WriteAllText($stagedManifestPath, $manifestJson, $utf8NoBom)
 
-  Push-Location $stagingRoot
+  # Use .NET ZIP support rather than an external tar executable. This avoids
+  # Git Bash resolving /usr/bin/tar on Windows and interpreting C:\ paths as
+  # remote-host syntax, while still producing standard forward-slash ZIP entries.
   try {
-    $archivePath = Join-Path $repoRoot $Output
-    $tarArgs = @("-a", "-c", "-f", $archivePath) + $entries
-    $tarProcess = Start-Process -FilePath "tar" -ArgumentList $tarArgs -NoNewWindow -Wait -PassThru
+    Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
+  }
+  catch {
+    # PowerShell Core already exposes ZipFile on platforms where this assembly
+    # is folded into the runtime, so an Add-Type failure is not fatal by itself.
+  }
 
-    if ($tarProcess.ExitCode -ne 0) {
-      throw "tar failed with exit code $($tarProcess.ExitCode)"
-    }
+  if (-not ("System.IO.Compression.ZipFile" -as [type])) {
+    throw "System.IO.Compression.ZipFile is unavailable in this PowerShell runtime."
   }
-  finally {
-    Pop-Location
-  }
+
+  [System.IO.Compression.ZipFile]::CreateFromDirectory(
+    $stagingRoot,
+    $archivePath,
+    [System.IO.Compression.CompressionLevel]::Optimal,
+    $false
+  )
 }
 finally {
   if (Test-Path $stagingRoot) {
     Remove-Item -Path $stagingRoot -Recurse -Force
   }
+}
+
+if (-not (Test-Path $archivePath)) {
+  throw "Theme archive was not created: $archivePath"
 }
 
 Write-Host "Created $Output with theme version $ReleaseVersion"
