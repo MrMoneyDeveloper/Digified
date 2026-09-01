@@ -1,6 +1,6 @@
 param(
-  [string]$Output = "digified-theme.zip",
-  [string]$ReleaseVersion = "2028.2.7"
+  [string]$ReleaseVersion = "2029.0.0",
+  [string]$Output = ""
 )
 
 $ErrorActionPreference = 'Stop'
@@ -8,6 +8,10 @@ Set-StrictMode -Version Latest
 
 if ($ReleaseVersion -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$') {
   throw "ReleaseVersion '$ReleaseVersion' is not valid Semantic Versioning 2.0.0."
+}
+
+if ([string]::IsNullOrWhiteSpace($Output)) {
+  $Output = "digified-theme-$ReleaseVersion.zip"
 }
 
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -34,9 +38,6 @@ if (Test-Path $Output) {
   Remove-Item $Output -Force
 }
 
-# Build from a temporary staging directory so the release archive can carry a
-# strictly newer Zendesk theme version without mutating a developer's working
-# manifest in place.
 $stagingRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("digified-theme-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $stagingRoot | Out-Null
 
@@ -48,11 +49,17 @@ try {
   $stagedManifestPath = Join-Path $stagingRoot "manifest.json"
   $manifest = Get-Content -Raw -Path $stagedManifestPath | ConvertFrom-Json
   $manifest.version = $ReleaseVersion
-  $manifest | ConvertTo-Json -Depth 100 | Set-Content -Path $stagedManifestPath -Encoding utf8
+
+  # Zendesk is fussy about manifest parsing. Write UTF-8 without a BOM so the
+  # imported archive contains a plain JSON manifest with an unambiguous SemVer.
+  $manifestJson = $manifest | ConvertTo-Json -Depth 100
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($stagedManifestPath, $manifestJson, $utf8NoBom)
 
   Push-Location $stagingRoot
   try {
-    $tarArgs = @("-a", "-c", "-f", (Join-Path $repoRoot $Output)) + $entries
+    $archivePath = Join-Path $repoRoot $Output
+    $tarArgs = @("-a", "-c", "-f", $archivePath) + $entries
     $tarProcess = Start-Process -FilePath "tar" -ArgumentList $tarArgs -NoNewWindow -Wait -PassThru
 
     if ($tarProcess.ExitCode -ne 0) {
