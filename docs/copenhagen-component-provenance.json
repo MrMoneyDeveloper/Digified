@@ -1,0 +1,18 @@
+{
+  "source": "https://github.com/zendesk/copenhagen_theme",
+  "release": "4.51.0",
+  "commit": "e54a32a771e3b003e6455930073e02162e82cba1",
+  "synced_at": "2026-09-01",
+  "files": {
+    "approval-requests-bundle.js": "df81493113cc8389a292051e23ffddc747637260246ab5ec713fe3df1bf8fc5f",
+    "approval-requests-translations-bundle.js": "8fdb0f9a0afac85cc1818b6d3996e2381d3bf7c3e3501c406d9b2f4ee114f547",
+    "flash-notifications-bundle.js": "243f8995ec1adba4ede90ac2df6795da51552de70ae21ba9078e98c32e27025c",
+    "new-request-form-bundle.js": "e6f2d45ca61034459e9cc417f9a868cfd0bed424f67d77db7a0e2d03f2f8a716",
+    "new-request-form-translations-bundle.js": "89d539cb1da4f4dc51a4a9176f4ea443134e78551d6492c53c876135803d8d53",
+    "service-catalog-bundle.js": "680ea8e0341254c9fa5e4e2a5f9ef280c02eb4a052f11c90011dec4f300d2313",
+    "service-catalog-translations-bundle.js": "6eaf8794d835e1cf9c3af846b5f035125599a1d566f0eec44aaaf87f76f45f46",
+    "shared-bundle.js": "7ed517701451453e609912cf6b4348c9fce81a9867d731928dbd593d7f13bd4f",
+    "ticket-fields-bundle.js": "404575bd13d2cfa9bbf2aa4b44d4699aeec08d040bf893bdf09ae5875d6e9608",
+    "wysiwyg-bundle.js": "cac9578354aeef2a63eeb9f001d50c3f796d298a8bf82dd0e08cc736d0cf8da3"
+  }
+}

@@ -1,6 +1,7 @@
 "use strict";
 
 const assert = require("assert");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
@@ -32,6 +33,9 @@ const requestBundle = read("assets/new-request-form-bundle.js");
 const documentHead = read("templates/document_head.hbs");
 const themeScript = read("script.js");
 const manifest = JSON.parse(read("manifest.json"));
+const componentProvenance = JSON.parse(
+  read("docs/copenhagen-component-provenance.json")
+);
 
 const requestRoutingStart = themeScript.indexOf("// Only run on new request page");
 const requestRoutingEnd = themeScript.indexOf("const isPrintableChar", requestRoutingStart);
@@ -50,12 +54,27 @@ assertIncludes(
 );
 assertIncludes(
   requestTemplate,
-  "const requestForm = {{json new_request_form}};",
+  "requestForm: {{json new_request_form}}",
   "new request template"
 );
 assertIncludes(
   requestTemplate,
   "renderNewRequestForm(settings, props, container);",
+  "new request template"
+);
+assertIncludes(
+  requestTemplate,
+  "const showSuggestedArticles = settings.show_suggested_articles ?? true;",
+  "new request template"
+);
+assertIncludes(
+  requestTemplate,
+  "answerBotGenerativeExperience:",
+  "new request template"
+);
+assertIncludes(
+  requestTemplate,
+  "requestPath: {{json (page_path 'request' id=request_id)}}",
   "new request template"
 );
 assertExcludes(
@@ -67,40 +86,45 @@ assertExcludes(requestTemplate, "stopImmediatePropagation", "new request templat
 assertExcludes(requestTemplate, "checkValidity()", "new request template");
 assertExcludes(requestTemplate, "reportValidity()", "new request template");
 
-// Subject is the only field Zendesk routes through its special subject branch,
-// which also mounts article-deflection logic. The theme deliberately keeps the
-// real request[subject] field name while routing its runtime type through the
-// same standard text renderer used by ordinary working text fields.
-assertIncludes(requestTemplate, 'field.type === "subject"', "subject routing");
-assertIncludes(
-  requestTemplate,
-  'field.name === "request[subject]"',
-  "subject routing"
-);
-assertIncludes(
-  requestTemplate,
-  'return { ...field, type: "text" };',
-  "subject routing"
-);
-assertIncludes(
-  requestTemplate,
-  "Subject routed through standard text renderer",
-  "subject routing"
-);
+// Do not patch controlled inputs through React's private instance properties or
+// fabricated events. The official renderer must own the subject end to end.
+assertExcludes(requestTemplate, "__reactProps$", "new request template");
+assertExcludes(requestTemplate, "_valueTracker", "new request template");
+assertExcludes(requestTemplate, "SubjectInputFix", "new request template");
+assertExcludes(requestTemplate, "new MutationObserver", "new request template");
+assertExcludes(requestTemplate, 'type: "text"', "new request template");
 
-// The old DOM/React recovery bridge must stay removed. It obscured the actual
-// subject-only renderer problem and introduced synthetic key/input behavior.
-assertExcludes(requestTemplate, "scheduleKeyFallback", "subject routing");
-assertExcludes(requestTemplate, "schedulePasteFallback", "subject routing");
-assertExcludes(requestTemplate, "_valueTracker", "subject routing");
-assertExcludes(requestTemplate, "__reactProps$", "subject routing");
-assertExcludes(requestTemplate, "new MutationObserver", "subject routing");
-
-// Guard the vendored Zendesk bundle contract: the special subject branch still
-// exists upstream, but this template intentionally bypasses it at runtime by
-// presenting Subject as a normal text ticket field before render.
+// Guard the vendored Zendesk bundle contract that renders and updates the
+// standard request subject before its native submit handler posts the form.
 assertIncludes(requestBundle, '"subject"===t.type', "Zendesk request renderer");
+assert.ok(
+  /"subject"===t\.type[\s\S]{0,300}onChange/.test(requestBundle),
+  "Zendesk request renderer must keep subject state wired to onChange"
+);
 assertIncludes(requestBundle, "handleSubmit", "Zendesk request renderer");
+
+// These generated bundles form one React component runtime. Mixing releases
+// caused the controlled Subject input to discard each keystroke. Pin all files
+// to one official Copenhagen release and verify their exact bytes.
+assert.strictEqual(
+  componentProvenance.source,
+  "https://github.com/zendesk/copenhagen_theme",
+  "component provenance must reference Zendesk's official repository"
+);
+assert.strictEqual(componentProvenance.release, "4.51.0");
+assert.strictEqual(
+  componentProvenance.commit,
+  "e54a32a771e3b003e6455930073e02162e82cba1"
+);
+for (const [fileName, expectedHash] of Object.entries(componentProvenance.files)) {
+  const contents = fs.readFileSync(path.join(ROOT, "assets", fileName));
+  const actualHash = crypto.createHash("sha256").update(contents).digest("hex");
+  assert.strictEqual(
+    actualHash,
+    expectedHash,
+    `${fileName} must match the recorded Copenhagen component release`
+  );
+}
 
 // A global document-head redirect used to send generic request URLs (including
 // internal staff) to the external/tenant form and also matched request history.
