@@ -1,5 +1,12 @@
 ## Digified Zendesk Theme
 
+## Technical handover and dependencies
+
+- [Technical handover](HANDOVER.md): ownership, setup, credential rotation, verification and recovery.
+- [Dependency and API/OAuth configuration list](DEPENDENCIES.md): runtime, external services and configuration inventory.
+
+**Handover requirement:** all API/OAuth credentials and related shared/deployment secrets in use must be rotated or reissued, configured and tested under the receiving owner. Completion must be recorded; these documentation changes do not rotate live credentials.
+
 The repository contains the working copy of the Digified Zendesk Guide theme. Edit the files under `templates/`, `assets/`, etc., then rebuild the distributable archive before uploading to Zendesk.
 
 ### Packaging
